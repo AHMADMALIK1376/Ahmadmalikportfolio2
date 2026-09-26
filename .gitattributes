@@ -1,0 +1,10 @@
+# Keep every text file with LF line endings, in the repository and on checkout,
+# so Windows and the Linux build machines see the same files and git stops
+# warning about CRLF on every commit.
+* text=auto eol=lf
+
+# binary files are never touched
+*.png binary
+*.jpg binary
+*.pdf binary
+*.ico binary
