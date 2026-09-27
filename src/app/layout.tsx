@@ -75,7 +75,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         </a>
         <Providers>
           <Nav />
-          <main id="main">{children}</main>
+          <main id="main" className="overflow-x-clip">{children}</main>
           <Footer />
         </Providers>
       </body>
