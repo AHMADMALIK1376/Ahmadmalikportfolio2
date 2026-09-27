@@ -9,21 +9,24 @@
  * Everything in the opening reads --p, which runs from 0 to 1 as it builds.
  */
 
-.stage {
+/* the factory, and the trucks that come and go from it: the trucks sit outside the factory's own stacking, so they
+   can drive off behind the words of the hero and the bar along the top of the page */
+.root {
   --p: 0;
   position: relative;
-  /* its layers are stacked among themselves, not with the page around it */
-  isolation: isolate;
+  cursor: pointer;
 }
 
 @media (scripting: none) {
-  .stage {
+  .root {
     --p: 1;
   }
 }
 
-.live {
-  cursor: pointer;
+.stage {
+  position: relative;
+  /* its layers are stacked among themselves, not with the page around it */
+  isolation: isolate;
 }
 
 .base {
@@ -137,9 +140,94 @@
   }
 }
 
-/* the truck, driven off and back by its translate */
+/* the trucks, driven in and off by their translate */
 .truck {
   will-change: translate, opacity;
+}
+
+/* BUILD's chimney, smoking while the line runs */
+.steam circle {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.live .steam circle {
+  animation: puff 2.7s ease-out infinite;
+}
+
+@keyframes puff {
+  from {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: translate(10px, -46px) scale(1.7);
+  }
+}
+
+/* TEST: the arm nods over whatever passes under it, and its scanner shines */
+.arm[data-working] {
+  animation: scan 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes scan {
+  from {
+    translate: -0.5% -0.3%;
+  }
+  to {
+    translate: 0.6% 0.35%;
+  }
+}
+
+.beam {
+  opacity: 0.12;
+  transition: opacity 0.2s ease;
+}
+
+.arm[data-working] .beam {
+  opacity: 0.45;
+}
+
+/* and the tick it gives each laptop, popping up and fading */
+.tick {
+  opacity: 0;
+}
+
+.tick[data-on] {
+  animation: tick 0.9s ease-out;
+}
+
+@keyframes tick {
+  0% {
+    opacity: 0;
+    translate: 0 1%;
+    scale: 0.6;
+  }
+  25% {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -1.5%;
+  }
+}
+
+/* the control desk's chart, running */
+.chart {
+  animation: chart 3s linear infinite;
+}
+
+@keyframes chart {
+  to {
+    translate: -24px 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -147,7 +235,10 @@
   [data-working] .light,
   .pencil[data-working],
   .press[data-working],
-  .tag[data-working] {
+  .tag[data-working],
+  .arm[data-working],
+  .live .steam circle,
+  .chart {
     animation: none;
   }
 }

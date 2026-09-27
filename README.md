@@ -64,15 +64,17 @@ buttons: every part is a soft rounded block (`Block`: a rounded top swept straig
 paper or a pastel, edged in the cards' 55% ink, and put through the same kind of noise
 filter and hard offset shadow the cards and chips have (`desk-card`, `desk-chip`).
 
-Ideas (named after Ahmad's projects) drop out of a hopper onto a conveyor belt and run
-through three machines: DESIGN turns each into a wireframe, BUILD into a laptop running the
-app, SHIP boxes it, and the boxes drop into a truck that drives off when it is full. Each
-machine works while something is inside it; clicking the factory drops in an idea. It is
-drawn as layers of SVG in one view box, stacked in the order they are painted, so a thing on
-the belt really goes into a machine and out the other side; everything that moves slides by
-its CSS translate, so the wobbling edges are never redrawn.
-
-Everything respects `prefers-reduced-motion`.
+Ideas (named after Ahmad's projects) drop out of a hopper fed from a thought cloud onto a
+conveyor that runs from the top right of the picture to the bottom left, across a factory floor:
+DESIGN turns each into a wireframe, BUILD (smoking, with a tank piped into it) into a laptop
+running the app, a robot arm at TEST scans it and ticks it off, and SHIP boxes it. A control desk
+charts the output; pallets and lamps stand about. The boxes drop into a truck at the end of the
+line, and when it is full it drives off behind the words of the hero and up behind the bar along
+the top of the page, while the next truck, in another colour, pulls in. Each machine works while
+something is inside it; clicking the factory drops in an idea. It is drawn as layers of SVG in one
+view box, stacked in the order they are painted, so a thing on the belt really goes into a machine
+and out the other side; everything that moves slides by its CSS translate, so the wobbling edges
+are never redrawn.
 
 ## What I do: the wallet
 
@@ -104,13 +106,13 @@ Every pop-up fits on one screen, on a laptop and on a phone, with nothing to scr
 
 ## Experience: the road trip
 
-Experience is a hand-drawn map (`src/components/sections/CareerMap.tsx`, with the land in
-`MapArt.tsx` and the styling in `Map.module.css`): every role on one road in order, and the
-workshop and hackathons as flags just off it. The map fills the screen and stays pinned
-while the section scrolls past, and the scrolling drives a van along the road; as it pulls
-up at each place, that place's card pops up on the map beside its pin (under the map on a
-phone). Scrolling back drives it back; pointing at a pin puts up its road sign, and clicking
-one scrolls there. Every stop is also listed for screen readers.
+Experience is a long hand-drawn map laid across the whole width of the page
+(`src/components/sections/CareerMap.tsx`, with the pictures of each place in `MapScenes.tsx` and
+the styling in `Map.module.css`): every role on one road that runs from the top of the map to the
+bottom, and the workshop and hackathons as flags beside it. As the page scrolls, a van drives down
+the road level with the middle of the screen, inking it in behind it, and each stop's card pops up
+on the map beside its pin as the van arrives. The road is drawn through wherever the stops fall on
+the page, so it fits any width; on a phone it runs down the left with the cards beside it.
 
 ## Contact: the pen plotter
 

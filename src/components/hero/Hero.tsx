@@ -14,7 +14,8 @@ export default function Hero() {
   return (
     <section id="top" aria-labelledby="hero-title" className="relative flex min-h-[100svh] flex-col pt-[calc(var(--nav-h)+1.5rem)] pb-12 sm:pt-[calc(var(--nav-h)+2.5rem)] sm:pb-16">
       <div className="gutter grid flex-1 items-center gap-12 sm:gap-16 lg:grid-cols-[0.94fr_1.06fr] lg:gap-6">
-        <div>
+        {/* the words, over the factory: its trucks drive off behind them */}
+        <div className="relative z-10">
           <p className="hero-rise flex items-center gap-2 text-sm font-bold text-muted sm:text-lg" style={rise(0)}>
             <span className="inline-block origin-[70%_70%] animate-[wave_2.4s_ease-in-out_1.2s_infinite]" aria-hidden="true">
               👋
@@ -65,14 +66,14 @@ export default function Hero() {
           <Factory />
 
           {/* margin notes, written once the factory is built */}
-          <div aria-hidden="true" className="hero-rise pointer-events-none absolute right-[3%] top-[10%] hidden rotate-[4deg] text-right text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-[34%] top-[1%] hidden -rotate-3 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
             ideas in,
             <br />
             apps out
-            <Doodle kind="arrow-curl" now delay={4.4} className="ml-auto mr-10 mt-1 w-16 rotate-[100deg] text-sienna-500" />
+            <Doodle kind="arrow-curl" now delay={4.4} className="-mt-6 ml-24 w-16 -rotate-[20deg] text-sienna-500" />
           </div>
-          <div aria-hidden="true" className="hero-rise pointer-events-none absolute bottom-[12%] left-[3%] hidden -rotate-3 text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(36)}>
-            <Doodle kind="loop" now delay={4.8} className="mb-1 ml-6 w-24 -rotate-[25deg] text-sage-500" />
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute -bottom-[1%] right-[2%] hidden rotate-[-3deg] text-right text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(36)}>
+            <Doodle kind="loop" now delay={4.8} className="mb-1 ml-auto mr-10 w-24 rotate-[190deg] text-sage-500" />
             click it to drop
             <br />
             in an idea
