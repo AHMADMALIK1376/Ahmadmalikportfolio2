@@ -1,0 +1,153 @@
+/*
+ * The factory is drawn in layers: SVGs one over another, each in the same view
+ * box and the same box on the page, stacked by z-index in the order they must
+ * be painted — the belt, then whatever is on the belt before the first
+ * machine, then that machine, then what is between it and the next, and so on
+ * to the truck. Everything that moves is moved by its CSS translate, in percent
+ * of its own box, so the browser slides it without redrawing it.
+ *
+ * Everything in the opening reads --p, which runs from 0 to 1 as it builds.
+ */
+
+.stage {
+  --p: 0;
+  position: relative;
+  /* its layers are stacked among themselves, not with the page around it */
+  isolation: isolate;
+}
+
+@media (scripting: none) {
+  .stage {
+    --p: 1;
+  }
+}
+
+.live {
+  cursor: pointer;
+}
+
+.base {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.moving {
+  will-change: translate;
+}
+
+/* a thing on the belt: hidden until it is put there */
+.item {
+  visibility: hidden;
+}
+
+.item[data-on] {
+  visibility: visible;
+}
+
+/* the belt's slats, slid along as a whole under a window the shape of the belt */
+.window {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.slats {
+  will-change: translate;
+  animation: belt var(--slat-time, 0.4s) linear infinite;
+}
+
+.stage:not(.live) .slats {
+  animation-play-state: paused;
+}
+
+@keyframes belt {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: var(--slat-to);
+  }
+}
+
+/* ── the machines at work, while something is inside them ── */
+
+.light {
+  fill: #9a9f98;
+  transition: fill 0.2s ease;
+}
+
+[data-working] .light {
+  fill: #9caf88;
+  animation: blink 0.5s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  50% {
+    fill: #de9372;
+  }
+}
+
+/* the designer's pencil scribbles: its whole layer turns about the pencil's foot */
+.pencil[data-working] {
+  animation: scribble 0.32s ease-in-out infinite alternate;
+}
+
+@keyframes scribble {
+  from {
+    rotate: -2.2deg;
+  }
+  to {
+    rotate: 2deg;
+  }
+}
+
+/* the builder's press comes down */
+.press[data-working] {
+  animation: press 0.6s cubic-bezier(0.5, 0, 0.3, 1) infinite;
+}
+
+@keyframes press {
+  40%,
+  60% {
+    translate: 0 1.8%;
+  }
+}
+
+/* the shipper's label flutters out */
+.tag[data-working] {
+  animation: tag 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes tag {
+  to {
+    rotate: 3deg;
+  }
+}
+
+/* the truck, driven off and back by its translate */
+.truck {
+  will-change: translate, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slats,
+  [data-working] .light,
+  .pencil[data-working],
+  .press[data-working],
+  .tag[data-working] {
+    animation: none;
+  }
+}

@@ -4,9 +4,9 @@ import SketchButton from "@/components/sketch/SketchButton";
 import Highlight from "@/components/sketch/Highlight";
 import Doodle from "@/components/sketch/Doodle";
 import { ArrowDown, Download, Pin, Clock } from "@/components/sketch/Icons";
+import Factory from "@/components/factory/Factory";
 import LocalTime from "@/components/LocalTime";
 import Typewriter from "./Typewriter";
-
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -60,21 +60,22 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* the pen plotter, which builds itself and then draws the projects, one sheet after another */}
-        <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-[30rem] lg:mr-0 lg:max-w-none lg:translate-x-8 min-[1360px]:translate-x-16">
-          <div className="aspect-[612/452]" />
+        {/* the factory: ideas in, apps out */}
+        <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-[30rem] lg:mr-0 lg:max-w-none lg:translate-x-6 min-[1360px]:translate-x-12">
+          <Factory />
 
-          {/* margin notes, written once the plotter is built */}
-          <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-[2%] top-[4%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
-            it draws my projects,
+          {/* margin notes, written once the factory is built */}
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute right-[3%] top-[10%] hidden rotate-[4deg] text-right text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
+            ideas in,
             <br />
-            line by line
-            <Doodle kind="arrow-curl" now delay={4.4} className="ml-12 mt-1 w-16 rotate-[20deg] text-sienna-500" />
+            apps out
+            <Doodle kind="arrow-curl" now delay={4.4} className="ml-auto mr-10 mt-1 w-16 rotate-[100deg] text-sienna-500" />
           </div>
-          <div aria-hidden="true" className="hero-rise pointer-events-none absolute -bottom-[4%] right-[4%] hidden rotate-[-3deg] text-right text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(36)}>
-            <Doodle kind="loop" now delay={4.8} className="mb-1 ml-auto mr-6 w-24 rotate-[160deg] text-sage-500" />
-            click it for
-            <br />a fresh sheet
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute bottom-[12%] left-[3%] hidden -rotate-3 text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(36)}>
+            <Doodle kind="loop" now delay={4.8} className="mb-1 ml-6 w-24 -rotate-[25deg] text-sage-500" />
+            click it to drop
+            <br />
+            in an idea
           </div>
         </div>
       </div>
