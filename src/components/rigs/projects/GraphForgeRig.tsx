@@ -14,7 +14,11 @@ import styles from "../Rigs.module.css";
  * chart types; one of three engines — D3, Recharts or Chart.js — draws the
  * chart on the stage; and the export docks hand out images and data. Outside
  * the window a server stands behind a barrier, because nothing is uploaded.
- * Round after round the chart turns from bars into a line into a pie.
+ * Round after round the chart turns from bars into a line into a pie: the
+ * spreadsheet's rows are read one by one, the registry names the drawer it
+ * opens out of its sixty-nine types, the stage titles the chart it shows, and
+ * a PNG and a CSV pop out of the docks — all of it, as the badge by the
+ * barrier says, without a byte leaving the browser.
  */
 
 const ENGINES = ["d3", "recharts", "chartjs"];
@@ -50,6 +54,10 @@ export default function GraphForgeRig({ className }: { className?: string }) {
   const packets = useRef<(SVGGElement | null)[]>([]);
   const charts = useRef<(SVGGElement | null)[]>([]);
   const drawers = useRef<(SVGRectElement | null)[]>([]);
+  const rows = useRef<(SVGRectElement | null)[]>([]);
+  const kindName = useRef<SVGTextElement>(null);
+  const chartTitle = useRef<SVGTextElement>(null);
+  const exports = useRef<(SVGGElement | null)[]>([]);
 
   useClock(built, svg, (ms) => {
     const kind = Math.floor(ms / ROUND) % 3;
@@ -57,6 +65,17 @@ export default function GraphForgeRig({ className }: { className?: string }) {
     runRoutes(ms, [READ, DRAW[kind], ...EXPORT], { pipes: pipes.current, packets: packets.current, nodes: nodes.current }, HOP, ROUND, { barrier: "warm" });
     charts.current.forEach((chart, i) => light(chart, i === kind && t > 2700));
     drawers.current.forEach((drawer, i) => drawer?.setAttribute("fill", i === kind + 1 && t > 1400 && t < 3000 ? "#ecc9b9" : "#f4f4f0"));
+    // the spreadsheet's rows, read one after another
+    rows.current.forEach((row, i) => row?.setAttribute("opacity", t > i * 220 && t < i * 220 + 500 ? "1" : "0"));
+    const name = ["bars", "line", "pie"][kind];
+    if (kindName.current) kindName.current.textContent = t > 1400 ? `drawer: ${name}` : "69 types";
+    if (chartTitle.current) chartTitle.current.textContent = t > 2700 ? `revenue · ${name}` : "stage";
+    // a file pops out of each dock after the chart is drawn
+    exports.current.forEach((file, i) => {
+      const f = t - (3200 + i * 700 + HOP);
+      file?.setAttribute("transform", f > 0 && f < 900 ? `translate(0 ${(-f / 900) * 20})` : "translate(-999 -999)");
+      file?.setAttribute("opacity", f > 0 && f < 900 ? (1 - f / 900).toFixed(2) : "0");
+    });
   });
 
   return (
@@ -77,7 +96,26 @@ export default function GraphForgeRig({ className }: { className?: string }) {
 
       {/* the spreadsheet's grid, and the registry's drawers */}
       <g transform={onTop(at(-208, -113, 14))} className={styles.tag}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <rect
+            key={i}
+            ref={(el) => {
+              rows.current[i] = el;
+            }}
+            x={4}
+            y={2 + i * 10}
+            width={50}
+            height={10}
+            fill="#e2b5a1"
+            opacity={0}
+          />
+        ))}
         <path d="M4 12H54M4 22H54M4 32H54M4 42H54M18 4V50M34 4V50" stroke="#b8c8a8" strokeWidth={1} />
+      </g>
+      <g transform={onTop(at(-206, 80, 6))} className={styles.tag}>
+        <text ref={kindName} x={2} y={6} fontSize={5} fontWeight={700} fill="#9c3f1d">
+          69 types
+        </text>
       </g>
       <g transform={onFront(at(-210, 70, 54))} className={styles.tag}>
         {[0, 1, 2, 3, 4].map((i) => (
@@ -100,9 +138,12 @@ export default function GraphForgeRig({ className }: { className?: string }) {
 
       {/* the stage, and the chart on it: bars, a line or a pie */}
       <g transform={onFront(at(-10, -40, 104))} className={styles.tag}>
-        <text x={10} y={14} fontSize={6.4} fontWeight={700} fill="#2d2f2b">
+        <text ref={chartTitle} x={10} y={14} fontSize={6.4} fontWeight={700} fill="#2d2f2b">
           stage
         </text>
+        {[40, 55, 70].map((v) => (
+          <path key={v} d={`M14 ${v}H138`} stroke="rgba(45,47,43,0.1)" strokeWidth={1} strokeDasharray="2 3" />
+        ))}
         <path d="M14 86H138M14 86V24" stroke="rgba(45,47,43,0.45)" strokeWidth={1} />
         {[
           <g key="bars">
@@ -140,7 +181,32 @@ export default function GraphForgeRig({ className }: { className?: string }) {
         <text x={2} y={6} fontSize={4.8} fontWeight={700} fill="#9c3f1d">
           no upload
         </text>
+        <rect x={0} y={12} width={32} height={9} rx={4.5} fill="#e2e9da" stroke="rgba(45,47,43,0.4)" strokeWidth={0.6} />
+        <text x={16} y={18.2} textAnchor="middle" fontSize={4.4} fontWeight={700} fill="#4c5e3e">
+          GDPR ✓
+        </text>
       </g>
+
+      {/* the files the docks hand out */}
+      {[
+        { x: 60, label: ".png" },
+        { x: 120, label: ".csv" },
+      ].map(({ x, label }, i) => (
+        <g
+          key={label}
+          ref={(el) => {
+            exports.current[i] = el;
+          }}
+          transform="translate(-999 -999)"
+        >
+          <g transform={`translate(${at(x, 90, 20).join(" ")})`}>
+            <rect x={-9} y={-11} width={18} height={13} rx={2} fill="#f4f4f0" stroke="rgba(45,47,43,0.55)" strokeWidth={0.8} />
+            <text y={-2.6} textAnchor="middle" fontSize={4.6} fontWeight={700} fill={i ? "#4c5e3e" : "#9c3f1d"}>
+              {label}
+            </text>
+          </g>
+        </g>
+      ))}
 
       <FlowPipes nodes={NODES} routes={ROUTES} refs={pipes} />
       {built && <FlowPackets routes={[READ, DRAW[0], ...EXPORT]} refs={packets} />}

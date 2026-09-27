@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { at, Block, drawn, onFront, Part, TONES, type Point } from "@/components/desk/iso";
+import { at, Block, drawn, onFront, onTop, Part, TONES, type Point } from "@/components/desk/iso";
 import { light, place, useBuild, useClock } from "../kit";
 import { FlowNodes, FlowPackets, FlowPipes, runRoutes, type FlowNode, type FlowRoute } from "../flow";
 import styles from "../Rigs.module.css";
@@ -12,9 +12,11 @@ import styles from "../Rigs.module.css";
  * Three buildings stand in a row: the React app, the Express API behind its
  * JWT gate, and the Oracle database with its seventeen tables and triggers. In
  * front stand the cron tower with its clock, and the mailbox. Requests travel
- * from the app through the API to the database and back all day; at midnight
- * the clock strikes, the five cron services wake one after another, the
- * attendance triggers fire in the database, and the reminders fly out.
+ * from the app through the API, past its JWT gate, to the database and back
+ * all day, while the sun crosses the sky and the attendance fills in on the
+ * app's roof; at midnight, under the moon, the clock strikes, the five cron
+ * services wake one after another, the triggers fire across the seventeen
+ * tables, and the reminders fly out.
  */
 
 const FRONT = -20;
@@ -47,6 +49,11 @@ export default function FocusFlowRig({ className }: { className?: string }) {
   const hand = useRef<SVGPathElement>(null);
   const crons = useRef<(SVGCircleElement | null)[]>([]);
   const letters = useRef<(SVGGElement | null)[]>([]);
+  const sky = useRef<SVGGElement>(null);
+  const skyBody = useRef<SVGCircleElement>(null);
+  const night = useRef<SVGRectElement>(null);
+  const bolt = useRef<SVGPathElement>(null);
+  const marks = useRef<(SVGRectElement | null)[]>([]);
 
   useClock(built, svg, (ms) => {
     const t = ms % DAY;
@@ -55,6 +62,20 @@ export default function FocusFlowRig({ className }: { className?: string }) {
     hand.current?.setAttribute("transform", `rotate(${((360 * (t - MIDNIGHT)) / DAY).toFixed(1)} 16 16)`);
     // the five cron services wake one after another
     crons.current.forEach((cron, i) => light(cron, t > MIDNIGHT + i * 120 && t < MIDNIGHT + 1400));
+    // the day: the sun across the sky, the moon at midnight, and the campus a shade darker at night
+    const p = ((t - MIDNIGHT + DAY) % DAY) / DAY;
+    const dark = Math.max(0, Math.cos(p * Math.PI * 2));
+    const day = p >= 0.25 && p < 0.75;
+    // each crosses from the left to the right in its half of the day, highest at noon or at midnight
+    const s = day ? (p - 0.25) / 0.5 : ((p + 0.25) % 1) / 0.5;
+    sky.current?.setAttribute("transform", `translate(${(110 + 460 * s).toFixed(1)} ${(248 - Math.sin(s * Math.PI) * 44).toFixed(1)})`);
+    skyBody.current?.setAttribute("fill", day ? "#e0916f" : "#e6e8e3");
+    night.current?.setAttribute("opacity", (dark * 0.14).toFixed(3));
+    // the triggers firing in the database as the cron reaches it
+    bolt.current?.setAttribute("opacity", t > MIDNIGHT + 1300 && t < MIDNIGHT + 2100 ? "1" : "0");
+    // the attendance, marked through the day
+    const marked = Math.floor(((p + 0.75) % 1) * 16);
+    marks.current.forEach((mark, i) => mark?.setAttribute("fill", i < marked ? (i % 5 === 3 ? "#e2b5a1" : "#9caf88") : "#e3e5e0"));
     // and the reminders fly up out of the mailbox
     letters.current.forEach((letter, i) => {
       const u = (t - MIDNIGHT - 2300 - i * 260) / 1100;
@@ -66,6 +87,10 @@ export default function FocusFlowRig({ className }: { className?: string }) {
 
   return (
     <svg ref={svg} viewBox="54 190 560 358" className={`${styles.rig} ${built ? styles.running : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
+      {/* the sky: the sun by day, the moon by night */}
+      <g ref={sky} className={styles.tag} transform="translate(-999 -999)">
+        <circle ref={skyBody} r={9} fill="#e0916f" stroke="rgba(45,47,43,0.4)" strokeWidth={1} />
+      </g>
       <Part arrival={{ lift: 30, from: 0.06, span: 0.14 }} style={drawn(0, 0.1)}>
         <g filter="url(#desk-card)">
           <Block x0={-230} x1={160} y0={-130} y1={120} z={0} h={6} tone={TONES.sage} r={22} />
@@ -106,6 +131,40 @@ export default function FocusFlowRig({ className }: { className?: string }) {
           cron
         </text>
       </g>
+
+      {/* the API's gate: every request carries its token */}
+      <g transform={onFront(at(-44, FRONT, 22))} className={styles.tag}>
+        <path d="M8 0.5L15 3V8.5C15 12.6 12 15.2 8 16.5C4 15.2 1 12.6 1 8.5V3Z" fill="#f4f4f0" stroke="#4c5e3e" strokeWidth={1.1} />
+        <text x={8} y={10.4} textAnchor="middle" fontSize={3.8} fontWeight={700} fill="#4c5e3e">
+          JWT
+        </text>
+      </g>
+      {/* the database's tables, and the triggers firing across them */}
+      <g transform={onFront(at(44, FRONT, 18))} className={styles.tag}>
+        <text x={2} y={4} fontSize={5.4} fontWeight={700} fill="#2d2f2b">
+          17 tables
+        </text>
+        <path ref={bolt} d="M60 -12L54 -2H59L55 8L64 -5H59L62 -12Z" fill="#d0714c" stroke="#9c3f1d" strokeWidth={0.6} opacity={0} />
+      </g>
+      {/* the attendance, marked on the app's roof through the day */}
+      <g transform={onTop(at(-196, -96, 52))} className={styles.tag}>
+        {Array.from({ length: 16 }, (_, i) => (
+          <rect
+            key={i}
+            ref={(el) => {
+              marks.current[i] = el;
+            }}
+            x={6 + (i % 8) * 8}
+            y={10 + Math.floor(i / 8) * 10}
+            width={6}
+            height={7}
+            rx={1.5}
+            fill="#e3e5e0"
+          />
+        ))}
+      </g>
+      {/* the night, a shade over the whole campus */}
+      <rect ref={night} x={54} y={190} width={560} height={358} fill="#242623" opacity={0} pointerEvents="none" />
 
       {/* the reminders */}
       {built &&

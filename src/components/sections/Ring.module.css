@@ -3,7 +3,8 @@
  *
  * Every project is a card, set round a circle and tipped a little towards the
  * viewer, so the ring is seen from just above. The script turns it — slowly on
- * its own, or by dragging, the arrows or the keyboard — by setting --angle.
+ * its own, or by dragging or the keyboard — by setting the ring's transform,
+ * which the compositor can move without redrawing the cards.
  * Each card has a face, drawn like the site's cards, and a back, sage and
  * patterned, for when it is turned away. The card nearest the front is marked,
  * and the one under the pointer steps out of the ring.
@@ -54,7 +55,8 @@
   height: var(--h);
   margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
   transform-style: preserve-3d;
-  transform: rotateX(var(--tilt)) rotateY(var(--angle, 0deg));
+  transform: rotateX(var(--tilt));
+  will-change: transform;
 }
 
 /* ── a card ────────────────────────────────────────────────────────────── */
@@ -71,9 +73,7 @@
   cursor: pointer;
   transform-style: preserve-3d;
   transform: rotateY(calc(360deg / var(--quantity) * var(--index))) translateZ(var(--r));
-  transition:
-    transform 0.45s var(--ease-sketch),
-    opacity 0.4s ease;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card:hover,
@@ -206,12 +206,6 @@
   color: var(--color-ink);
   text-align: center;
   line-height: 1.2;
-}
-
-/* a card the filter has set aside */
-.card[data-dim] {
-  opacity: 0.28;
-  pointer-events: none;
 }
 
 /* small screens: a little less on each card */

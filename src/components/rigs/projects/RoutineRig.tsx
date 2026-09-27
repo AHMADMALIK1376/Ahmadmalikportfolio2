@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { at, Block, drawn, onFront, Part, TONES, type Point } from "@/components/desk/iso";
+import { at, Block, drawn, onFront, onTop, Part, TONES, type Point } from "@/components/desk/iso";
 import { light, place, useBuild, useClock } from "../kit";
 import { FlowNodes, FlowPackets, FlowPipes, runRoutes, type FlowNode, type FlowRoute } from "../flow";
 import styles from "../Rigs.module.css";
@@ -10,8 +10,9 @@ import styles from "../Rigs.module.css";
  * Routine Dashboard, a task manager, as a shelving unit with a shelf for each
  * group of tasks: today, this week, and done. A task is worked down from one
  * shelf to the next, each shelf's progress moving as it goes and every move
- * synced up to Firebase; and every other round the whole dashboard turns dark
- * and back, the switch remembered in localStorage.
+ * synced up to Firebase, which says so; finished tasks are ticked; and every
+ * other round the switch slides over and the whole dashboard turns dark and
+ * back, the choice written into localStorage.
  */
 
 const SHELVES = [
@@ -47,6 +48,10 @@ export default function RoutineRig({ className }: { className?: string }) {
   const task = useRef<SVGGElement>(null);
   const bars = useRef<(SVGRectElement | null)[]>([]);
   const unit = useRef<SVGGElement>(null);
+  const knob = useRef<SVGCircleElement>(null);
+  const theme = useRef<SVGTextElement>(null);
+  const synced = useRef<SVGTextElement>(null);
+  const finished = useRef<SVGGElement>(null);
 
   useClock(built, svg, (ms) => {
     const round = Math.floor(ms / ROUND);
@@ -66,6 +71,13 @@ export default function RoutineRig({ className }: { className?: string }) {
     bars.current.forEach((bar, i) => bar?.setAttribute("width", (progress[i] * 60).toFixed(1)));
     // every other round, the dashboard goes dark
     light(unit.current, round % 2 === 1);
+    const dark = round % 2 === 1;
+    knob.current?.setAttribute("cx", dark ? "30" : "12");
+    knob.current?.setAttribute("fill", dark ? "#d0714c" : "#f4f4f0");
+    if (theme.current) theme.current.textContent = `theme=${dark ? "dark" : "light"}`;
+    // Firebase says when it has caught up
+    if (synced.current) synced.current.textContent = (t > 2000 && t < 3000) || t > 4000 ? "synced ✓" : "syncing…";
+    light(finished.current, t >= 3600);
   });
 
   return (
@@ -105,11 +117,24 @@ export default function RoutineRig({ className }: { className?: string }) {
             </g>
           </Part>
         ))}
+        {/* ticks on the tasks already done */}
+        <g className={styles.tag}>
+          {[-100, -70, -40].map((x) => (
+            <g key={x} transform={onTop(at(x + 4, -10, SHELVES[0].z + 15))}>
+              <path d="M2 8L6 12L14 3" fill="none" stroke="#4c5e3e" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+          ))}
+        </g>
         {/* the task being worked */}
         {built && (
           <g ref={task}>
             <g filter="url(#desk-chip)">
               <Block x0={SLOT_X - 11} x1={SLOT_X + 11} y0={-11} y1={11} z={5} h={10} tone={TONES.sageDeep} r={3} width={1.1} />
+            </g>
+            <g ref={finished} className={styles.overlay}>
+              <g transform={onTop(at(SLOT_X - 8, -8, 15))}>
+                <path d="M2 8L6 12L14 3" fill="none" stroke="#f4f4f0" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+              </g>
             </g>
           </g>
         )}
@@ -125,6 +150,21 @@ export default function RoutineRig({ className }: { className?: string }) {
         </Part>
       </g>
       <FlowNodes nodes={NODES} refs={nodes} />
+      {/* the dark mode switch, and what localStorage remembers of it */}
+      <g transform={onTop(at(-228, -38, 12))} className={styles.tag}>
+        <rect x={2} y={9} width={34} height={12} rx={6} fill="#3b3d39" />
+        <circle ref={knob} cx={12} cy={15} r={4.6} fill="#f4f4f0" style={{ transition: "cx 0.4s ease, fill 0.4s ease" }} />
+      </g>
+      <g transform={onFront(at(-180, -30, 10))} className={styles.tag}>
+        <text ref={theme} x={2} y={0} fontSize={4.6} fontWeight={700} fill="#2d2f2b">
+          theme=light
+        </text>
+      </g>
+      <g transform={onFront(at(175, 0, 30))} className={styles.tag}>
+        <text ref={synced} x={4} y={0} fontSize={5} fontWeight={700} fill="#9c3f1d">
+          synced ✓
+        </text>
+      </g>
       <FlowPipes nodes={NODES} routes={ROUTES} refs={pipes} />
       {built && <FlowPackets routes={ROUTES} refs={packets} />}
     </svg>

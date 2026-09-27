@@ -5,9 +5,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { CATEGORIES, PROJECTS, type Category } from "@/lib/content";
 import SectionHeading from "@/components/sketch/SectionHeading";
 import Highlight from "@/components/sketch/Highlight";
-import SketchButton from "@/components/sketch/SketchButton";
 import { Sketch } from "@/components/sketch/Doodle";
-import { ArrowRight } from "@/components/sketch/Icons";
 import { DRAWINGS } from "./drawings";
 import ProjectModal from "./ProjectModal";
 import styles from "./Ring.module.css";
@@ -16,15 +14,15 @@ import styles from "./Ring.module.css";
  * Stuff I've built: the projects stood in a ring that turns.
  *
  * The ring turns slowly on its own, and stops while it is pointed at. It can be
- * dragged round and flung, stepped a card at a time with the arrows, or turned
- * by the keyboard, which brings each card it reaches to the front. The card at
- * the front is named underneath. The filter sets aside the projects it does
- * not want. Clicking a card opens it, with its working drawing.
+ * dragged round and flung, or turned by the keyboard, which brings each card it
+ * reaches to the front. The card at the front is named underneath. Clicking a
+ * card opens it, with its working drawing.
  */
 
 const COUNT = PROJECTS.length;
 const STEP = 360 / COUNT;
 const AUTO = -7; // degrees a second, so the next card comes round from the right
+const TILT = -10;
 const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<Category | "all", string>;
 const ICON = { ai: DRAWINGS.llm, fullstack: DRAWINGS.web, tools: DRAWINGS.frontend } as const;
 
@@ -39,7 +37,6 @@ const turnTo = (i: number, angle: number) => {
 type Spin = { angle: number; speed: number; target: number | null; held: boolean; drag: null | { x: number; t: number; moved: number } };
 
 export default function Projects() {
-  const [filter, setFilter] = useState<Category | "all">("all");
   const [front, setFront] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
   const [direction, setDirection] = useState(1);
@@ -53,8 +50,6 @@ export default function Projects() {
   useEffect(() => {
     isOpen.current = open !== null;
   }, [open]);
-
-  const matches = useCallback((i: number) => filter === "all" || PROJECTS[i].category === filter, [filter]);
 
   // the clock that turns the ring
   useEffect(() => {
@@ -80,7 +75,7 @@ export default function Projects() {
         s.speed += (want - s.speed) * (1 - Math.exp(-dt * 2.5));
         s.angle += s.speed * dt;
       }
-      ring.current?.style.setProperty("--angle", `${s.angle.toFixed(2)}deg`);
+      if (ring.current) ring.current.style.transform = `rotateX(${TILT}deg) rotateY(${s.angle.toFixed(3)}deg)`;
       const facing = frontAt(s.angle);
       if (facing !== shown) {
         shown = facing;
@@ -92,25 +87,8 @@ export default function Projects() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // when the filter changes, bring a card it keeps to the front
-  useEffect(() => {
-    const s = spin.current;
-    const facing = frontAt(s.angle);
-    if (matches(facing)) return;
-    const next = Array.from({ length: COUNT }, (_, k) => (facing + k) % COUNT).find(matches);
-    if (next !== undefined) s.target = turnTo(next, s.angle);
-  }, [matches]);
-
   const bring = (i: number) => {
     spin.current.target = turnTo(i, spin.current.target ?? spin.current.angle);
-  };
-  const step = (by: number) => {
-    let i = frontAt(spin.current.target ?? spin.current.angle);
-    for (let k = 0; k < COUNT; k++) {
-      i = (i + by + COUNT) % COUNT;
-      if (matches(i)) break;
-    }
-    bring(i);
   };
 
   // dragging the ring round, and flinging it
@@ -159,14 +137,6 @@ export default function Projects() {
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>
 
-      <div role="group" aria-label="Filter projects" className="-mt-3 flex flex-wrap items-center gap-2.5 sm:-mt-4 sm:gap-3">
-        {CATEGORIES.map((category) => (
-          <SketchButton key={category.id} size="sm" calm aria-pressed={filter === category.id} onClick={() => setFilter(category.id)}>
-            {category.label}
-          </SketchButton>
-        ))}
-      </div>
-
       {/* the ring */}
       <div
         ref={stage}
@@ -197,8 +167,6 @@ export default function Projects() {
               className={`${styles.card} ink-${project.ink}`}
               style={{ "--index": i } as CSSProperties}
               data-front={front === i ? "" : undefined}
-              data-dim={matches(i) ? undefined : ""}
-              tabIndex={matches(i) ? 0 : -1}
               aria-label={`${project.title}: ${project.tagline}. Open`}
               onFocus={() => bring(i)}
               onClick={(e) => show(i, e.currentTarget)}
@@ -230,11 +198,8 @@ export default function Projects() {
         </div>
       </div>
 
-      {/* the card at the front, named, with the arrows either side */}
-      <div className="relative z-10 mt-1 flex items-center justify-center gap-3 sm:gap-5">
-        <SketchButton size="sm" calm onClick={() => step(-1)} icon={<ArrowRight className="sketch-btn__icon rotate-180" />}>
-          <span className="sr-only">Previous project</span>
-        </SketchButton>
+      {/* the card at the front, named */}
+      <div className="relative z-10 mt-1 flex items-center justify-center">
         <button type="button" onClick={(e) => show(front, e.currentTarget)} className="group min-w-0 max-w-md rounded-2xl px-3 py-1 text-center">
           <span className="block text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sienna-600">
             #{String(front + 1).padStart(2, "0")} · {LABEL[current.category]}
@@ -242,9 +207,6 @@ export default function Projects() {
           <span className="ink-wobble mt-0.5 block truncate text-base font-bold group-hover:underline group-hover:decoration-wavy group-hover:underline-offset-4 sm:text-lg">{current.title}</span>
           <span className="block truncate text-xs text-muted">{current.tagline}</span>
         </button>
-        <SketchButton size="sm" calm onClick={() => step(1)} icon={<ArrowRight className="sketch-btn__icon" />}>
-          <span className="sr-only">Next project</span>
-        </SketchButton>
       </div>
 
       <AnimatePresence onExitComplete={() => opener.current?.focus()}>

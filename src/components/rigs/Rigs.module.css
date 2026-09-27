@@ -109,3 +109,35 @@
 .night[data-lit] {
   filter: brightness(0.62) saturate(0.85);
 }
+
+/* wires between parts, faint until something runs along them */
+.wire {
+  stroke: rgb(45 47 43 / 0.14);
+  transition: stroke 0.2s ease;
+}
+[data-lit] > .wire {
+  stroke: #9caf88;
+}
+[data-lit="warm"] > .wire {
+  stroke: #e0916f;
+}
+
+/* something flowing along a line, like messages along a bus */
+.flow {
+  stroke-dasharray: 4 7;
+  animation: flow 0.9s linear infinite;
+  animation-play-state: paused;
+}
+.running .flow {
+  animation-play-state: running;
+}
+@keyframes flow {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow {
+    animation: none;
+  }
+}

@@ -12,7 +12,9 @@ import styles from "../Rigs.module.css";
  * about the canvas. One after another a slipper comes down on them: the
  * creature bursts into particles, its underline goes from the code, and the
  * count of problems falls — until the code is clean and a new batch of bugs
- * arrives. Beside the laptop stand the rack of species and the frame meter.
+ * arrives. The line whose bug is next is highlighted in the editor, the status
+ * bar keeps the score and the combo, and a sparkline shows the frame rate
+ * holding at sixty. Beside the laptop stands the rack of species.
  */
 
 // the screen, in its own units: across it and down it
@@ -36,6 +38,9 @@ export default function BugistanRig({ className }: { className?: string }) {
   const slipper = useRef<SVGGElement>(null);
   const squiggles = useRef<(SVGPathElement | null)[]>([]);
   const count = useRef<SVGTextElement>(null);
+  const current = useRef<SVGRectElement>(null);
+  const score = useRef<SVGTextElement>(null);
+  const fps = useRef<SVGPolylineElement>(null);
 
   useClock(built, svg, (ms) => {
     // a batch of bugs, squashed one every SQUASH, then a new batch after a pause
@@ -69,6 +74,16 @@ export default function BugistanRig({ className }: { className?: string }) {
       }
     });
     if (count.current) count.current.textContent = `⚠ ${BUGS.length - squashed} problems`;
+    // the line whose bug is next, highlighted in the editor
+    const next = Math.min(BUGS.length - 1, Math.floor(t / SQUASH));
+    current.current?.setAttribute("y", String(19 + BUGS[next].line * 12));
+    current.current?.setAttribute("opacity", squashed < BUGS.length ? "1" : "0");
+    if (score.current) score.current.textContent = squashed > 1 ? `squashed ${squashed} · combo ×${squashed}` : `squashed ${squashed}`;
+    // the frame rate, holding at sixty
+    fps.current?.setAttribute(
+      "points",
+      Array.from({ length: 10 }, (_, i) => `${250 + i * 3},${(SCREEN.h + 2 - 3 - Math.sin(ms / 200 + i * 1.3) * 1.4).toFixed(1)}`).join(" "),
+    );
   });
 
   return (
@@ -99,6 +114,12 @@ export default function BugistanRig({ className }: { className?: string }) {
         <text x={SCREEN.w / 2} y={8.6} textAnchor="middle" fontSize={5.2} fontWeight={700} fill="#9a9f98">
           bugistan — main.ts
         </text>
+        {/* the activity bar down the left */}
+        {[20, 32, 44, 56].map((y, i) => (
+          <rect key={y} x={3} y={y} width={6} height={6} rx={1.5} fill={i === 3 ? "#d0714c" : "#5e625c"} />
+        ))}
+        {/* the line whose bug is next */}
+        <rect ref={current} x={12} y={19} width={150} height={10} rx={2} fill="rgba(224,145,111,0.16)" />
         {/* the code, with a squiggle under each line that has a problem */}
         {CODE.map((width, line) => (
           <rect key={line} x={14 + (line % 3) * 8} y={22 + line * 12} width={width} height={4.5} rx={2} fill={line % 4 === 0 ? "#b1c29f" : line % 3 === 0 ? "#e0916f" : "#6b706a"} />
@@ -153,8 +174,15 @@ export default function BugistanRig({ className }: { className?: string }) {
         <text ref={count} x={10} y={SCREEN.h + 4} fontSize={5.6} fontWeight={700} fill="#e0916f">
           ⚠ 5 problems
         </text>
+        <text ref={score} x={120} y={SCREEN.h + 4} fontSize={5.6} fontWeight={700} fill="#b1c29f">
+          squashed 0
+        </text>
+        <polyline ref={fps} points="250,166 277,166" fill="none" stroke="#b1c29f" strokeWidth={1} strokeLinejoin="round" />
         <text x={SCREEN.w - 10} y={SCREEN.h + 4} textAnchor="end" fontSize={5.6} fontWeight={700} fill="#b1c29f">
           60 fps
+        </text>
+        <text x={CANVAS.x + 8} y={CANVAS.y + 10} fontSize={5} fontWeight={700} fill="#7c817a">
+          canvas
         </text>
       </g>
 

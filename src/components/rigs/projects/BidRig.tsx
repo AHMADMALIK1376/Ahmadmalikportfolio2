@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { at, Block, drawn, onFront, Part, TONES, type Point } from "@/components/desk/iso";
+import { at, Block, drawn, onFront, onTop, Part, TONES, type Point } from "@/components/desk/iso";
 import { light, place, useBuild, useClock } from "../kit";
 import { FlowNodes, FlowPackets, FlowPipes, runRoutes, type FlowNode, type FlowRoute } from "../flow";
 import styles from "../Rigs.module.css";
@@ -14,7 +14,10 @@ import styles from "../Rigs.module.css";
  * the matcher, which scores each requirement against the capability library
  * behind it and marks it pass, gap or fail; the dashboard, whose gauge swings
  * between NO-GO and GO; and the drafter, which writes the proposal and hands
- * it out as a Word document. A tender rides the belt through each in turn.
+ * it out as a Word document. A tender rides the belt through each in turn:
+ * the intake takes its PDF or DOCX, Claude lists the requirements as it reads
+ * them, the library's scores rise as the matcher compares, a stopwatch counts
+ * the seconds, and the draft is out inside a minute.
  */
 
 const FRONT = 60;
@@ -52,6 +55,9 @@ export default function BidRig({ className }: { className?: string }) {
   const odds = useRef<SVGTextElement>(null);
   const checks = useRef<(SVGGElement | null)[]>([]);
   const docx = useRef<SVGGElement>(null);
+  const requirements = useRef<(SVGRectElement | null)[]>([]);
+  const scores = useRef<(SVGRectElement | null)[]>([]);
+  const clock = useRef<SVGTextElement>(null);
 
   useClock(built, svg, (ms) => {
     const t = ms % LINE;
@@ -68,6 +74,19 @@ export default function BidRig({ className }: { className?: string }) {
     needle.current?.setAttribute("transform", `rotate(${angle.toFixed(1)} 30 34)`);
     if (odds.current) odds.current.textContent = since < 0 ? "—" : `${Math.min(72, Math.round(since * 1.6))}%`;
     light(docx.current, x > 205);
+    // Claude lists the requirements as it reads the tender
+    requirements.current.forEach((line, i) => {
+      const u = Math.max(0, Math.min(1, (x + 130 - i * 12) / 30));
+      line?.setAttribute("width", (u * [34, 26, 30, 22][i]).toFixed(1));
+    });
+    // the library's scores rise while the matcher compares
+    scores.current.forEach((bar, i) => {
+      const u = Math.max(0, Math.min(1, (x + 40 - i * 10) / 40));
+      bar?.setAttribute("width", (u * [30, 44, 18, 36][i]).toFixed(1));
+    });
+    // the seconds since the tender went in, stopping when the draft is out
+    const seconds = Math.min(52, Math.max(0, Math.round(((x + 210) / 420) * 52)));
+    if (clock.current) clock.current.textContent = `0:${String(seconds).padStart(2, "0")} / 60s`;
   });
 
   return (
@@ -83,7 +102,70 @@ export default function BidRig({ className }: { className?: string }) {
           <Block x0={-12} x1={12} y0={20} y1={40} z={8} h={3} tone={TONES.paper} r={2} width={1} />
         </g>
       </g>
+      {/* rollers along the belt, and the belt itself moving */}
+      <g className={styles.tag}>
+        {Array.from({ length: 16 }, (_, i) => {
+          const [cx, cy] = at(-220 + i * 32, 50, 4);
+          return <circle key={i} cx={cx} cy={cy} r={2.4} fill="#7c817a" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} />;
+        })}
+        <path d={`M${at(-228, 30, 8).join(" ")}L${at(268, 30, 8).join(" ")}`} stroke="#9a9f98" strokeWidth={1.4} className={styles.flow} />
+      </g>
       <FlowNodes nodes={NODES} refs={nodes} />
+      {/* what goes in at the intake */}
+      <g transform={onFront(at(-210, FRONT, 34))} className={styles.tag}>
+        <rect x={4} y={4} width={18} height={9} rx={2} fill="#f5dfd5" stroke="rgba(45,47,43,0.4)" strokeWidth={0.6} />
+        <text x={13} y={10.4} textAnchor="middle" fontSize={4.6} fontWeight={700} fill="#9c3f1d">
+          PDF
+        </text>
+        <rect x={25} y={4} width={22} height={9} rx={2} fill="#e2e9da" stroke="rgba(45,47,43,0.4)" strokeWidth={0.6} />
+        <text x={36} y={10.4} textAnchor="middle" fontSize={4.6} fontWeight={700} fill="#4c5e3e">
+          DOCX
+        </text>
+      </g>
+      {/* the requirements Claude has read, a line at a time */}
+      <g transform={onFront(at(-130, FRONT, 44))} className={styles.tag}>
+        {[0, 1, 2, 3].map((i) => (
+          <rect
+            key={i}
+            ref={(el) => {
+              requirements.current[i] = el;
+            }}
+            x={8}
+            y={4 + i * 6}
+            width={0}
+            height={3}
+            rx={1.5}
+            fill={i === 3 ? "#bc4e26" : "#9c3f1d"}
+            opacity={0.7}
+          />
+        ))}
+        <text x={8} y={32} fontSize={4.4} fontWeight={700} fill="#9c3f1d">
+          due 14 oct
+        </text>
+      </g>
+      {/* the capability library's scores */}
+      <g transform={onTop(at(-38, -73, 50))} className={styles.tag}>
+        {[0, 1, 2, 3].map((i) => (
+          <rect
+            key={i}
+            ref={(el) => {
+              scores.current[i] = el;
+            }}
+            x={4}
+            y={2 + i * 5}
+            width={0}
+            height={3.5}
+            rx={1.5}
+            fill={i === 2 ? "#e2b5a1" : "#9caf88"}
+          />
+        ))}
+      </g>
+      {/* the stopwatch, on the drafter */}
+      <g transform={onFront(at(140, FRONT, 38))} className={styles.tag}>
+        <text ref={clock} x={30} y={10} textAnchor="middle" fontSize={5.4} fontWeight={700} fill="#2d2f2b">
+          0:00 / 60s
+        </text>
+      </g>
 
       {/* the matcher's marks, and the dashboard's gauge, on their fronts */}
       <g transform={onFront(at(-40, FRONT, 38))} className={styles.tag}>

@@ -12,9 +12,11 @@ import styles from "../Rigs.module.css";
  *
  * A message comes in from the chat, and the conversation's state is carried
  * round the graph: at recall the person's drawer slides out of the vault and
- * what it knows about them is loaded; at the prompt it is written into the
- * system prompt; Qwen answers; at remember what was new goes back into the
- * vault; and the reply appears in the chat, greeting them as someone it knows.
+ * their memory card rises — their name, what they like, what they last talked
+ * about; at the prompt it is written, line by line, into the system prompt;
+ * Qwen, up in Alibaba Cloud, thinks and answers; at remember what was new goes
+ * back into the vault; and the reply appears in the chat, greeting them as
+ * someone it knows.
  */
 
 const NODES: FlowNode[] = [
@@ -45,6 +47,9 @@ export default function NeuraCacheRig({ className }: { className?: string }) {
   const drawer = useRef<SVGGElement>(null);
   const reply = useRef<SVGGElement>(null);
   const typing = useRef<SVGGElement>(null);
+  const memory = useRef<SVGGElement>(null);
+  const prompt = useRef<(SVGRectElement | null)[]>([]);
+  const thinking = useRef<(SVGCircleElement | null)[]>([]);
 
   useClock(built, svg, (ms) => {
     const t = ms % TURN;
@@ -55,6 +60,17 @@ export default function NeuraCacheRig({ className }: { className?: string }) {
     // the reply appears once the state has come all the way round
     light(reply.current, t > 7 * HOP);
     light(typing.current, t > HOP && t <= 7 * HOP);
+    // the memory card, risen over recall while it is read
+    const card = t > 2 * HOP && t < 3.6 * HOP ? Math.min(1, (t - 2 * HOP) / 300) : 0;
+    memory.current?.setAttribute("transform", card ? `translate(0 ${(-card * 10).toFixed(1)})` : "translate(-999 -999)");
+    memory.current?.setAttribute("opacity", card.toFixed(2));
+    // the system prompt, written a line at a time
+    prompt.current.forEach((line, i) => {
+      const u = Math.max(0, Math.min(1, (t - 3 * HOP - i * 150) / 300));
+      line?.setAttribute("width", (u * [30, 24, 34, 20][i]).toFixed(1));
+    });
+    // Qwen thinking
+    thinking.current.forEach((dot, i) => dot?.setAttribute("opacity", t > 4 * HOP && t < 5 * HOP && Math.sin(ms / 120 - i) > 0 ? "1" : "0.25"));
   });
 
   return (
@@ -89,6 +105,62 @@ export default function NeuraCacheRig({ className }: { className?: string }) {
           <rect x={6} y={16} width={48} height={10} rx={3} fill="#f5dfd5" stroke="rgba(45,47,43,0.55)" strokeWidth={0.9} />
           <text x={30} y={23.4} textAnchor="middle" fontSize={5.2} fontWeight={700} fill="#9c3f1d">
             sara
+          </text>
+        </g>
+      </g>
+
+      {/* Alibaba Cloud, where Qwen runs, and Qwen thinking */}
+      <g className={styles.tag} transform={`translate(${at(155, -5, 64).join(" ")})`}>
+        <path d="M-22 6C-30 6 -30 -6 -21 -6C-20 -16 -6 -18 -2 -10C2 -18 16 -16 16 -6C26 -7 27 6 18 6Z" fill="#f4f4f0" stroke="rgba(45,47,43,0.5)" strokeWidth={1} />
+        <text y={2} textAnchor="middle" fontSize={4.6} fontWeight={700} fill="#9c3f1d">
+          alibaba cloud
+        </text>
+        {[-6, 0, 6].map((x, i) => (
+          <circle
+            key={x}
+            ref={(el) => {
+              thinking.current[i] = el;
+            }}
+            cx={x}
+            cy={16}
+            r={1.8}
+            fill="#d0714c"
+            opacity={0.25}
+          />
+        ))}
+      </g>
+
+      {/* the system prompt, on a sheet lying beside the prompt step */}
+      <g transform={onTop(at(98, -126, 8))} className={styles.tag}>
+        <rect x={0} y={0} width={40} height={30} rx={3} fill="#f4f4f0" stroke="rgba(45,47,43,0.4)" strokeWidth={0.7} />
+        {[0, 1, 2, 3].map((i) => (
+          <rect
+            key={i}
+            ref={(el) => {
+              prompt.current[i] = el;
+            }}
+            x={4}
+            y={5 + i * 6}
+            width={0}
+            height={2.6}
+            rx={1.3}
+            fill={i === 1 ? "#d0714c" : "#9caf88"}
+          />
+        ))}
+      </g>
+
+      {/* the person's memory card, risen over recall */}
+      <g ref={memory} transform="translate(-999 -999)" opacity={0}>
+        <g transform={`translate(${at(-15, -102, 40).join(" ")})`}>
+          <rect x={-30} y={-24} width={60} height={30} rx={5} fill="#f5dfd5" stroke="rgba(45,47,43,0.55)" strokeWidth={0.9} />
+          <text x={-25} y={-15} fontSize={5.4} fontWeight={700} fill="#9c3f1d">
+            sara
+          </text>
+          <text x={-25} y={-7} fontSize={4.4} fontWeight={700} fill="#2d2f2b">
+            likes: LangGraph
+          </text>
+          <text x={-25} y={0} fontSize={4.4} fontWeight={700} fill="#2d2f2b">
+            last: memory
           </text>
         </g>
       </g>

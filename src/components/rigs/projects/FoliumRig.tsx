@@ -11,7 +11,9 @@ import styles from "../Rigs.module.css";
  * once. Their edits travel from their laptops into the y-sweet sync layer, on
  * through the FastAPI backend and into Postgres; each round a version is saved
  * onto the history, and a deleted document comes back out of the trash. On the
- * page, the lines grow in each writer's colour.
+ * page, the lines grow in each writer's colour, each caret flying its writer's
+ * name; the page is shared to edit and to view; every edit is checked against
+ * Supabase auth; and files leave and arrive at the import and export dock.
  */
 
 const NODES: FlowNode[] = [
@@ -25,13 +27,18 @@ const NODES: FlowNode[] = [
   { key: "db", x0: 120, x1: 180, y0: -115, y1: -60, z: 8, h: 34, tone: TONES.paper, r: 24, tag: "postgres", order: 0.5, big: true },
   { key: "versions", x0: -180, x1: -130, y0: -105, y1: -60, z: 8, h: 12, tone: TONES.paper, r: 4, tag: "versions", order: 0.6 },
   { key: "trash", x0: -110, x1: -80, y0: -10, y1: 20, z: 8, h: 16, tone: TONES.concrete, tag: "trash", order: 0.7 },
+  { key: "auth", x0: 70, x1: 104, y0: 26, y1: 56, z: 8, h: 14, tone: TONES.sageDeep, tag: "supabase", tagSize: 4.4, order: 0.4 },
+  { key: "dock", x0: 150, x1: 190, y0: 10, y1: 44, z: 8, h: 10, tone: TONES.paper, r: 4, tag: "import", tagSize: 5, order: 0.8 },
 ];
 const ROUTES: FlowRoute[] = [
   { stops: ["lapA", "sync", "api", "db"], colour: "#80966b", at: 0 },
   { stops: ["lapB", "sync", "api", "db"], colour: "#d0714c", lit: "warm", at: 1500 },
   { stops: ["db", "versions"], colour: "#7c817a", at: 2900 },
   { stops: ["trash", "db"], colour: "#7c817a", at: 3600 },
+  { stops: ["api", "auth"], colour: "#80966b", at: 700 },
+  { stops: ["api", "dock"], colour: "#d0714c", lit: "warm", at: 3200 },
 ];
+const WRITERS = ["you", "team"];
 const CYCLE = 4400;
 const HOP = 620;
 // the page's lines, each the width it grows to, and who writes it
@@ -47,6 +54,8 @@ export default function FoliumRig({ className }: { className?: string }) {
   const lines = useRef<(SVGRectElement | null)[]>([]);
   const carets = useRef<(SVGRectElement | null)[]>([]);
   const version = useRef<SVGTextElement>(null);
+  const flags = useRef<(SVGGElement | null)[]>([]);
+  const files = useRef<SVGGElement>(null);
 
   useClock(built, svg, (ms) => {
     runRoutes(ms, ROUTES, { pipes: pipes.current, packets: packets.current, nodes: nodes.current }, HOP, CYCLE);
@@ -58,8 +67,15 @@ export default function FoliumRig({ className }: { className?: string }) {
       const typing = u > 0 && u < 1;
       carets.current[k]?.setAttribute("x", (8 + line.width * u).toFixed(1));
       carets.current[k]?.setAttribute("opacity", typing ? "1" : "0");
+      // the writer's name rides above their caret
+      flags.current[k]?.setAttribute("transform", `translate(${(8 + line.width * u).toFixed(1)} ${16 + k * 9})`);
+      flags.current[k]?.setAttribute("opacity", typing ? "1" : "0");
     });
     if (version.current) version.current.textContent = `v${12 + Math.floor((ms + CYCLE - 2900 - 3 * HOP) / CYCLE)}`;
+    // a file comes out of the dock each round
+    const f = (ms - 3200 - HOP + CYCLE * 10) % CYCLE;
+    files.current?.setAttribute("transform", f < 900 ? `translate(${(f / 900) * 14} ${(-f / 900) * 22})` : "translate(-999 -999)");
+    files.current?.setAttribute("opacity", (f < 900 ? 1 - f / 900 : 0).toFixed(2));
   });
 
   return (
@@ -97,14 +113,47 @@ export default function FoliumRig({ className }: { className?: string }) {
               fill={line.caret}
               opacity={0}
             />
+            <g
+              ref={(el) => {
+                flags.current[k] = el;
+              }}
+              opacity={0}
+            >
+              <rect x={1} y={-7} width={16} height={6} rx={2} fill={line.caret} />
+              <text x={9} y={-2.6} textAnchor="middle" fontSize={4} fontWeight={700} fill="#f4f4f0">
+                {WRITERS[k % 2]}
+              </text>
+            </g>
           </g>
         ))}
+        {/* who it is shared with, and how */}
+        <rect x={70} y={4} width={20} height={8} rx={4} fill="#e2e9da" stroke="rgba(45,47,43,0.35)" strokeWidth={0.6} />
+        <text x={80} y={9.8} textAnchor="middle" fontSize={4.4} fontWeight={700} fill="#4c5e3e">
+          edit
+        </text>
+        <rect x={93} y={4} width={20} height={8} rx={4} fill="#f4f4f0" stroke="rgba(45,47,43,0.35)" strokeWidth={0.6} />
+        <text x={103} y={9.8} textAnchor="middle" fontSize={4.4} fontWeight={700} fill="#7c817a">
+          view
+        </text>
       </g>
       <TopTag origin={at(20, -44, 13)} text="editor" size={5.6} />
       <g transform={onTop(at(-176, -100, 20))} className={styles.tag}>
         <text ref={version} x={32} y={34} fontSize={6.4} fontWeight={700} fill="#9c3f1d">
           v12
         </text>
+      </g>
+      {/* the history's list of versions */}
+      <g transform={onTop(at(-178, -103, 20))} className={styles.tag}>
+        <path d="M6 8H30M6 14H26M6 20H28" stroke="#b8bcb5" strokeWidth={1.6} strokeLinecap="round" />
+      </g>
+      {/* a file leaving the dock */}
+      <g ref={files} transform="translate(-999 -999)">
+        <g transform={`translate(${at(170, 27, 18).join(" ")})`}>
+          <rect x={-8} y={-10} width={16} height={12} rx={2} fill="#f4f4f0" stroke="rgba(45,47,43,0.55)" strokeWidth={0.8} />
+          <text y={-2} textAnchor="middle" fontSize={4.4} fontWeight={700} fill="#9c3f1d">
+            .docx
+          </text>
+        </g>
       </g>
       <FlowPipes nodes={NODES} routes={ROUTES} refs={pipes} />
       {built && <FlowPackets routes={ROUTES} refs={packets} />}

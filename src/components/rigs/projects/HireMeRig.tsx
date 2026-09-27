@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { at, Block, drawn, line, onFront, onTop, Part, TONES } from "@/components/desk/iso";
-import { useBuild, useClock } from "../kit";
+import { light, useBuild, useClock } from "../kit";
 import { FlowNodes, FlowPackets, FlowPipes, runRoutes, type FlowNode, type FlowRoute } from "../flow";
 import styles from "../Rigs.module.css";
 
@@ -13,7 +13,9 @@ import styles from "../Rigs.module.css";
  * job board sends its jobs in on its aerial and the best three are picked; the
  * press writes a three-paragraph letter for each; and the letters wait at the
  * review desk behind a lock that never opens on its own — the person reads,
- * edits and sends them.
+ * edits and sends them. As the CV goes in, the fields Claude pulls out of it
+ * rise over the hub; the jobs show how well each matches; and the letters
+ * stack up on the desk in front of the person, one for each of the three.
  */
 
 const NODES: FlowNode[] = [
@@ -40,6 +42,8 @@ export default function HireMeRig({ className }: { className?: string }) {
   const packets = useRef<(SVGGElement | null)[]>([]);
   const waiting = useRef<SVGTextElement>(null);
   const jobs = useRef<(SVGRectElement | null)[]>([]);
+  const fields = useRef<SVGGElement>(null);
+  const letters = useRef<(SVGGElement | null)[]>([]);
 
   useClock(built, svg, (ms) => {
     runRoutes(ms, ROUTES, { pipes: pipes.current, packets: packets.current, nodes: nodes.current }, HOP, CYCLE);
@@ -47,6 +51,13 @@ export default function HireMeRig({ className }: { className?: string }) {
     const round = Math.floor((ms + CYCLE - 2700 - HOP) / CYCLE);
     if (waiting.current) waiting.current.textContent = `${Math.max(0, round % 4)}/3 waiting`;
     jobs.current.forEach((job, i) => job?.setAttribute("fill", i === round % 3 ? "#d0714c" : "#e3e5e0"));
+    // the CV's fields rise over the hub as it is read, then settle away
+    const t = ms % CYCLE;
+    const rise = t > HOP && t < HOP + 1200 ? (t - HOP) / 1200 : -1;
+    fields.current?.setAttribute("transform", rise >= 0 ? `translate(0 ${(-rise * 18).toFixed(1)})` : "translate(-999 -999)");
+    fields.current?.setAttribute("opacity", rise >= 0 ? Math.min(1, (1 - rise) * 2.5).toFixed(2) : "0");
+    // the letters waiting on the desk
+    letters.current.forEach((letter, i) => light(letter, i < Math.max(0, round % 4)));
   });
 
   return (
@@ -80,6 +91,51 @@ export default function HireMeRig({ className }: { className?: string }) {
             stroke="rgba(45,47,43,0.4)"
           />
         ))}
+      </g>
+
+      {/* how well each of the three best jobs matches the CV */}
+      <g transform={onFront(at(100, 30, 26))} className={styles.tag}>
+        {["92", "88", "81"].map((match, i) => (
+          <text key={match} x={9.5 + i * 15} y={25} textAnchor="middle" fontSize={4.4} fontWeight={700} fill="#4c5e3e">
+            {match}%
+          </text>
+        ))}
+      </g>
+
+      {/* the fields Claude pulls out of the CV, rising over the hub */}
+      <g ref={fields} transform="translate(-999 -999)">
+        <g transform={`translate(${at(0, 0, 44).join(" ")})`}>
+          {["name", "skills", "5 yrs"].map((field, i) => (
+            <g key={field} transform={`translate(${-34 + i * 24} ${i % 2 ? -6 : 0})`}>
+              <rect x={-11} y={-6} width={22} height={9} rx={4.5} fill="#f4f4f0" stroke="rgba(45,47,43,0.5)" strokeWidth={0.7} />
+              <text y={0.6} textAnchor="middle" fontSize={4.6} fontWeight={700} fill="#2d2f2b">
+                {field}
+              </text>
+            </g>
+          ))}
+        </g>
+      </g>
+
+      {/* the letters, stacked on the desk as they are written */}
+      {[0, 1, 2].map((i) => (
+        <g
+          key={i}
+          ref={(el) => {
+            letters.current[i] = el;
+          }}
+          className={styles.overlay}
+        >
+          <g filter="url(#desk-chip)">
+            <Block x0={-140 + i * 3} x1={-114 + i * 3} y0={-24 - i * 2} y1={-4 - i * 2} z={20 + i * 3} h={2} tone={TONES.paper} r={2} width={0.9} />
+          </g>
+        </g>
+      ))}
+
+      {/* the person who reads them, standing at the desk */}
+      <g className={styles.tag} transform={`translate(${at(-162, 10, 6).join(" ")})`}>
+        <ellipse cx={0} cy={2} rx={9} ry={4} fill="#2d2f2b" opacity={0.12} />
+        <path d="M-6 0C-6 -12 -5 -22 0 -22S6 -12 6 0Z" fill="#9caf88" stroke="rgba(45,47,43,0.55)" strokeWidth={1} />
+        <circle cx={0} cy={-27} r={5} fill="#f5dfd5" stroke="rgba(45,47,43,0.55)" strokeWidth={1} />
       </g>
 
       {/* the review desk: the letters waiting, behind a lock */}

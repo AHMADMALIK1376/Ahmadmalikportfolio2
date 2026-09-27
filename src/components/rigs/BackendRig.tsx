@@ -14,8 +14,10 @@ import styles from "./Rigs.module.css";
  * beside it. Then it serves on its own clock: requests come up the cable into
  * the load balancer and down through an API server to the cache — or on to the
  * database when the cache misses — and the answer goes back the way it came,
- * each unit lighting as it is used. The workers' fans turn, and the dashboard
- * counts it all.
+ * each unit lighting as it is used: the load balancer names the server it
+ * picked, the cache the key it served, and the database's disks blink. Jobs
+ * that can wait are fed from a tray into the workers, whose fans turn. The
+ * dashboard counts it all.
  */
 
 const RACK = { x0: -60, x1: 60, y0: -45, y1: 45, h: 232 };
@@ -42,6 +44,14 @@ const CABLE = (() => {
   return `M${s[0].toFixed(1)} ${s[1].toFixed(1)}C${(s[0] + 70).toFixed(1)} ${(s[1] - 10).toFixed(1)} ${(e[0] - 90).toFixed(1)} ${(e[1] + 30).toFixed(1)} ${e[0].toFixed(1)} ${e[1].toFixed(1)}`;
 })();
 const REQUEST = 1800;
+// the jobs that can wait, carried from their tray into the workers
+const JOBS = 3600;
+const JOB_PATH = (() => {
+  const s = at(-110, 60, 16);
+  const e = at(RAIL_X + 4, FRONT, middle("workers"));
+  return `M${s[0].toFixed(1)} ${s[1].toFixed(1)}C${s[0].toFixed(1)} ${(s[1] - 60).toFixed(1)} ${(e[0] - 40).toFixed(1)} ${e[1].toFixed(1)} ${e[0].toFixed(1)} ${e[1].toFixed(1)}`;
+})();
+const KEYS = ["user:42", "cart:7", "sku:118", "user:9"];
 
 export default function BackendRig({ className }: { className?: string }) {
   const svg = useRef<SVGSVGElement>(null);
@@ -51,6 +61,11 @@ export default function BackendRig({ className }: { className?: string }) {
   const packet = useRef<SVGGElement | null>(null);
   const readouts = useRef<(SVGTextElement | null)[]>([]);
   const bars = useRef<(SVGRectElement | null)[]>([]);
+  const jobPath = useRef<SVGPathElement>(null);
+  const job = useRef<SVGGElement | null>(null);
+  const picked = useRef<SVGTextElement>(null);
+  const cacheKey = useRef<SVGTextElement>(null);
+  const disks = useRef<(SVGCircleElement | null)[]>([]);
 
   useClock(built, svg, (ms) => {
     const n = Math.floor(ms / REQUEST);
@@ -84,6 +99,13 @@ export default function BackendRig({ className }: { className?: string }) {
     const hits = served - Math.floor((served + 1) / 3);
     const values = [`${(1.18 + (n % 7) * 0.03).toFixed(2)}k`, `${Math.round((hits / served) * 100)}%`, `${miss ? 41 : 12 + (n % 5)}ms`];
     readouts.current.forEach((el, i) => el && (el.textContent = values[i]));
+    if (picked.current) picked.current.textContent = `→ ${api === "api1" ? "api-1" : "api-2"}`;
+    if (cacheKey.current) cacheKey.current.textContent = miss ? "miss" : KEYS[n % KEYS.length];
+    // the database's disks, busy when a miss reaches it
+    disks.current.forEach((disk, i) => disk?.setAttribute("fill", miss && t > 0.5 && t < 0.8 && Math.sin(ms / 60 + i * 2) > 0 ? "#d0714c" : "#b8c8a8"));
+    // a job from the tray into the workers
+    const j = (ms % JOBS) / JOBS;
+    place(job.current, j < 0.4 ? along(jobPath.current, j / 0.4) : [-999, -999]);
     bars.current.forEach((bar, i) => {
       const k = n - (bars.current.length - 1 - i);
       const h = k < 0 ? 2 : k % 3 === 2 ? 26 : 9 + ((k * 7) % 6);
@@ -94,7 +116,28 @@ export default function BackendRig({ className }: { className?: string }) {
   });
 
   return (
-    <svg ref={svg} viewBox="4 108 532 464" className={`${styles.rig} ${built ? styles.running : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
+    <svg ref={svg} viewBox="-58 108 594 464" className={`${styles.rig} ${built ? styles.running : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
+      {/* the clients: a laptop and a phone on the desk */}
+      <Part arrival={{ lift: 30, from: 0.5, span: 0.12, fall: true }} style={drawn(0.44, 0.5, 0.06)}>
+        <g filter="url(#desk-chip)">
+          <Block x0={-310} x1={-270} y0={128} y1={156} z={0} h={4} tone={TONES.paper} r={4} width={1.1} />
+          <Block x0={-310} x1={-270} y0={124} y1={128} z={4} h={24} tone={TONES.dark} r={3} width={1.1} />
+          <Block x0={-258} x1={-246} y0={160} y1={168} z={0} h={18} tone={TONES.dark} r={3} width={1.1} />
+        </g>
+      </Part>
+
+      {/* the jobs that can wait, in their tray, and the way they go to the workers */}
+      <Part arrival={{ lift: 30, from: 0.56, span: 0.12, fall: true }} style={drawn(0.5, 0.56, 0.06)}>
+        <g filter="url(#desk-chip)">
+          <Block x0={-132} x1={-88} y0={40} y1={80} z={0} h={6} tone={TONES.concrete} r={6} width={1.2} />
+          {[0, 1, 2].map((k) => (
+            <Block key={k} x0={-124 + k * 12} x1={-114 + k * 12} y0={52} y1={66} z={6} h={8} tone={k === 1 ? TONES.sienna : TONES.sage} r={2} width={1} />
+          ))}
+        </g>
+        <FrontTag origin={at(-132, 80, 3)} text="jobs" size={5.6} fill="#5e625c" />
+      </Part>
+      <path ref={jobPath} d={JOB_PATH} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="1 5" strokeLinecap="round" className={styles.pipes} />
+
       {/* the clients' cable, coming up off the desk */}
       <path ref={cable} d={CABLE} fill="none" stroke="#7c817a" strokeWidth={3.2} strokeLinecap="round" className={styles.pipes} />
       <g className={styles.pipes}>
@@ -124,7 +167,30 @@ export default function BackendRig({ className }: { className?: string }) {
             <g transform={onFront(at(34, FRONT, unit.z + unit.h - 4))}>
               <circle cx={8} cy={4} r={3.2} className={styles.led} stroke="rgba(45,47,43,0.55)" strokeWidth={0.8} />
               {unit.key === "db" &&
-                [16, 24, 32].map((v) => <rect key={v} x={-52} y={v} width={60} height={4} rx={2} fill="#b8c8a8" />)}
+                [16, 24, 32].map((v, k) => (
+                  <g key={v}>
+                    <rect x={-52} y={v} width={50} height={4} rx={2} fill="#e2e9da" stroke="rgba(45,47,43,0.3)" strokeWidth={0.6} />
+                    <circle
+                      ref={(el) => {
+                        disks.current[k] = el;
+                      }}
+                      cx={4}
+                      cy={v + 2}
+                      r={2}
+                      fill="#b8c8a8"
+                    />
+                  </g>
+                ))}
+              {unit.key === "lb" && (
+                <text ref={picked} x={-2} y={6} textAnchor="end" fontSize={5.6} fontWeight={700} fill="#4c5e3e" className={styles.tag}>
+                  → api-1
+                </text>
+              )}
+              {unit.key === "cache" && (
+                <text ref={cacheKey} x={-2} y={6} textAnchor="end" fontSize={5.6} fontWeight={700} fill="#9c3f1d" className={styles.tag}>
+                  user:42
+                </text>
+              )}
               {unit.key === "workers" &&
                 [-40, -18].map((u) => (
                   <g key={u} transform={`translate(${u} 12)`}>
@@ -177,6 +243,9 @@ export default function BackendRig({ className }: { className?: string }) {
               </text>
             </g>
           ))}
+          <text x={12} y={132} fontSize={5.6} fontWeight={700} fill="#647a52">
+            ● all systems normal
+          </text>
           <path d="M12 118H128" stroke="rgba(45,47,43,0.4)" strokeWidth={1} />
           {Array.from({ length: 10 }, (_, i) => (
             <rect
@@ -196,13 +265,22 @@ export default function BackendRig({ className }: { className?: string }) {
       </Part>
 
       {built && (
-        <Packet
-          colour="#80966b"
-          r={4}
-          ref={(el) => {
-            packet.current = el;
-          }}
-        />
+        <>
+          <Packet
+            colour="#80966b"
+            r={4}
+            ref={(el) => {
+              packet.current = el;
+            }}
+          />
+          <Packet
+            colour="#d0714c"
+            r={3.4}
+            ref={(el) => {
+              job.current = el;
+            }}
+          />
+        </>
       )}
     </svg>
   );
