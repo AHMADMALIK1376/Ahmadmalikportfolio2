@@ -1,0 +1,743 @@
+@import "tailwindcss";
+
+/*
+ * The sketchbook design system.
+ *
+ * One visual language for the whole site, taken from the hand-drawn button:
+ * Courier New set bold, an SVG noise filter that makes every edge wobble like
+ * ink, a soft offset shadow instead of a border, and a highlighter that
+ * scribbles itself across on hover. Three colours only: sage green, concrete
+ * gray and a touch of burnt sienna. Tailwind's own palette is cleared, so no
+ * other colour can creep in.
+ */
+
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+
+  /* concrete: the paper, the ink and every gray between */
+  --color-paper: #eaebe6;
+  --color-paper-2: #f4f4f0;
+  --color-paper-3: #dcded8;
+  --color-concrete-100: #e3e5e0;
+  --color-concrete-200: #d2d5cf;
+  --color-concrete-300: #b8bcb5;
+  --color-concrete-400: #9a9f98;
+  --color-concrete-500: #7c817a;
+  --color-concrete-600: #5e625c;
+  --color-concrete-700: #464943;
+  --color-concrete-800: #333532;
+  --color-concrete-900: #242623;
+  --color-ink: #2d2f2b;
+  --color-muted: #5a5e58;
+
+  /* sage green */
+  --color-sage-50: #f0f3ec;
+  --color-sage-100: #e2e9da;
+  --color-sage-200: #cbd7bd;
+  --color-sage-300: #b1c29f;
+  --color-sage-400: #9caf88;
+  --color-sage-500: #80966b;
+  --color-sage-600: #647a52;
+  --color-sage-700: #4c5e3e;
+  --color-sage-800: #3a4830;
+
+  /* burnt sienna, used sparingly */
+  --color-sienna-100: #f5dfd5;
+  --color-sienna-200: #ecbea9;
+  --color-sienna-300: #de9372;
+  --color-sienna-400: #d0714c;
+  --color-sienna-500: #bc4e26;
+  --color-sienna-600: #9c3f1d;
+  --color-sienna-700: #7b3117;
+
+  --shadow-sketch: 4px 4px 0 1px rgb(45 47 43 / 0.4);
+
+  --ease-sketch: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-blink: blink 1s steps(1) infinite;
+}
+
+@theme inline {
+  /* Courier New everywhere, as the button has it. Courier Prime stands in on
+     devices that do not have Courier New (most Android and Linux). */
+  --font-sans: "Courier New", var(--font-courier-prime), Courier, monospace;
+  --font-mono: "Courier New", var(--font-courier-prime), Courier, monospace;
+}
+
+/* ---------------------------------------------------------------- base --- */
+
+@layer base {
+  :root {
+    --shadow-ink: rgb(45 47 43 / 0.4);
+    --shadow-ink-strong: rgb(45 47 43 / 0.94);
+    /* the highlighter: sage where the design had yellow, sienna where it had blue */
+    --hl-sage: rgb(140 172 112 / 0.55);
+    --hl-sienna: rgb(188 78 38 / 0.4);
+    --hl-concrete: rgb(124 129 122 / 0.4);
+    --nav-h: 4.5rem;
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--nav-h) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+
+  /* the concrete: fine grain and a faint dot grid, painted once and fixed */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .18 0 0 0 0 .19 0 0 0 0 .17 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+      radial-gradient(circle at 1px 1px, rgb(45 47 43 / 0.09) 1px, transparent 0);
+    background-size: 220px 220px, 26px 26px;
+  }
+
+  ::selection {
+    background: var(--hl-sage);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px dashed var(--color-sienna-500);
+    outline-offset: 4px;
+    border-radius: 0.5rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-paper-3);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-concrete-400);
+    border-radius: 999px;
+    border: 2px solid var(--color-paper-3);
+  }
+}
+
+/* ------------------------------------------------------------ utilities --- */
+
+@utility gutter {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* type that looks inked: the button's own filter, on text */
+@utility ink-wobble {
+  filter: url(#handDrawnNoise);
+}
+
+/* The three inks. A component takes one and reads its colours from these. */
+@utility ink-sage {
+  --ink-fill: var(--color-sage-100);
+  --ink-soft: var(--color-sage-200);
+  --ink-accent: var(--color-sage-500);
+  --ink-text: var(--color-sage-700);
+  --ink-hl: var(--hl-sage);
+}
+@utility ink-sienna {
+  --ink-fill: var(--color-sienna-100);
+  --ink-soft: var(--color-sienna-200);
+  --ink-accent: var(--color-sienna-500);
+  --ink-text: var(--color-sienna-600);
+  --ink-hl: var(--hl-sienna);
+}
+@utility ink-concrete {
+  --ink-fill: var(--color-concrete-100);
+  --ink-soft: var(--color-concrete-200);
+  --ink-accent: var(--color-concrete-500);
+  --ink-text: var(--color-concrete-700);
+  --ink-hl: var(--hl-concrete);
+}
+
+/* Components sit in their own layer, so Tailwind utilities on the same
+   element (hidden, lg:hidden, bg-*, margins) can still override them. */
+@layer components {
+  /* ------------------------------------------------------ the sketch button --- */
+
+  /*
+   * The button from the design, kept as it was drawn. What changed is only what
+   * a whole site needs from it:
+   *  - position: relative, so the highlighter covers the button and not the page;
+   *  - the lasso's offsets are in em, so the same drawing works at three sizes
+   *    (at the large size 1em is 24px, which gives the design's exact numbers);
+   *  - the highlighter is sage where the design had yellow, and pressing turns
+   *    it burnt sienna where the design turned it blue.
+   */
+  .sketch-btn {
+    position: relative;
+    text-align: center;
+    transition: 0.3s ease-in-out;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--color-ink);
+    filter: url(#handDrawnNoise);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45em;
+    user-select: none;
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    font-weight: bold;
+    /* written in normal case and shown in capitals, so screen readers say words, not letters */
+    text-transform: uppercase;
+    line-height: 1.15;
+    padding: 1em;
+    border-width: 0px;
+    border-radius: 2rem;
+    box-shadow: var(--shadow-ink) 4px 4px 0 1px;
+    animation: sketch-idle 1s infinite ease-in-out;
+    text-decoration: none;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sketch-btn--md {
+    font-size: 1.125rem;
+    padding: 0.85em 1.15em;
+  }
+
+  .sketch-btn--sm {
+    font-size: 0.9rem;
+    padding: 0.7em 1.05em;
+    box-shadow: var(--shadow-ink) 3px 3px 0 1px;
+  }
+
+  /* a tinted face, for the one button in a group that matters most */
+  .sketch-btn--sage {
+    background-color: var(--color-sage-200);
+  }
+  .sketch-btn--sienna {
+    background-color: var(--color-sienna-100);
+  }
+
+  /* a button that stays still until it is pointed at: for rows of many buttons */
+  .sketch-btn--calm {
+    animation: none;
+  }
+
+  /* no shadow until it is pointed at or current: for the navigation */
+  .sketch-btn--ghost {
+    box-shadow: none;
+  }
+  .sketch-btn--ghost:hover,
+  .sketch-btn--ghost[aria-current] {
+    box-shadow: var(--shadow-ink) 3px 3px 0 1px;
+  }
+
+  /* room on the left for the lasso that hangs off it */
+  .sketch-btn--lasso {
+    margin-left: 2em;
+  }
+
+  .sketch-btn__highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    fill: var(--hl-sage);
+    stroke: var(--hl-sage);
+    stroke-width: 10;
+    stroke-linecap: round;
+    pointer-events: none;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transition: stroke-dashoffset 0.5s ease-in-out;
+  }
+
+  .sketch-btn__lasso {
+    fill: var(--shadow-ink);
+    transition: 0.3s ease-out;
+    scale: 0.5;
+    position: absolute;
+    left: 1em;
+    top: 50%;
+    width: 5.3333em;
+    height: 5.3333em;
+    translate: calc(-100% + 1em) calc(-50% + 1em);
+    pointer-events: none;
+  }
+
+  .sketch-btn__icon {
+    width: 1em;
+    height: 1em;
+    flex: none;
+  }
+
+  .sketch-btn:hover,
+  .sketch-btn:focus-visible {
+    font-weight: bold;
+    border-width: 0px;
+    border-radius: 2rem;
+    rotate: -2.5deg;
+    animation: sketch-hover 2.5s infinite ease-in-out;
+  }
+
+  .sketch-btn:focus-visible {
+    outline: none;
+    box-shadow:
+      var(--shadow-ink) 4px 4px 0 1px,
+      0 0 0 3px var(--color-paper),
+      0 0 0 5px var(--color-sienna-500);
+  }
+
+  .sketch-btn:hover .sketch-btn__highlight,
+  .sketch-btn:focus-visible .sketch-btn__highlight,
+  .sketch-btn[aria-pressed="true"] .sketch-btn__highlight,
+  .sketch-btn[aria-current] .sketch-btn__highlight {
+    stroke-dashoffset: 0;
+  }
+
+  .sketch-btn:active .sketch-btn__highlight {
+    stroke-dashoffset: 1000;
+    animation:
+      sketch-highlight 5s infinite,
+      sketch-col 0.5s forwards;
+    stroke: var(--hl-sienna);
+  }
+
+  .sketch-btn:hover .sketch-btn__lasso,
+  .sketch-btn:focus-visible .sketch-btn__lasso {
+    rotate: -15deg;
+    translate: calc(-100% + 0.9167em) calc(-50% + 1.2667em);
+  }
+
+  .sketch-btn:active .sketch-btn__lasso {
+    fill: var(--shadow-ink-strong);
+    rotate: -135deg;
+    translate: calc(-100% + 2.2917em) calc(-50% + 1.0667em);
+    animation: none;
+  }
+
+  .sketch-btn:active {
+    font-weight: bold;
+    border-width: 0px;
+    border-radius: 2rem;
+    box-shadow: inset var(--shadow-ink-strong) 4px 4px 0 1px;
+    rotate: -2.5deg;
+    animation: sketch-active 1s infinite ease-in-out;
+  }
+
+  .sketch-btn:disabled,
+  .sketch-btn[aria-disabled="true"] {
+    cursor: progress;
+    opacity: 0.7;
+  }
+
+  @keyframes sketch-idle {
+    0% {
+      filter: url(#handDrawnNoise);
+    }
+    50% {
+      rotate: 2.5deg;
+      filter: url(#handDrawnNoise2);
+    }
+    100% {
+      filter: url(#handDrawnNoise);
+    }
+  }
+
+  @keyframes sketch-col {
+    0% {
+      stroke: var(--hl-sage);
+    }
+    100% {
+      stroke: var(--hl-sienna);
+    }
+  }
+
+  @keyframes sketch-highlight {
+    0% {
+      stroke-dashoffset: 0;
+    }
+    25% {
+      stroke-dashoffset: 1000;
+    }
+    50% {
+      stroke-dashoffset: 1000;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes sketch-hover {
+    0% {
+      rotate: 0deg;
+      filter: url(#handDrawnNoise);
+      translate: 0 0px;
+    }
+    25% {
+      rotate: -1deg;
+      filter: url(#handDrawnNoise2);
+      translate: 0 -2px;
+    }
+    50% {
+      rotate: 0deg;
+      filter: url(#handDrawnNoise);
+      translate: 0 2px;
+    }
+    75% {
+      rotate: -1deg;
+      filter: url(#handDrawnNoise2);
+      translate: 0 -2px;
+    }
+    100% {
+      rotate: 0deg;
+      filter: url(#handDrawnNoise);
+      translate: 0 0px;
+    }
+  }
+
+  @keyframes sketch-active {
+    0% {
+      filter: url(#handDrawnNoiset);
+      translate: 0 -1px;
+    }
+    25% {
+      rotate: -3deg;
+    }
+    50% {
+      filter: url(#handDrawnNoiset2);
+      translate: 0 1px;
+    }
+    66% {
+      rotate: 1.5deg;
+    }
+    100% {
+      filter: url(#handDrawnNoiset);
+      translate: 0 -1px;
+    }
+  }
+
+  /* ------------------------------------------------------ the sketch box --- */
+
+  /*
+   * A card in the button's language: a paper face, a soft offset shadow, and an
+   * edge that wobbles. The wobble is drawn on a layer behind the content, so the
+   * text inside stays crisp and readable.
+   */
+  .sketch-box {
+    position: relative;
+    isolation: isolate;
+    border-radius: 1.75rem;
+  }
+
+  .sketch-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--box-fill, var(--color-paper-2));
+    border: 1.5px solid rgb(45 47 43 / 0.55);
+    box-shadow: var(--shadow-ink) 5px 5px 0 1px;
+    filter: url(#sketchFrame);
+    transition:
+      box-shadow 0.3s ease-in-out,
+      background-color 0.3s ease-in-out;
+  }
+
+  .sketch-box--tinted {
+    --box-fill: var(--ink-fill);
+  }
+
+  .sketch-box--lift {
+    transition:
+      rotate 0.3s var(--ease-sketch),
+      translate 0.3s var(--ease-sketch);
+  }
+
+  .sketch-box--lift:hover,
+  .sketch-box--lift:focus-within {
+    rotate: -0.6deg;
+    translate: 0 -3px;
+  }
+
+  .sketch-box--lift:hover::before,
+  .sketch-box--lift:focus-within::before {
+    box-shadow: var(--shadow-ink) 8px 8px 0 1px;
+    animation: sketch-frame-boil 0.5s steps(1) infinite;
+  }
+
+  /* pressed into the page, like the button while it is held: for form fields */
+  .sketch-well {
+    position: relative;
+    isolation: isolate;
+    border-radius: 1.1rem;
+  }
+
+  .sketch-well::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--color-paper-2);
+    box-shadow: inset var(--shadow-ink) 3px 3px 0 1px;
+    filter: url(#handDrawnNoise);
+    transition: box-shadow 0.25s ease-in-out;
+  }
+
+  .sketch-well:focus-within::before {
+    box-shadow: inset var(--shadow-ink-strong) 4px 4px 0 1px;
+    animation: sketch-well-boil 0.6s steps(1) infinite;
+  }
+
+  @keyframes sketch-frame-boil {
+    0% {
+      filter: url(#sketchFrame);
+    }
+    50% {
+      filter: url(#sketchFrame2);
+    }
+  }
+
+  @keyframes sketch-well-boil {
+    0% {
+      filter: url(#handDrawnNoise);
+    }
+    50% {
+      filter: url(#handDrawnNoise2);
+    }
+  }
+
+  /* ------------------------------------------------------ small pieces --- */
+
+  .sketch-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.35em 0.8em;
+    border-radius: 2rem;
+    background: var(--ink-fill, var(--color-paper-2));
+    color: var(--color-ink);
+    box-shadow: var(--shadow-ink) 2px 2px 0 1px;
+    filter: url(#sketchChip);
+    white-space: nowrap;
+  }
+
+  /* a line drawn by hand under or across something */
+  .sketch-rule {
+    height: 10px;
+    width: 100%;
+    color: var(--color-concrete-400);
+  }
+
+  /* a hand-drawn tick, for lists */
+  .sketch-list > li {
+    position: relative;
+    padding-left: 1.75rem;
+  }
+
+  .sketch-list > li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.3em;
+    width: 1.05rem;
+    height: 1.05rem;
+    background: currentColor;
+    color: var(--ink-accent, var(--color-sage-500));
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 13.2c2.1 1.4 3.9 3.2 5.4 5.6 3-6.3 6.7-10.8 11.6-14.3'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+
+  /* masking tape, holding a photo or a note to the page */
+  .sketch-tape {
+    position: absolute;
+    width: 6.5rem;
+    height: 1.9rem;
+    background: rgb(210 213 207 / 0.78);
+    box-shadow: 0 1px 2px rgb(45 47 43 / 0.15);
+    filter: url(#handDrawnNoiset);
+    pointer-events: none;
+  }
+
+  /* ruled notebook paper, for the contact form */
+  .notebook {
+    background-image:
+      linear-gradient(90deg, transparent 2.6rem, rgb(188 78 38 / 0.28) 2.6rem, rgb(188 78 38 / 0.28) calc(2.6rem + 1.5px), transparent calc(2.6rem + 1.5px)),
+      repeating-linear-gradient(to bottom, transparent 0, transparent calc(2rem - 1px), rgb(124 129 122 / 0.22) calc(2rem - 1px), rgb(124 129 122 / 0.22) 2rem);
+  }
+
+  /* the first screen arrives without waiting for JavaScript: each piece rises
+     into place, one after another, set by --i */
+  .hero-rise {
+    animation: hero-rise 0.9s var(--ease-sketch) both;
+    animation-delay: calc(0.15s + var(--i, 0) * 0.12s);
+  }
+
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      translate: 0 28px;
+      rotate: -1.5deg;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+      rotate: 0deg;
+    }
+  }
+
+  .hero-drop {
+    animation: hero-drop 1.1s var(--ease-sketch) 0.5s both;
+  }
+
+  @keyframes hero-drop {
+    from {
+      opacity: 0;
+      translate: 0 -40px;
+      rotate: 9deg;
+      scale: 0.92;
+    }
+    to {
+      opacity: 1;
+      translate: 0 0;
+      rotate: 2.5deg;
+      scale: 1;
+    }
+  }
+
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -10px;
+    }
+  }
+
+  .bob {
+    animation: bob 1.6s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%,
+    60%,
+    100% {
+      rotate: 0deg;
+    }
+    10%,
+    30% {
+      rotate: 16deg;
+    }
+    20%,
+    40% {
+      rotate: -8deg;
+    }
+  }
+
+  @keyframes bob {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 8px;
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+/* ------------------------------------------------------ reduced motion --- */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .sketch-btn,
+  .sketch-btn:hover,
+  .sketch-btn:focus-visible,
+  .sketch-btn:active,
+  .sketch-btn:active .sketch-btn__highlight,
+  .sketch-box--lift:hover::before,
+  .sketch-box--lift:focus-within::before,
+  .sketch-well:focus-within::before {
+    animation: none;
+  }
+
+  .animate-marquee,
+  .animate-blink,
+  .float,
+  .bob {
+    animation: none;
+  }
+
+  .hero-rise,
+  .hero-drop {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}
