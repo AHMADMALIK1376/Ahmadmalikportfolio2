@@ -1,0 +1,69 @@
+/*
+ * The plotter is drawn in layers: SVGs one over another, each in the same view
+ * box and the same box on the page, so a point in one lands on the same point
+ * in all. The machine lies in the flow and sizes the rest; the others are laid
+ * over it. The moving ones are moved by their CSS translate, in percent of
+ * their own box, so the browser slides them without redrawing them.
+ *
+ * Everything in the opening reads --p, which runs from 0 to 1 as it builds.
+ */
+
+.stage {
+  --p: 0;
+  position: relative;
+}
+
+@media (scripting: none) {
+  .stage {
+    --p: 1;
+  }
+}
+
+.live {
+  cursor: pointer;
+}
+
+.base {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* the sheet's layer is held in a window cut off at the feed slot */
+.slot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.moving {
+  will-change: translate;
+}
+
+/* the carriage's light, blinking while it plots */
+.busy {
+  fill: #f4f4f0;
+  stroke: rgba(45, 47, 43, 0.55);
+  stroke-width: 1;
+}
+
+.busy[data-on] {
+  animation: busy 0.9s steps(1, end) infinite;
+}
+
+@keyframes busy {
+  50% {
+    fill: #80966b;
+  }
+}

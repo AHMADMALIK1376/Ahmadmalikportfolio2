@@ -179,7 +179,7 @@ export default function Projects() {
   const current = PROJECTS[front];
 
   return (
-    <section id="work" aria-labelledby="work-title" className="gutter py-14 sm:py-20 md:pb-24 md:pt-16">
+    <section id="work" aria-labelledby="work-title" className="gutter overflow-x-clip py-14 sm:py-20 md:pb-24 md:pt-16">
       <SectionHeading number="03" kicker="selected work" id="work-title" intro="Drag the ring, swipe it, or let it turn, and open any card to watch it work.">
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>
