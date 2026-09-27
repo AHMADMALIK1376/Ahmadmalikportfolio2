@@ -3,20 +3,20 @@
  *
  * Every project is a card, set round a circle and tipped a little towards the
  * viewer, so the ring is seen from just above. The script turns it — slowly on
- * its own, or by dragging or the keyboard — by setting the ring's transform,
- * which the compositor can move without redrawing the cards.
- * Each card has a face, drawn like the site's cards, and a back, sage and
- * patterned, for when it is turned away. The card nearest the front is marked,
- * and the one under the pointer steps out of the ring.
+ * its own, or by dragging, swiping or the keyboard — by setting the ring's
+ * transform, which the compositor can move without redrawing the cards.
+ * Each card has a face, drawn like the site's other cards — a paper face with
+ * a wobbling edge and the hard offset shadow — and a back, sage and patterned,
+ * for when it is turned away. The card under the pointer steps out of the ring.
  */
 
 .stage {
-  --w: 150px;
-  --h: 198px;
-  --r: 350px;
-  --tilt: -10deg;
+  --w: 184px;
+  --h: 246px;
+  --r: 410px;
+  --tilt: -7deg;
   position: relative;
-  height: 21rem;
+  height: 22.5rem;
   perspective: 1900px;
   perspective-origin: 50% 30%;
   touch-action: pan-y;
@@ -33,19 +33,19 @@
 
 @media (width < 64rem) {
   .stage {
-    --w: 146px;
-    --h: 196px;
-    --r: 300px;
-    height: 19.5rem;
+    --w: 164px;
+    --h: 220px;
+    --r: 350px;
+    height: 20rem;
   }
 }
 
 @media (width < 40rem) {
   .stage {
-    --w: 112px;
-    --h: 152px;
-    --r: 190px;
-    height: 15.5rem;
+    --w: 132px;
+    --h: 178px;
+    --r: 235px;
+    height: 16.5rem;
   }
 }
 
@@ -88,18 +88,18 @@
 .back {
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: 20px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-/* the face: a card in the site's own hand, its edge wobbling on a layer behind the words */
+/* the face: a paper card in the site's own hand, its edge wobbling on a layer behind the words */
 .face {
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.75rem 0.8rem 0.7rem;
+  gap: 0.35rem;
+  padding: 0.85rem 0.9rem 0.8rem;
   overflow: hidden;
 }
 
@@ -109,17 +109,16 @@
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: var(--ink-fill);
+  background: var(--color-paper-2);
   border: 1.5px solid rgb(45 47 43 / 0.55);
-  box-shadow: rgb(45 47 43 / 0.4) 4px 4px 0 1px;
+  box-shadow: rgb(45 47 43 / 0.4) 5px 5px 0 1px;
   filter: url(#sketchFrame);
-  transition: box-shadow 0.3s ease;
 }
 
 .card[data-front] .face::before,
 .card:hover .face::before,
 .card:focus-visible .face::before {
-  box-shadow: rgb(45 47 43 / 0.4) 7px 7px 0 1px;
+  box-shadow: rgb(45 47 43 / 0.4) 8px 8px 0 1px;
 }
 
 .card:focus-visible .face::before {
@@ -134,79 +133,108 @@
 }
 
 .number {
-  font-size: 1.15rem;
+  font-size: 1.45rem;
   font-weight: 700;
   line-height: 1;
   color: var(--ink-text);
 }
 
 .kind {
+  padding: 0.3em 0.65em;
+  border-radius: 1rem;
+  background: var(--ink-fill);
+  box-shadow: rgb(45 47 43 / 0.4) 1.5px 1.5px 0 0.5px;
   font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-muted);
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
-.icon {
-  display: block;
-  width: 2rem;
-  height: 1.5rem;
-  color: var(--ink-text);
-}
-
-/* the name and the line under it, never more than two lines each, so the card's foot always shows */
-.title {
-  font-size: 0.84rem;
-  font-weight: 700;
-  line-height: 1.2;
+/* each line of words held to a few lines, so the card's foot always shows */
+.title,
+.tagline,
+.point {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.title {
+  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.18;
+  -webkit-line-clamp: 2;
 }
 
 .tagline {
-  font-size: 0.6rem;
-  line-height: 1.4;
-  color: var(--color-muted);
-  display: -webkit-box;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink-text);
   -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+}
+
+.point {
+  font-size: 0.57rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+  -webkit-line-clamp: 3;
+}
+
+/* the stack, as small chips: two rows at most */
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  max-height: 2.7rem;
+  margin-top: auto;
   overflow: hidden;
 }
 
-.bottom {
+.chip {
+  padding: 0.25em 0.6em;
+  border-radius: 1rem;
+  background: var(--ink-fill);
+  box-shadow: rgb(45 47 43 / 0.4) 1.5px 1.5px 0 0.5px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.3rem;
-  margin-top: auto;
-  font-size: 0.55rem;
-  font-weight: 700;
+  gap: 0.4rem;
+  padding-top: 0.2rem;
 }
 
-/* the first of the stack, as a small chip that shortens itself rather than spill */
-.chip {
-  min-width: 0;
-  max-width: 70%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0.25em 0.6em;
+/* the look of the site's small calm button, without being one — the whole card is the button */
+.pill {
+  padding: 0.45em 0.8em;
   border-radius: 1rem;
-  background: var(--color-paper-2);
-  box-shadow: rgb(45 47 43 / 0.4) 1.5px 1.5px 0 0.5px;
+  box-shadow: rgb(45 47 43 / 0.4) 2px 2px 0 1px;
   font-size: 0.52rem;
   font-weight: 700;
-  line-height: 1.3;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.25s ease;
 }
 
-.open {
-  flex: none;
-  color: var(--color-sienna-600);
-  white-space: nowrap;
+.card:hover .pill,
+.card:focus-visible .pill {
+  background: var(--hl-sage);
+}
+
+.code {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: var(--color-muted);
 }
 
 /* the back: sage, striped, with the maker's mark */
@@ -216,7 +244,7 @@
   place-items: center;
   background: repeating-linear-gradient(135deg, #cbd7bd 0 9px, #dfe7d4 9px 18px);
   border: 1.5px solid rgb(45 47 43 / 0.55);
-  box-shadow: rgb(45 47 43 / 0.4) 4px 4px 0 1px;
+  box-shadow: rgb(45 47 43 / 0.4) 5px 5px 0 1px;
 }
 
 .mark {
@@ -228,37 +256,53 @@
   background: #f4f4f0;
   border: 1.5px solid rgb(45 47 43 / 0.55);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--color-ink);
   text-align: center;
   line-height: 1.2;
 }
 
-/* small screens: a little less on each card */
+/* smaller cards: a little less on each */
+@media (width < 64rem) {
+  .title {
+    font-size: 0.85rem;
+  }
+  .point {
+    -webkit-line-clamp: 2;
+  }
+}
+
 @media (width < 40rem) {
   .face {
-    gap: 0.2rem;
-    padding: 0.55rem 0.55rem 0.5rem;
+    gap: 0.25rem;
+    padding: 0.6rem 0.6rem 0.55rem;
   }
   .number {
-    font-size: 0.9rem;
+    font-size: 1.05rem;
   }
   .kind {
     font-size: 0.42rem;
   }
   .title {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
   }
   .tagline {
     font-size: 0.5rem;
   }
-  .icon {
+  .point {
     display: none;
   }
-  .bottom {
-    font-size: 0.46rem;
+  .stack {
+    max-height: 1.2rem;
   }
   .chip {
     font-size: 0.44rem;
+  }
+  .pill,
+  .code {
+    font-size: 0.44rem;
+  }
+  .mark {
+    font-size: 0.65rem;
   }
 }

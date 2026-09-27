@@ -5,8 +5,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Poin
 import { CATEGORIES, PROJECTS, type Category } from "@/lib/content";
 import SectionHeading from "@/components/sketch/SectionHeading";
 import Highlight from "@/components/sketch/Highlight";
-import { Sketch } from "@/components/sketch/Doodle";
-import { DRAWINGS } from "./drawings";
+import { GitHub } from "@/components/sketch/Icons";
 import ProjectModal from "./ProjectModal";
 import styles from "./Ring.module.css";
 
@@ -24,9 +23,8 @@ import styles from "./Ring.module.css";
 const COUNT = PROJECTS.length;
 const STEP = 360 / COUNT;
 const AUTO = -7; // degrees a second, so the next card comes round from the right
-const TILT = -10;
+const TILT = -7;
 const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<Category | "all", string>;
-const ICON = { ai: DRAWINGS.llm, fullstack: DRAWINGS.web, tools: DRAWINGS.frontend } as const;
 
 /** Which card faces the viewer when the ring has turned by `angle`. */
 const frontAt = (angle: number) => ((Math.round(-angle / STEP) % COUNT) + COUNT) % COUNT;
@@ -182,7 +180,7 @@ export default function Projects() {
 
   return (
     <section id="work" aria-labelledby="work-title" className="gutter py-14 sm:py-20 md:pb-24 md:pt-16">
-      <SectionHeading number="03" kicker="selected work" id="work-title" intro="Things I've designed, built and shipped. Drag the ring round or let it turn, and open any card to watch it work.">
+      <SectionHeading number="03" kicker="selected work" id="work-title" intro="Drag the ring, swipe it, or let it turn, and open any card to watch it work.">
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>
 
@@ -216,18 +214,28 @@ export default function Projects() {
               onClick={(e) => show(i, e.currentTarget)}
             >
               <span className={styles.face}>
-                <span>
-                  <span className={styles.top}>
-                    <span className={styles.number}>#{String(i + 1).padStart(2, "0")}</span>
-                    <span className={styles.kind}>{LABEL[project.category]}</span>
-                  </span>
-                  <Sketch box="0 0 120 90" paths={ICON[project.category]} className={styles.icon} strokeWidth={4} duration={0.4} />
-                  <span className={styles.title}>{project.title}</span>
-                  <span className={styles.tagline}>{project.tagline}</span>
+                <span className={styles.top}>
+                  <span className={styles.number}>#{String(i + 1).padStart(2, "0")}</span>
+                  <span className={styles.kind}>{LABEL[project.category]}</span>
                 </span>
-                <span className={styles.bottom}>
-                  <span className={styles.chip}>{project.stack[0]}</span>
-                  <span className={styles.open}>open ↗</span>
+                <span className={styles.title}>{project.title}</span>
+                <span className={styles.tagline}>{project.tagline}</span>
+                <span className={styles.point}>{project.points[0]}</span>
+                <span className={styles.stack}>
+                  {project.stack.slice(0, 3).map((tool) => (
+                    <span key={tool} className={styles.chip}>
+                      {tool}
+                    </span>
+                  ))}
+                  {project.stack.length > 3 && <span className={styles.chip}>+{project.stack.length - 3}</span>}
+                </span>
+                <span className={styles.foot}>
+                  <span className={styles.pill}>details +</span>
+                  {project.repo && (
+                    <span className={styles.code}>
+                      <GitHub className="size-3" /> code
+                    </span>
+                  )}
                 </span>
               </span>
               <span className={styles.back} aria-hidden="true">
