@@ -3,22 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import deskStyles from "@/components/desk/Desk.module.css";
 import { at, between, Block, COS, Detail, drawn, frontFace, line, onFront, onTop, Part, poly, rounded, sideFace, topFace, TONES, type Point, type Tone } from "@/components/desk/iso";
-import { PLOTS } from "./plots";
+import { layout, MARGIN, RULES, type Field, type Letter, type Mark } from "./hand";
 import styles from "./Plotter.module.css";
 
 /**
- * The hero's pen plotter: a machine in the site's own hand — soft blocks in
- * paper and pastel with a wobbling edge and a hard shadow — that draws Ahmad's
- * projects, one sheet after another, the way he would sketch them.
+ * The contact section's pen plotter: a machine in the site's own hand — soft
+ * blocks in paper and pastel with a wobbling edge and a hard shadow — with a
+ * sheet of ruled notebook paper in it, which writes out the visitor's letter
+ * as they type it into the form.
  *
- * When the page opens it builds itself: the base draws in, the rails and the
- * gantry are lowered on, the carriage and its pen drop into place and a sheet
- * comes out of the feed. Then it plots. The gantry runs up and down the sheet,
- * the carriage runs across it, and the pen goes down, draws a stroke — boxes,
- * arrows, a network, a chart, even the labels, in its own single-stroke hand —
- * lifts, and moves to the next. A finished sheet is held up for a moment, fed
- * out of the front, and a fresh one comes in with the next drawing (and the
- * next pen). Clicking the machine finishes the sheet and feeds the next.
+ * It builds itself when it comes into view (the base draws in, the gantry is
+ * lowered onto its rails, the carriage and pen drop in, a sheet comes out of
+ * the feed) and writes "Dear Ahmad," at the top. Then every character typed is
+ * written in its turn: the gantry runs up and down the sheet, the carriage runs
+ * across it, and the pen goes down, draws a stroke, lifts, and moves to the
+ * next, hurrying when it falls behind. What is deleted fades off the page, and
+ * a word that no longer fits its line is written again on the next. When the
+ * letter is sent, the sheet is fed out of the front and a fresh one comes in.
  *
  * It is drawn in layers, one SVG over another in the same view box: the
  * machine, the sheet, the gantry, the pen, the carriage and the display. The
@@ -49,7 +50,7 @@ const CARRIAGE = { half: 16, depth: 11, z: 50, h: 42 };
 const PEN = { half: 3.5, tip: 7, body: 25 };
 /** How high the pen lifts to travel. */
 const LIFT = 12;
-/** Where the pen waits, at the back of the sheet, while a sheet is fed. */
+/** Where the pen waits, at the back of the sheet. */
 const PARK: Point = [150, 6];
 
 const SAGE: Tone = { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" };
@@ -57,31 +58,23 @@ const SHEET: Tone = { top: "#fbfbf8", left: "#eceee9", right: "#e3e5e0" };
 const STEEL: Tone = { top: "#b8bcb5", left: "#9a9f98", right: "#7c817a" };
 const SIENNA: Tone = { top: "#de9372", left: "#d0714c", right: "#bc4e26" };
 const DARK: Tone = TONES.dark;
-/** The pens in the holder at the back, one for each ink the drawings use. */
-const INKS = [...new Set(PLOTS.map((p) => p.ink))];
+const INK = "#2d2f2b";
+/** The other pens, waiting in the holder at the back. */
+const SPARE_PENS = ["#9c3f1d", "#4c5e3e"];
 
 // ── the opening, in progress from 0 to 1 ───────────────────────────────
-const INTRO = 3400;
-const DELAY = 450;
+const INTRO = 3000;
 
-// ── the plotting, in real time ─────────────────────────────────────────
-const DRAW_SPEED = 560; // sheet units a second, pen down
-const TRAVEL_SPEED = 1400; // pen up
-const PEN_MOVE = 45; // ms to lift or lower the pen
-const HOLD = 2600; // ms a finished sheet is shown
+// ── the writing, in real time ───────────────────────────────────────────
+const DRAW_SPEED = 260; // sheet units a second, pen down
+const TRAVEL_SPEED = 800; // pen up
+const PEN_MOVE = 55; // ms to lift or lower the pen
 const FEED_OUT = 750;
 const FEED_IN = 850;
-/** How far a sheet slides when it is fed, in the scene. */
 const FEED_OUT_BY = 230;
 const FEED_IN_FROM = -250;
-
-type Step =
-  | { kind: "travel"; to: Point }
-  | { kind: "pen"; down: boolean }
-  | { kind: "draw"; stroke: number }
-  | { kind: "hold"; ms: number }
-  | { kind: "feedOut" }
-  | { kind: "feedIn" };
+const FIELDS: Field[] = ["greeting", "message", "sign", "email"];
+const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** Everything in front of the feed slot, on the sheet's plane: the sheet is hidden behind it as it comes out. */
 const SLOT_CLIP = (() => {
@@ -91,56 +84,64 @@ const SLOT_CLIP = (() => {
 
 const smooth = (k: number) => k * k * (3 - 2 * k);
 
-export default function Plotter({ className }: { className?: string }) {
+/** A character on the sheet: its strokes, how long each is, and how many are written. */
+type Written = { key: string; paths: SVGPathElement[]; lengths: number[]; done: number; gone: boolean };
+type Step =
+  | { kind: "travel"; to: Point }
+  | { kind: "pen"; down: boolean }
+  | { kind: "draw"; mark: Written; stroke: number }
+  | { kind: "hold"; ms: number }
+  | { kind: "feedOut" }
+  | { kind: "feedIn" };
+
+type Engine = { sync: () => void; send: () => void };
+
+export default function Plotter({ letter, sent, onPoke, className }: { letter: Letter; sent: number; onPoke?: () => void; className?: string }) {
   const stage = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   const [built, setBuilt] = useState(false);
   const sheet = useRef<SVGSVGElement>(null);
   const gantry = useRef<SVGSVGElement>(null);
   const pen = useRef<SVGSVGElement>(null);
   const carriage = useRef<SVGSVGElement>(null);
-  const plots = useRef<(SVGGElement | null)[]>([]);
-  const inks = useRef<(SVGPathElement | null)[][]>(PLOTS.map(() => []));
-  const cap = useRef<SVGPathElement>(null);
-  const holder = useRef<(SVGGElement | null)[]>([]);
+  const ink = useRef<SVGGElement>(null);
   const readout = useRef<SVGTextElement>(null);
   const bar = useRef<SVGRectElement>(null);
   const busy = useRef<SVGCircleElement>(null);
-  /** set while running: finishes the sheet and feeds the next */
-  const skip = useRef<() => void>(() => {});
+  const latest = useRef(letter);
+  const engine = useRef<Engine | null>(null);
 
-  // the opening: --p runs from 0 to 1, and every part works out from it where it is
+  // it builds itself the first time it comes into view
   useEffect(() => {
     const el = stage.current;
     if (!el) return;
+    const watch = new IntersectionObserver(([entry]) => entry.isIntersecting && setVisible(true), { threshold: 0.3 });
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || !visible) return;
     const length = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : INTRO;
     let start = -1;
     let frame = 0;
     const tick = (now: number) => {
-      if (start < 0) start = now + (length ? DELAY : 0);
-      const p = length ? Math.min(1, Math.max(0, (now - start) / length)) : 1;
+      if (start < 0) start = now;
+      const p = length ? Math.min(1, (now - start) / length) : 1;
       el.style.setProperty("--p", p.toFixed(4));
       if (p < 1) frame = requestAnimationFrame(tick);
       else setBuilt(true);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [visible]);
 
-  // the plotting
+  // the writing
   useEffect(() => {
-    if (!built) return;
-    const paths = inks.current;
-    const lengths = paths.map((plot) => plot.map((p) => p?.getTotalLength() ?? 0));
-    const starts = paths.map((plot) => plot.map((p): Point => (p ? [p.getPointAtLength(0).x, p.getPointAtLength(0).y] : [0, 0])));
-    const totals = lengths.map((ls) => ls.reduce((a, b) => a + b, 0));
-    // each stroke is one dash as long as itself, slid along to show as much of it as is drawn
-    paths.forEach((plot, k) =>
-      plot.forEach((path, i) => {
-        if (!path) return;
-        path.style.strokeDasharray = `${lengths[k][i].toFixed(2)} ${(lengths[k][i] + 2).toFixed(2)}`;
-        path.style.strokeDashoffset = lengths[k][i].toFixed(2);
-      }),
-    );
+    const group = ink.current;
+    if (!built || !group) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     // where the pen is: across the sheet, down it, and how far it is lifted
     const pos = { u: PARK[0], v: PARK[1], lift: LIFT };
@@ -156,72 +157,130 @@ export default function Plotter({ className }: { className?: string }) {
       sheet.current.style.translate = shift(-COS * by, by / 2);
       sheet.current.style.opacity = String(opacity);
     };
-    const mark = (k: number, i: number, done: number) => {
-      const path = paths[k][i];
-      if (!path) return;
-      path.style.strokeDashoffset = (lengths[k][i] * (1 - done)).toFixed(2);
-      path.style.strokeOpacity = done > 0 ? "1" : "0";
-    };
-    let drawnSoFar = 0;
-    const show = (k: number, progress: number) => {
-      plots.current.forEach((g, j) => g?.setAttribute("visibility", j === k ? "visible" : "hidden"));
-      cap.current?.setAttribute("fill", PLOTS[k].ink);
-      holder.current.forEach((g, j) => g?.setAttribute("opacity", INKS[j] === PLOTS[k].ink ? "0" : "1"));
-      if (readout.current) readout.current.textContent = `PLOT ${k + 1}/${PLOTS.length} · ${PLOTS[k].name}`;
-      if (bar.current) bar.current.setAttribute("width", (98 * progress).toFixed(1));
+    const say = (text: string) => {
+      if (readout.current) readout.current.textContent = text;
     };
 
-    // with reduced motion: the first drawing, finished, and nothing moving
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      PLOTS[0].strokes.forEach((_, i) => mark(0, i, 1));
-      show(0, 1);
-      put();
-      return;
-    }
+    // what is on the sheet, part by part, and what is still to be written, in order
+    const written: Record<Field, Written[]> = { greeting: [], message: [], sign: [], email: [] };
+    let queue: Written[] = [];
+    let greeted = false;
+    let frozen = false;
 
-    const stepsFor = (k: number): Step[] => [
-      ...PLOTS[k].strokes.flatMap((_, i): Step[] => [{ kind: "travel", to: starts[k][i] }, { kind: "pen", down: true }, { kind: "draw", stroke: i }, { kind: "pen", down: false }]),
-      { kind: "travel", to: PARK },
-      { kind: "hold", ms: HOLD },
-      { kind: "feedOut" },
-      { kind: "feedIn" },
-    ];
+    const show = (mark: Written, stroke: number, done: number) => {
+      const path = mark.paths[stroke];
+      path.style.opacity = done > 0 ? "1" : "0";
+      path.style.strokeDashoffset = (mark.lengths[stroke] * (1 - done)).toFixed(2);
+    };
+    const make = (mark: Mark): Written => {
+      const paths = mark.strokes.map((d) => {
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", d);
+        group.appendChild(path);
+        return path;
+      });
+      const lengths = paths.map((p) => p.getTotalLength());
+      paths.forEach((path, i) => {
+        path.style.strokeDasharray = `${lengths[i].toFixed(2)} ${(lengths[i] + 2).toFixed(2)}`;
+        path.style.strokeDashoffset = lengths[i].toFixed(2);
+        path.style.opacity = "0";
+      });
+      return { key: mark.key, paths, lengths, done: 0, gone: false };
+    };
+    const erase = (mark: Written) => {
+      mark.gone = true;
+      for (const path of mark.paths) {
+        path.style.transition = "opacity 0.25s ease";
+        path.style.opacity = "0";
+        window.setTimeout(() => path.remove(), 300);
+      }
+    };
+    const progress = () => {
+      const all = FIELDS.flatMap((f) => written[f]);
+      const done = all.filter((m) => m.done === m.paths.length).length;
+      if (bar.current) bar.current.setAttribute("width", (all.length ? (98 * done) / all.length : 0).toFixed(1));
+    };
+    /** Writes everything still waiting, at once. */
+    const flush = () => {
+      for (const mark of queue) {
+        mark.paths.forEach((_, i) => show(mark, i, 1));
+        mark.done = mark.paths.length;
+      }
+      queue = [];
+      progress();
+    };
 
-    let k = 0;
-    let steps = stepsFor(k);
-    let index = 0;
+    /** Brings the sheet into line with the letter: whatever changed is rubbed out, and written again. */
+    const sync = () => {
+      if (frozen) return;
+      const want = layout(latest.current, greeted);
+      for (const field of FIELDS) {
+        const have = written[field];
+        const next = want[field];
+        let same = 0;
+        while (same < have.length && same < next.length && have[same].key === next[same].key) same++;
+        if (same === have.length && same === next.length) continue;
+        have.slice(same).forEach(erase);
+        const added = next.slice(same).map(make);
+        written[field] = [...have.slice(0, same), ...added];
+        queue.push(...added);
+      }
+      queue = queue.filter((m) => !m.gone);
+      if (reduced) flush();
+      else if (queue.length) say("WRITING");
+      progress();
+    };
+
+    // the steps the machine takes: planned one at a time, from where it is and what is left to write
+    let script: Step[] = [];
+    let step: Step | null = null;
     let t = 0;
     let length = 0;
     let from = { ...pos };
+    let idle = 0;
+    let hovering = false;
 
-    const begin = () => {
-      const step = steps[index];
-      from = { ...pos };
-      t = 0;
-      if (step.kind === "travel") {
-        const distance = Math.hypot(step.to[0] - pos.u, step.to[1] - pos.v);
-        length = distance < 0.5 ? 0 : Math.max(70, (distance / TRAVEL_SPEED) * 1000);
-      } else if (step.kind === "pen") length = PEN_MOVE;
-      else if (step.kind === "draw") {
-        length = (lengths[k][step.stroke] / DRAW_SPEED) * 1000;
-        const path = paths[k][step.stroke];
-        if (path) path.style.strokeOpacity = "1";
-      } else if (step.kind === "hold") length = step.ms;
-      else if (step.kind === "feedOut") length = FEED_OUT;
-      else {
-        // the next drawing: a clean sheet waiting in the feed, and the next pen in the carriage
-        length = FEED_IN;
-        k = (k + 1) % PLOTS.length;
-        PLOTS[k].strokes.forEach((_, i) => mark(k, i, 0));
-        drawnSoFar = 0;
-        show(k, 0);
-        feed(FEED_IN_FROM, 1);
+    const boost = () => 1 + Math.min(queue.length, 60) / 4;
+    const plan = (): Step | null => {
+      const scripted = script.shift();
+      if (scripted) return scripted;
+      const mark = queue[0];
+      if (!mark) {
+        if (pos.lift < LIFT) return { kind: "pen", down: false };
+        // a pause in the typing: the gantry runs back off the page, so the whole letter can be read
+        if (!hovering && idle > 900) {
+          hovering = true;
+          return { kind: "travel", to: [pos.u, PARK[1]] };
+        }
+        return null;
       }
+      hovering = false;
+      const start = mark.paths[mark.done].getPointAtLength(0);
+      const there = Math.hypot(start.x - pos.u, start.y - pos.v) < 0.6;
+      if (!there) return pos.lift < LIFT ? { kind: "pen", down: false } : { kind: "travel", to: [start.x, start.y] };
+      if (pos.lift > 0) return { kind: "pen", down: true };
+      return { kind: "draw", mark, stroke: mark.done };
     };
 
-    /** How far through the current step is, from 0 to 1, and what that does. */
+    const begin = (next: Step) => {
+      step = next;
+      from = { ...pos };
+      t = 0;
+      const speed = boost();
+      if (next.kind === "travel") {
+        const distance = Math.hypot(next.to[0] - pos.u, next.to[1] - pos.v);
+        length = distance < 0.5 ? 0 : Math.max(40, (distance / (TRAVEL_SPEED * speed)) * 1000);
+      } else if (next.kind === "pen") length = PEN_MOVE / Math.sqrt(speed);
+      else if (next.kind === "draw") {
+        length = (next.mark.lengths[next.stroke] / (DRAW_SPEED * speed)) * 1000;
+        say("WRITING");
+      } else if (next.kind === "hold") length = next.ms;
+      else if (next.kind === "feedOut") length = FEED_OUT;
+      else length = FEED_IN;
+    };
+
     const apply = (f: number) => {
-      const step = steps[index];
+      if (!step) return;
       if (step.kind === "travel") {
         const e = smooth(f);
         pos.u = from.u + (step.to[0] - from.u) * e;
@@ -229,13 +288,11 @@ export default function Plotter({ className }: { className?: string }) {
       } else if (step.kind === "pen") {
         pos.lift = step.down ? LIFT * (1 - f) : LIFT * f;
       } else if (step.kind === "draw") {
-        const path = paths[k][step.stroke];
-        if (!path) return;
-        const point = path.getPointAtLength(lengths[k][step.stroke] * f);
+        const path = step.mark.paths[step.stroke];
+        const point = path.getPointAtLength(step.mark.lengths[step.stroke] * f);
         pos.u = point.x;
         pos.v = point.y;
-        mark(k, step.stroke, f);
-        if (bar.current) bar.current.setAttribute("width", ((98 * (drawnSoFar + lengths[k][step.stroke] * f)) / totals[k]).toFixed(1));
+        show(step.mark, step.stroke, f);
       } else if (step.kind === "feedOut") {
         const e = f * f;
         feed(FEED_OUT_BY * e, 1 - e);
@@ -246,52 +303,94 @@ export default function Plotter({ className }: { className?: string }) {
     };
 
     const finish = () => {
+      if (!step) return;
       apply(1);
-      const step = steps[index];
-      if (step.kind === "draw") drawnSoFar += lengths[k][step.stroke];
-      index++;
-      if (index >= steps.length) {
-        steps = stepsFor(k);
-        index = 0;
+      if (step.kind === "draw") {
+        const mark = step.mark;
+        mark.done++;
+        if (mark.done === mark.paths.length) {
+          queue = queue.filter((m) => m !== mark);
+          progress();
+          if (!queue.length) say("READY");
+        }
+      } else if (step.kind === "feedOut") {
+        // the old sheet is gone: a clean one waits in the feed
+        FIELDS.forEach((f) => (written[f] = []));
+        group.replaceChildren();
+        feed(FEED_IN_FROM, 1);
+        progress();
+      } else if (step.kind === "feedIn") {
+        frozen = false;
+        say("SENT ✓");
+        window.setTimeout(() => say(queue.length ? "WRITING" : "READY"), 2200);
+        sync();
       }
-      begin();
+      step = null;
     };
 
-    show(k, 0);
+    const send = () => {
+      if (frozen) return;
+      frozen = true;
+      flush();
+      say("SENDING");
+      if (reduced) {
+        FIELDS.forEach((f) => (written[f] = []));
+        group.replaceChildren();
+        frozen = false;
+        sync();
+        return;
+      }
+      step = null;
+      script = [{ kind: "pen", down: false }, { kind: "travel", to: PARK }, { kind: "hold", ms: 350 }, { kind: "feedOut" }, { kind: "feedIn" }];
+    };
+
+    engine.current = { sync, send };
     put();
-    begin();
     busy.current?.setAttribute("data-on", "");
 
-    skip.current = () => {
-      const step = steps[index];
-      if (step.kind === "feedOut" || step.kind === "feedIn") return;
-      // everything drawn, the pen up, and straight on to parking and a short hold
-      PLOTS[k].strokes.forEach((_, i) => mark(k, i, 1));
-      drawnSoFar = totals[k];
-      if (bar.current) bar.current.setAttribute("width", "98");
-      pos.lift = LIFT;
-      index = steps.findIndex((s) => s.kind === "travel" && s.to === PARK);
-      steps[index + 1] = { kind: "hold", ms: 500 };
-      begin();
-    };
+    // "Dear Ahmad," first, then whatever has been typed already
+    greeted = true;
+    sync();
+
+    if (reduced) {
+      return () => {
+        engine.current = null;
+      };
+    }
 
     let frame = 0;
     let last = 0;
     const tick = (now: number) => {
       const dt = last ? Math.min(60, now - last) : 16;
       last = now;
-      t += dt;
-      // a step can be shorter than a frame: finish as many as the time covers
-      while (t >= length) {
-        const over = t - length;
-        finish();
-        t = over;
+      let left = dt;
+      // as many steps as the time covers: a fast writer is kept up with
+      for (let guard = 0; guard < 400; guard++) {
+        const current = step as Step | null;
+        if (current && current.kind === "draw" && current.mark.gone) step = null;
+        if (!step) {
+          const next = plan();
+          if (!next) {
+            idle += left;
+            break;
+          }
+          idle = 0;
+          begin(next);
+        }
+        const need = length - t;
+        if (left >= need) {
+          left -= need;
+          finish();
+        } else {
+          t += left;
+          apply(length ? t / length : 1);
+          break;
+        }
       }
-      apply(length ? t / length : 1);
       frame = requestAnimationFrame(tick);
     };
 
-    // only plot while it is on screen
+    // it only runs while it is on screen
     const watch = new IntersectionObserver(([entry]) => {
       cancelAnimationFrame(frame);
       if (entry.isIntersecting) {
@@ -304,9 +403,19 @@ export default function Plotter({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(frame);
       watch.disconnect();
-      skip.current = () => {};
+      engine.current = null;
     };
   }, [built]);
+
+  // every letter sent, and every change to the letter. A letter sent clears the form in the same moment, so the sending
+  // comes first: the machine stops listening, and feeds out the page as it was
+  useEffect(() => {
+    if (sent) engine.current?.send();
+  }, [sent]);
+  useEffect(() => {
+    latest.current = letter;
+    engine.current?.sync();
+  }, [letter]);
 
   const layer = styles.layer;
   const start = shift(-COS * PARK[1], PARK[1] / 2);
@@ -314,9 +423,9 @@ export default function Plotter({ className }: { className?: string }) {
   const startPen = shift(COS * (PARK[0] - PARK[1]), (PARK[0] + PARK[1]) / 2 - LIFT);
 
   return (
-    <div ref={stage} className={`${styles.stage} ${built ? styles.live : ""} ${className ?? ""}`} onClick={() => skip.current()}>
-      {/* ── the machine: base, feed, bed, rails, the pens in their holder ── */}
-      <svg viewBox={VIEW} className={styles.base} aria-hidden="true" focusable="false">
+    <div ref={stage} className={`${styles.stage} ${built ? styles.live : ""} ${className ?? ""}`} onClick={onPoke} aria-hidden="true">
+      {/* ── the machine: base, feed, bed, rails, the spare pens in their holder ── */}
+      <svg viewBox={VIEW} className={styles.base} focusable="false">
         <g style={drawn(0.04, 0.14)} filter="url(#desk-card)">
           <Block x0={HOUSING.x0} x1={HOUSING.x1} y0={HOUSING.y0} y1={HOUSING.y1} z={0} h={HOUSING.h} tone={TONES.paper} r={14} />
           {/* the slot the sheets come out of */}
@@ -326,20 +435,14 @@ export default function Plotter({ className }: { className?: string }) {
           MA-02 · PEN PLOTTER
         </text>
 
-        {/* the pens waiting in their holder, on top of the feed */}
         <g style={drawn(0.2, 0.28)} filter="url(#desk-chip)">
-          <Block x0={112} x1={186} y0={-154} y1={-136} z={HOUSING.h} h={8} tone={TONES.concrete} r={5} width={1.2} />
+          <Block x0={130} x1={186} y0={-154} y1={-136} z={HOUSING.h} h={8} tone={TONES.concrete} r={5} width={1.2} />
         </g>
-        {INKS.map((ink, j) => (
-          <Part key={ink} arrival={{ lift: 36, from: 0.3 + j * 0.035, span: 0.06, fall: true }} style={drawn(0.28 + j * 0.035, 0.3 + j * 0.035, 0.05)}>
-            <g
-              ref={(el) => {
-                holder.current[j] = el;
-              }}
-              filter="url(#desk-chip)"
-            >
-              <Block x0={126 + j * 22} x1={133 + j * 22} y0={-148} y1={-141} z={HOUSING.h + 8} h={20} tone={DARK} r={2} width={1} />
-              <Block x0={125.5 + j * 22} x1={133.5 + j * 22} y0={-148.5} y1={-140.5} z={HOUSING.h + 22} h={8} tone={{ top: ink, left: ink, right: ink }} r={2.5} width={1} />
+        {SPARE_PENS.map((colour, j) => (
+          <Part key={colour} arrival={{ lift: 36, from: 0.3 + j * 0.035, span: 0.06, fall: true }} style={drawn(0.28 + j * 0.035, 0.3 + j * 0.035, 0.05)}>
+            <g filter="url(#desk-chip)">
+              <Block x0={144 + j * 22} x1={151 + j * 22} y0={-148} y1={-141} z={HOUSING.h + 8} h={20} tone={DARK} r={2} width={1} />
+              <Block x0={143.5 + j * 22} x1={151.5 + j * 22} y0={-148.5} y1={-140.5} z={HOUSING.h + 22} h={8} tone={{ top: colour, left: colour, right: colour }} r={2.5} width={1} />
             </g>
           </Part>
         ))}
@@ -381,48 +484,36 @@ export default function Plotter({ className }: { className?: string }) {
         </g>
       </svg>
 
-      {/* ── the sheet, and what is drawn on it; hidden behind the slot as it comes out ── */}
+      {/* ── the sheet: a page of the notebook, and what is written on it; hidden behind the slot as it comes out ── */}
       <div className={styles.slot} style={{ clipPath: SLOT_CLIP }}>
-        <svg ref={sheet} viewBox={VIEW} className={`${layer} ${styles.moving}`} aria-hidden="true" focusable="false">
+        <svg ref={sheet} viewBox={VIEW} className={`${layer} ${styles.moving}`} focusable="false">
           <g className={deskStyles.fade} style={between(0.62, 0.08)}>
             <path d={rounded(topFace(PX, PX + 300, PY, PY + 200, SHEET_Z), 3)} fill="#2d2f2b" fillOpacity={0.18} transform="translate(3 3)" />
             <Block x0={PX} x1={PX + 300} y0={PY} y1={PY + 200} z={SHEET_Z} h={1.5} tone={SHEET} r={3} width={1.1} />
-            <g transform={onTop(at(PX, PY, SHEET_TOP))} fill="none" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
-              {PLOTS.map((plot, k) => (
-                <g
-                  key={plot.name}
-                  ref={(el) => {
-                    plots.current[k] = el;
-                  }}
-                  stroke={plot.ink}
-                  visibility={k === 0 ? "visible" : "hidden"}
-                >
-                  {plot.strokes.map((d, i) => (
-                    <path
-                      key={i}
-                      ref={(el) => {
-                        inks.current[k][i] = el;
-                      }}
-                      d={d}
-                      style={{ strokeOpacity: 0 }}
-                    />
-                  ))}
-                </g>
-              ))}
+            <g transform={onTop(at(PX, PY, SHEET_TOP))}>
+              {/* the notebook's rules and its red margin */}
+              <g stroke="#9a9f98" strokeOpacity={0.55} strokeWidth={0.8}>
+                {RULES.map((v) => (
+                  <path key={v} d={`M6 ${v + 1.6}H294`} />
+                ))}
+              </g>
+              <path d={`M${MARGIN} 2V198`} stroke="#de9372" strokeWidth={0.9} />
+              {/* the writing, added a stroke at a time as it is written */}
+              <g ref={ink} fill="none" stroke={INK} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
             </g>
           </g>
         </svg>
       </div>
 
       {/* ── the gantry: a leg on each rail, and the beam across ── */}
-      <svg ref={gantry} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: start }} aria-hidden="true" focusable="false">
+      <svg ref={gantry} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: start }} focusable="false">
         <Part arrival={{ lift: 44, from: 0.3, span: 0.14 }} style={drawn(0.28, 0.38)}>
           <g filter="url(#desk-card)">
             <Block x0={-194} x1={-174} y0={GANTRY.y0} y1={GANTRY.y1} z={GANTRY.z} h={GANTRY.top - GANTRY.z} tone={TONES.paper} r={6} />
             <Block x0={-180} x1={180} y0={GANTRY.beamY0} y1={GANTRY.beamY1} z={GANTRY.beamZ} h={14} tone={TONES.sienna} r={6} />
             <Block x0={174} x1={194} y0={GANTRY.y0} y1={GANTRY.y1} z={GANTRY.z} h={GANTRY.top - GANTRY.z} tone={TONES.paper} r={6} />
           </g>
-          {/* the carriage's track along the beam, and a maker's plate on the near leg */}
+          {/* the carriage's track along the beam, and a plate on the near leg */}
           <Detail d={line(at(-170, GANTRY.beamY1, GANTRY.beamZ + 7), at(170, GANTRY.beamY1, GANTRY.beamZ + 7))} width={1} />
           <Detail d={rounded(sideFace(194, GANTRY.y0 + 5, GANTRY.y1 - 5, 44, 70), 3)} fill="#e3e5e0" />
           {Array.from({ length: 3 }, (_, i) => (
@@ -432,7 +523,7 @@ export default function Plotter({ className }: { className?: string }) {
       </svg>
 
       {/* ── the pen, hanging from the carriage ── */}
-      <svg ref={pen} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startPen }} aria-hidden="true" focusable="false">
+      <svg ref={pen} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startPen }} focusable="false">
         <Part arrival={{ lift: 40, from: 0.56, span: 0.07, fall: true }} style={drawn(0.54, 0.58, 0.05)}>
           <g filter="url(#desk-chip)">
             <Block x0={PX - PEN.half} x1={PX + PEN.half} y0={PY - PEN.half} y1={PY + PEN.half} z={SHEET_TOP + PEN.tip} h={PEN.body} tone={DARK} r={2} width={1} />
@@ -442,9 +533,7 @@ export default function Plotter({ className }: { className?: string }) {
             fill="#5e625c"
             width={1}
           />
-          {/* a band in the pen's own ink, just below the carriage */}
           <path
-            ref={cap}
             d={poly(
               at(PX - PEN.half, PY + PEN.half, SHEET_TOP + 17),
               at(PX + PEN.half, PY + PEN.half, SHEET_TOP + 17),
@@ -453,14 +542,14 @@ export default function Plotter({ className }: { className?: string }) {
               at(PX + PEN.half, PY + PEN.half, SHEET_TOP + 21),
               at(PX - PEN.half, PY + PEN.half, SHEET_TOP + 21),
             )}
-            fill={PLOTS[0].ink}
+            fill={INK}
             className={deskStyles.fill}
           />
         </Part>
       </svg>
 
       {/* ── the carriage, running along the front of the beam ── */}
-      <svg ref={carriage} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startAt }} aria-hidden="true" focusable="false">
+      <svg ref={carriage} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startAt }} focusable="false">
         <Part arrival={{ lift: 50, from: 0.46, span: 0.08, fall: true }} style={drawn(0.44, 0.5, 0.06)}>
           <g filter="url(#desk-card)">
             <Block x0={PX - CARRIAGE.half} x1={PX + CARRIAGE.half} y0={PY - CARRIAGE.depth} y1={PY + CARRIAGE.depth} z={CARRIAGE.z} h={CARRIAGE.h} tone={SIENNA} r={6} />
@@ -471,11 +560,11 @@ export default function Plotter({ className }: { className?: string }) {
         </Part>
       </svg>
 
-      {/* ── the display: which drawing, and how far along ── */}
-      <svg viewBox={VIEW} className={layer} aria-hidden="true" focusable="false">
+      {/* ── the display: what it is doing, and how much of the letter is written ── */}
+      <svg viewBox={VIEW} className={layer} focusable="false">
         <g className={deskStyles.fade} style={between(0.8, 0.06)}>
-          <text ref={readout} transform={onFront(at(-172, BASE.y1, 14))} y={2} fontSize={6} fontWeight={700} letterSpacing={0.4} fill="#cbd7bd">
-            {`PLOT 1/${PLOTS.length} · ${PLOTS[0].name}`}
+          <text ref={readout} transform={onFront(at(-172, BASE.y1, 14))} y={2} fontSize={6} fontWeight={700} letterSpacing={0.6} fill="#cbd7bd">
+            READY
           </text>
           <g transform={onFront(at(-172, BASE.y1, 8.5))}>
             <rect x={0} y={0} width={98} height={2.2} rx={1} fill="#5e625c" />
@@ -483,14 +572,6 @@ export default function Plotter({ className }: { className?: string }) {
           </g>
         </g>
       </svg>
-
-      {/* the same, for the keyboard: its click reaches the machine's own */}
-      {built && (
-        <button type="button" className="sketch-chip sr-only absolute bottom-0 left-0 focus:not-sr-only">
-          Plot the next drawing
-        </button>
-      )}
     </div>
   );
 }
-

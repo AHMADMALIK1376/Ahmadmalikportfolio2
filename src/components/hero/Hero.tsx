@@ -6,7 +6,7 @@ import Doodle from "@/components/sketch/Doodle";
 import { ArrowDown, Download, Pin, Clock } from "@/components/sketch/Icons";
 import LocalTime from "@/components/LocalTime";
 import Typewriter from "./Typewriter";
-import Plotter from "@/components/plotter/Plotter";
+
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -62,7 +62,7 @@ export default function Hero() {
 
         {/* the pen plotter, which builds itself and then draws the projects, one sheet after another */}
         <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-[30rem] lg:mr-0 lg:max-w-none lg:translate-x-8 min-[1360px]:translate-x-16">
-          <Plotter />
+          <div className="aspect-[612/452]" />
 
           {/* margin notes, written once the plotter is built */}
           <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-[2%] top-[4%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
