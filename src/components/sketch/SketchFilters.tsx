@@ -9,6 +9,8 @@
  * cheaper filter because there are many of them.
  */
 
+import { DeskFilters } from "@/components/desk/iso";
+
 const REGION = { x: "-20%", y: "-20%", width: "140%", height: "140%" } as const;
 
 function Noise({ id, scale, seed, frequency = 0.1, octaves = 8 }: { id: string; scale: number; seed?: number; frequency?: number; octaves?: number }) {
@@ -30,6 +32,8 @@ export default function SketchFilters() {
       <Noise id="sketchFrame" scale={5} frequency={0.035} octaves={2} />
       <Noise id="sketchFrame2" scale={5} frequency={0.035} octaves={2} seed={1010} />
       <Noise id="sketchChip" scale={2.5} octaves={3} />
+      {/* the isometric drawings' own: the cards' wobble and shadow, for blocks */}
+      <DeskFilters />
     </svg>
   );
 }

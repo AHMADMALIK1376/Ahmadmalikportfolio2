@@ -42,13 +42,14 @@
 /* lowered into place */
 .lower {
   --k: clamp(0, (var(--p) - var(--from)) / var(--span), 1);
-  transform: translateY(calc(var(--lift) * (var(--k) * var(--k) * (3 - 2 * var(--k)) - 1) * 1px));
+  --home: calc(var(--k) * var(--k) * (3 - 2 * var(--k)));
+  transform: translate(calc(var(--shift, 0) * (1 - var(--home)) * 1px), calc(var(--lift) * (var(--home) - 1) * 1px));
 }
 
 /* dropped into place: falling faster and faster, and landing with a snap */
 .fall {
   --k: clamp(0, (var(--p) - var(--from)) / var(--span), 1);
-  transform: translateY(calc(var(--lift) * (var(--k) * var(--k) - 1) * 1px));
+  transform: translate(calc(var(--shift, 0) * (1 - var(--k) * var(--k)) * 1px), calc(var(--lift) * (var(--k) * var(--k) - 1) * 1px));
   opacity: clamp(0, (var(--p) - var(--from)) * 60, 1);
 }
 

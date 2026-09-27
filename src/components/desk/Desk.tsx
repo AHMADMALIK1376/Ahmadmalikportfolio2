@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./Desk.module.css";
 import Computer, { CHARACTER, KEYBOARD_PORT, MOUSE_PORT, POINTER_REST, RUN_BUTTON, SCREEN, type ComputerTiming } from "./Computer";
 import Mouse, { MOUSE_CABLE_START, type MouseTiming } from "./Mouse";
-import { at, bend, between, Block, COS, DeskFilters, Detail, dot, drawn, INK, line, onFront, onTop, Part, rounded, Wire, type Point, type Tone } from "./iso";
+import { at, bend, between, Block, COS, Detail, dot, drawn, INK, line, onFront, onTop, Part, rounded, Wire, type Point, type Tone } from "./iso";
 import { lineLength, PROGRAM, typedPart } from "./program";
 
 /**
@@ -360,8 +360,6 @@ export default function Desk({ className }: { className?: string }) {
   return (
     <>
       <svg ref={svg} viewBox="38 -84 582 640" className={`${styles.desk} ${built ? styles.live : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
-        <DeskFilters />
-
         <Computer
           timing={COMPUTER}
           rowRef={(row, el) => {

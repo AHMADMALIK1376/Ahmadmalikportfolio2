@@ -51,6 +51,21 @@ export function bend(points: Point[], radius: number) {
   return `M${xy(points[0])}${corners.join("")}L${xy(points[points.length - 1])}`;
 }
 
+/** The site's inks as the three faces of a block: top, left and right. */
+export const TONES = {
+  paper: { top: "#f4f4f0", left: "#e3e5e0", right: "#d2d5cf" },
+  concrete: { top: "#e6e8e3", left: "#d3d6d0", right: "#b9bdb6" },
+  dark: { top: "#5e625c", left: "#4a4d48", right: "#3b3d39" },
+  sage: { top: "#e2e9da", left: "#cbd7bd", right: "#b8c8a8" },
+  sageDeep: { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" },
+  sienna: { top: "#f5dfd5", left: "#ecc9b9", right: "#e2b5a1" },
+} satisfies Record<string, Tone>;
+
+/** The corners of a rectangle: lying flat at height z, facing the viewer on the left at depth y, or facing right at x. */
+export const topFace = (x0: number, x1: number, y0: number, y1: number, z: number): Point[] => [at(x0, y0, z), at(x1, y0, z), at(x1, y1, z), at(x0, y1, z)];
+export const frontFace = (x0: number, x1: number, z0: number, z1: number, y: number): Point[] => [at(x0, y, z1), at(x1, y, z1), at(x1, y, z0), at(x0, y, z0)];
+export const sideFace = (x: number, y0: number, y1: number, z0: number, z1: number): Point[] => [at(x, y1, z1), at(x, y0, z1), at(x, y0, z0), at(x, y1, z0)];
+
 // ── rounded corners ─────────────────────────────────────────────────────
 
 /**
@@ -152,17 +167,17 @@ export function Wire({ d, width = 4, colour = "#7c817a", light = "#b8bcb5", styl
 }
 
 /**
- * A part that arrives from above: held `lift` view-box units up, and brought
- * down into place as --p passes from `from` over `span`. With `fall` it drops
- * like something let go of — slowly at first, then fast — instead of being
- * lowered.
+ * A part that arrives from above: held `lift` view-box units up (and `shift`
+ * across), and brought into place as --p passes from `from` over `span`. With
+ * `fall` it drops like something let go of — slowly at first, then fast —
+ * instead of being lowered.
  */
-export type Arrival = { lift: number; from: number; span: number; fall?: boolean };
+export type Arrival = { lift: number; from: number; span: number; fall?: boolean; shift?: number };
 
 export function Part({ arrival, style, className, children }: { arrival: Arrival; style?: CSSProperties; className?: string; children: ReactNode }) {
-  const { lift, from, span, fall = false } = arrival;
+  const { lift, from, span, fall = false, shift = 0 } = arrival;
   return (
-    <g className={`${fall ? styles.fall : styles.lower} ${className ?? ""}`} style={{ "--lift": lift, "--from": from, "--span": span, ...style } as CSSProperties}>
+    <g className={`${fall ? styles.fall : styles.lower} ${className ?? ""}`} style={{ "--lift": lift, "--shift": shift, "--from": from, "--span": span, ...style } as CSSProperties}>
       {children}
     </g>
   );

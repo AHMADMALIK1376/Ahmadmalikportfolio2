@@ -48,6 +48,11 @@ export type Service = {
   steps: string[];
   ink: Ink;
   doodle: "llm" | "architecture" | "web" | "backend" | "frontend";
+  /** what the work delivers, shown when the card is opened */
+  delivers: string[];
+  tools: string[];
+  /** projects on this page where the work can be seen, by slug */
+  seenIn: string[];
 };
 
 export const SERVICES: Service[] = [
@@ -58,6 +63,13 @@ export const SERVICES: Service[] = [
     steps: ["Data → tokens", "Forward · backward", "Loss ↓", "Checkpoints"],
     ink: "sage",
     doodle: "llm",
+    delivers: [
+      "Datasets cleaned, split and tokenized, ready to train on.",
+      "Training runs that log their loss and save checkpoints as they go.",
+      "The finished model served behind an API, with prompts engineered around it.",
+    ],
+    tools: ["Python", "FastAPI", "LangGraph", "Claude API", "Qwen"],
+    seenIn: ["neuracache", "bid-response-engine", "hireme-agent"],
   },
   {
     title: "Software architecture",
@@ -66,6 +78,13 @@ export const SERVICES: Service[] = [
     steps: ["Clients → gateway", "Services", "Event bus", "Data & cache"],
     ink: "sienna",
     doodle: "architecture",
+    delivers: [
+      "A system mapped out before it is built: clients, gateway, services and data.",
+      "API contracts and event flows agreed up front, so parts can be built in parallel.",
+      "Caches and queues placed where they pay for themselves.",
+    ],
+    tools: ["Node.js", "FastAPI", "PostgreSQL", "MongoDB", "Docker"],
+    seenIn: ["folium", "focusflow"],
   },
   {
     title: "Web applications",
@@ -74,6 +93,13 @@ export const SERVICES: Service[] = [
     steps: ["Database", "API", "Frontend", "Build · test · deploy"],
     ink: "concrete",
     doodle: "web",
+    delivers: [
+      "The database, the API and the interface, built together as one product.",
+      "A build, test and deploy pipeline, so every change ships the same way.",
+      "A live app on a real server — not a demo on a laptop.",
+    ],
+    tools: ["React.js", "Next.js", "TypeScript", "Tailwind CSS", "Vercel"],
+    seenIn: ["folium", "routine-dashboard", "graphforge"],
   },
   {
     title: "Backend engineering",
@@ -82,6 +108,13 @@ export const SERVICES: Service[] = [
     steps: ["Load balancing", "APIs", "Cache & database", "Workers · monitoring"],
     ink: "sage",
     doodle: "backend",
+    delivers: [
+      "RESTful APIs that validate every request, with JWT authentication.",
+      "A cache in front of the database, and queries that stay fast as data grows.",
+      "Background workers and scheduled jobs for everything that can wait.",
+    ],
+    tools: ["Node.js", "Express.js", "FastAPI", "PostgreSQL", "Oracle 21c XE"],
+    seenIn: ["focusflow", "bid-response-engine"],
   },
   {
     title: "Frontend development",
@@ -90,6 +123,13 @@ export const SERVICES: Service[] = [
     steps: ["Box model", "Layout & spacing", "Keyboard focus", "Contrast · WCAG"],
     ink: "sienna",
     doodle: "frontend",
+    delivers: [
+      "Layouts measured to the pixel, with spacing that follows one scale.",
+      "Every control reachable by keyboard, with a focus ring you can see.",
+      "Colours that pass WCAG contrast, and markup a screen reader understands.",
+    ],
+    tools: ["React.js", "TypeScript", "Tailwind CSS", "Figma", "Playwright"],
+    seenIn: ["graphforge", "routine-dashboard", "folium"],
   },
 ];
 

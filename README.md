@@ -74,6 +74,20 @@ the whole opening; see `Desk.module.css`.
 
 Everything respects `prefers-reduced-motion`.
 
+## What I do: the wallet
+
+The five kinds of work are cards tucked into a stitched sage wallet
+(`src/components/sections/ServiceWallet.tsx`, styled in `Wallet.module.css`). Pointed at, it
+opens and the cards fan up out of the pocket; the one under the pointer lifts clear. Naming
+one in the list beside it lifts its card too. On a phone the wallet starts open.
+
+Clicking a card opens it (`ServiceModal.tsx`): everything about the work on one side, and on
+the other its working drawing, rebuilt from the first portfolio's What I do in this one's
+style (`src/components/rigs/`): a model training, a system as a staircase of floors, a web
+app in layers shipped down a belt, a backend rack serving requests, and a page under a
+magnifying glass. Each draws itself as the card opens and then runs on its own clock
+(`kit.tsx`). The arrows, or ← and →, step to the next card; Escape closes it.
+
 ## Content
 
 Everything the site says is in `src/lib/content.ts` — profile, services, projects,

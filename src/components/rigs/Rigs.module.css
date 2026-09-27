@@ -1,0 +1,103 @@
+/*
+ * The running states of the What-I-do drawings. Their building is done by the
+ * desk's own classes (drawn, coloured in, lowered, dropped); what happens once
+ * they run is here: things light when they are used, fans turn, and overlays
+ * come and go as the clock moves.
+ */
+
+.rig {
+  --p: 0;
+  overflow: visible;
+}
+
+@media (scripting: none) {
+  .rig {
+    --p: 1;
+  }
+}
+
+/* names printed on the parts come in after the parts are coloured */
+.tag {
+  opacity: clamp(0, (var(--p) - 0.72) / 0.12, 1);
+}
+
+/* pipes and wires between the parts, run once the parts are standing */
+.pipes {
+  opacity: clamp(0, (var(--p) - 0.78) / 0.12, 1);
+}
+
+/* moving things are only there once it runs */
+.packet {
+  pointer-events: none;
+}
+
+/* a glow over a part, shown while the part is lit: sage, or sienna for a write, a miss or a backward pass */
+.glow {
+  fill: #d6e5c6;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+[data-lit] > .glow,
+[data-lit].glow {
+  opacity: 0.9;
+  transition-duration: 0.08s;
+}
+[data-lit="warm"] > .glow,
+[data-lit="warm"].glow {
+  fill: #f2c7b2;
+}
+
+/* a light on a part: off, then sage when lit, or sienna when lit for a write or a miss */
+.led {
+  fill: #b8bcb5;
+  transition: fill 0.15s ease-out;
+}
+[data-lit] .led,
+.led[data-lit] {
+  fill: #80966b;
+}
+[data-lit="warm"] .led,
+.led[data-lit="warm"] {
+  fill: #d0714c;
+}
+
+/* an overlay that comes and goes with the clock */
+.overlay {
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+.overlay[data-lit] {
+  opacity: 1;
+}
+
+/* a fan or a wheel, turning in its own plane */
+.spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 0.9s linear infinite;
+  animation-play-state: paused;
+}
+.running .spin {
+  animation-play-state: running;
+}
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
+
+/* a text caret, blinking in a focused field */
+.caret {
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
