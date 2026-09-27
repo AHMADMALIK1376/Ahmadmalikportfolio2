@@ -13,9 +13,9 @@ import styles from "./Ring.module.css";
 /**
  * Stuff I've built: the projects stood in a ring that turns.
  *
- * The ring turns slowly on its own, and stops while it is pointed at. It can be
- * dragged round and flung, or turned by the keyboard, which brings each card it
- * reaches to the front. The card at the front is named underneath. Clicking a
+ * The ring turns slowly on its own, and keeps turning under the pointer. It can
+ * be dragged round and flung, or turned by the keyboard, which brings each card
+ * it reaches to the front and holds it there while it is being read. The card at the front is named underneath. Clicking a
  * card opens it, with its working drawing.
  */
 
@@ -141,19 +141,14 @@ export default function Projects() {
       <div
         ref={stage}
         className={styles.stage}
-        onPointerEnter={(e) => {
-          if (e.pointerType === "mouse") spin.current.held = true;
-        }}
-        onPointerLeave={() => {
-          spin.current.held = false;
-          letGo();
-        }}
+        onPointerLeave={letGo}
         onPointerDown={grab}
         onPointerMove={pull}
         onPointerUp={letGo}
         onPointerCancel={letGo}
-        onFocus={() => {
-          spin.current.held = true;
+        onFocus={(e) => {
+          // only the keyboard holds the ring still; a click never does
+          spin.current.held = e.target.matches(":focus-visible");
         }}
         onBlur={() => {
           spin.current.held = false;
@@ -182,7 +177,7 @@ export default function Projects() {
                   <span className={styles.tagline}>{project.tagline}</span>
                 </span>
                 <span className={styles.bottom}>
-                  <span className="sketch-chip [--ink-fill:var(--color-paper-2)]">{project.stack[0]}</span>
+                  <span className={styles.chip}>{project.stack[0]}</span>
                   <span className={styles.open}>open ↗</span>
                 </span>
               </span>

@@ -96,8 +96,9 @@
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 0.85rem 0.9rem 0.8rem;
+  gap: 0.3rem;
+  padding: 0.75rem 0.8rem 0.7rem;
+  overflow: hidden;
 }
 
 .face::before {
@@ -131,40 +132,45 @@
 }
 
 .number {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 700;
   line-height: 1;
   color: var(--ink-text);
 }
 
 .kind {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
+  white-space: nowrap;
 }
 
 .icon {
-  width: 2.6rem;
-  height: 2rem;
-  margin-top: 0.3rem;
+  display: block;
+  width: 2rem;
+  height: 1.5rem;
   color: var(--ink-text);
 }
 
+/* the name and the line under it, never more than two lines each, so the card's foot always shows */
 .title {
-  font-size: 1rem;
+  font-size: 0.84rem;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .tagline {
-  margin-top: 0.3rem;
-  font-size: 0.66rem;
+  font-size: 0.6rem;
   line-height: 1.4;
   color: var(--color-muted);
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -174,11 +180,29 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.3rem;
-  font-size: 0.6rem;
+  margin-top: auto;
+  font-size: 0.55rem;
   font-weight: 700;
 }
 
+/* the first of the stack, as a small chip that shortens itself rather than spill */
+.chip {
+  min-width: 0;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.25em 0.6em;
+  border-radius: 1rem;
+  background: var(--color-paper-2);
+  box-shadow: rgb(45 47 43 / 0.4) 1.5px 1.5px 0 0.5px;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
 .open {
+  flex: none;
   color: var(--color-sienna-600);
   white-space: nowrap;
 }
@@ -211,22 +235,28 @@
 /* small screens: a little less on each card */
 @media (width < 40rem) {
   .face {
-    padding: 0.6rem 0.65rem;
+    gap: 0.2rem;
+    padding: 0.55rem 0.55rem 0.5rem;
   }
   .number {
-    font-size: 1rem;
+    font-size: 0.9rem;
+  }
+  .kind {
+    font-size: 0.42rem;
   }
   .title {
-    font-size: 0.78rem;
+    font-size: 0.66rem;
   }
   .tagline {
-    font-size: 0.56rem;
-    -webkit-line-clamp: 2;
+    font-size: 0.5rem;
   }
   .icon {
     display: none;
   }
   .bottom {
-    font-size: 0.52rem;
+    font-size: 0.46rem;
+  }
+  .chip {
+    font-size: 0.44rem;
   }
 }
