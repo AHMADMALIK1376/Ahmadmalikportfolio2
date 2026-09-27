@@ -13,9 +13,11 @@ import styles from "./Ring.module.css";
 /**
  * Stuff I've built: the projects stood in a ring that turns.
  *
- * The ring turns slowly on its own, and keeps turning under the pointer. It can
- * be dragged round and flung, or turned by the keyboard, which brings each card
- * it reaches to the front and holds it there while it is being read. The card at the front is named underneath. Clicking a
+ * The ring turns slowly on its own, and keeps turning under the pointer. A
+ * sideways swipe on a trackpad (or shift and the wheel) spins it, easing into
+ * the swipe and gliding on after it; it can be dragged round and flung; and the
+ * keyboard brings each card it reaches to the front and holds it there while it
+ * is being read. Scrolling up and down still scrolls the page. The card at the front is named underneath. Clicking a
  * card opens it, with its working drawing.
  */
 
@@ -34,7 +36,20 @@ const turnTo = (i: number, angle: number) => {
   return angle + ((((want - angle) % 360) + 540) % 360) - 180;
 };
 
-type Spin = { angle: number; speed: number; target: number | null; held: boolean; drag: null | { x: number; t: number; moved: number } };
+type Spin = {
+  angle: number;
+  speed: number;
+  target: number | null;
+  held: boolean;
+  drag: null | { x: number; t: number; moved: number };
+  /** turn still owed by a swipe, eased in over the next few frames */
+  owed: number;
+  /** when the last swipe arrived, and how fast it was turning the ring */
+  swipedAt: number;
+  swipeSpeed: number;
+};
+/** Degrees the ring turns for each pixel a swipe moves. */
+const PER_PIXEL = 0.2;
 
 export default function Projects() {
   const [front, setFront] = useState(0);
@@ -45,7 +60,7 @@ export default function Projects() {
   const opener = useRef<HTMLElement | null>(null);
   const dragged = useRef(false);
   // the ring's motion, kept out of React: where it is, how fast it turns, where it is going, and whether it is held
-  const spin = useRef<Spin>({ angle: 0, speed: AUTO, target: null, held: false, drag: null });
+  const spin = useRef<Spin>({ angle: 0, speed: AUTO, target: null, held: false, drag: null, owed: 0, swipedAt: 0, swipeSpeed: 0 });
   const isOpen = useRef(false);
   useEffect(() => {
     isOpen.current = open !== null;
@@ -61,8 +76,20 @@ export default function Projects() {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const s = spin.current;
+      const swiping = now - s.swipedAt < 140;
       if (s.drag) {
         // the pointer has it
+      } else if (s.owed || swiping) {
+        // a swipe has it: turn by what it owes, smoothly, and when it ends, glide on at its speed
+        const step = s.owed * (1 - Math.exp(-dt * 14));
+        s.angle += step;
+        s.owed -= step;
+        if (Math.abs(s.owed) < 0.01) s.owed = 0;
+        s.speed = 0;
+        if (!swiping && !s.owed) {
+          s.speed = Math.max(-260, Math.min(260, s.swipeSpeed * 0.6));
+          s.swipeSpeed = 0;
+        }
       } else if (s.target !== null) {
         s.angle = reduce ? s.target : s.angle + (s.target - s.angle) * (1 - Math.exp(-dt * 9));
         if (Math.abs(s.target - s.angle) < 0.05) {
@@ -85,6 +112,28 @@ export default function Projects() {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // a sideways swipe turns the ring; an up-and-down one is left to scroll the page. It is listened
+  // for directly, not through React, so it can stop the browser treating the swipe as "go back"
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      const s = spin.current;
+      const pixels = event.deltaMode === 1 ? event.deltaX * 16 : event.deltaX;
+      const turn = -pixels * PER_PIXEL;
+      const now = performance.now();
+      const since = Math.max(16, now - (s.swipedAt || now - 16)) / 1000;
+      s.swipeSpeed = s.swipeSpeed * 0.6 + (turn / since) * 0.4;
+      s.owed += turn;
+      s.swipedAt = now;
+      s.target = null;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
   const bring = (i: number) => {

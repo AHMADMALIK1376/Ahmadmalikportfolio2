@@ -20,6 +20,8 @@
   perspective: 1900px;
   perspective-origin: 50% 30%;
   touch-action: pan-y;
+  /* a sideways swipe over the ring spins it, rather than going back a page */
+  overscroll-behavior-x: contain;
   cursor: grab;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
