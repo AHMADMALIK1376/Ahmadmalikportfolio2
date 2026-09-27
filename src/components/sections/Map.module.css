@@ -1,138 +1,121 @@
 /*
- * The experience map: the land as an SVG, with the places laid over it as
- * buttons, each at its own point in percent of the map. A pin's tip sits on
- * its point; its road sign stands on a post above it, green for the places on
- * the road and brown, like a tourist sign, for the landmarks.
- *
- * The section is tall, and the map is pinned inside it: while the section
- * scrolls past, the map stays on the screen and the scrolling drives the van.
+ * The experience map: a long sheet of land laid across the whole width of the
+ * page, drawn as one SVG the size of the sheet, with the stops set in the
+ * page's usual column over it. Each stop is a row: a pin standing on the road
+ * at --x across the column, and its card on the far side of the pin, which
+ * pops up once the van has reached it. The van and the inked road behind it
+ * are moved by the script as the page scrolls.
  */
 
-.track {
+.sheet {
+  --pin: 2.2rem;
   position: relative;
-  height: calc(100svh + var(--stops) * 52svh);
+  margin-top: 1.5rem;
 }
 
-.pinned {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100svh;
-  padding-block: 1rem;
-}
-
-/* the heading and the map, as wide as fits: the whole width, unless the screen is too short for it */
-.stage {
-  width: min(100%, calc((100svh - 11rem) * 800 / 440 + 1rem));
-  margin-inline: auto;
-}
-
-.map {
-  --pin: 2.15rem;
-}
-
-.canvas {
-  position: relative;
-  aspect-ratio: 800 / 440;
-}
-
-.art {
+.land {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
   display: block;
-  width: 100%;
-  height: 100%;
+  pointer-events: none;
 }
 
-.stops {
+/* the road behind the van, inked in over the pencil */
+.inked {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-/* ── a place: a point with no size, that its pin and sign hang off ─────── */
-
-.stop {
+.inked svg {
   position: absolute;
-  width: 0;
-  height: 0;
-  z-index: 1;
+  left: 0;
+  top: 0;
 }
 
-.stop[data-on] {
-  z-index: 3;
+.column {
+  position: relative;
+  padding-top: 9.5rem;
+  padding-bottom: 11rem;
+}
+
+/* the title of the map, in its cartouche */
+.cartouche {
+  position: absolute;
+  left: 1rem;
+  top: 2.6rem;
+  padding: 0.75rem 1.1rem 0.7rem;
+  border-radius: 0.9rem;
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-ink) 3px 3px 0 1px;
+  filter: url(#sketchChip);
+}
+
+.cartoucheRule {
+  display: block;
+  height: 2px;
+  margin: 0.3rem 0 0.35rem;
+  border-radius: 2px;
+  background: var(--color-sienna-500);
+}
+
+@media (width >= 40rem) {
+  .cartouche {
+    left: 2rem;
+  }
+}
+
+.stops {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── a stop: its pin on the road, and its card on the far side ─────────── */
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-height: 21rem;
+  padding: 2.4rem 0;
 }
 
 .pin {
   position: absolute;
-  left: 0;
-  top: 0;
+  z-index: 3;
+  left: var(--x);
+  top: 5.3rem;
   width: calc(var(--pin) * 0.78);
   height: var(--pin);
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
-  pointer-events: auto;
   translate: -50% -100%;
-  transform-origin: 50% 100%;
   filter: url(#sketchChip) drop-shadow(2px 2px 0 rgb(45 47 43 / 0.35));
   transition:
     translate 0.3s var(--ease-sketch),
     scale 0.3s var(--ease-sketch);
 }
 
-/* a flag stands on its pole, a fifth of the way across */
-.stop:not([data-road]) .pin {
-  translate: -21% -100%;
-}
-
 .pin:hover {
   translate: -50% calc(-100% - 5px);
 }
 
-.stop:not([data-road]) .pin:hover {
-  translate: -21% calc(-100% - 5px);
+.pin[data-reached] {
+  scale: 1.12;
 }
 
-.stop[data-active] .pin {
-  scale: 1.18;
-}
-
-/* pins drop onto the map as the road reaches them */
-.map .pin {
-  opacity: 0;
-}
-
-.map[data-in] .pin {
-  animation: drop 0.65s var(--ease-sketch) var(--d, 0s) both;
-}
-
-@keyframes drop {
-  from {
-    opacity: 0;
-    transform: translateY(-26px) scale(0.6);
-  }
-  55% {
-    opacity: 1;
-    transform: translateY(2px) scale(1.06, 0.94);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* the chosen place: a ring spreading out on the ground */
-.stop[data-active]::before {
+/* the place the van has reached: a ring spreading out under its pin */
+.pin[data-reached]::after {
   content: "";
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 1.7rem;
-  height: 0.75rem;
+  left: 50%;
+  top: 100%;
+  width: 1.8rem;
+  height: 0.8rem;
   translate: -50% -50%;
   border: 2px solid var(--color-sienna-500);
   border-radius: 50%;
@@ -140,7 +123,7 @@
   pointer-events: none;
 }
 
-.stop[data-active]:not([data-road])::before {
+.pin:not([data-road])[data-reached]::after {
   border-color: var(--color-sage-600);
 }
 
@@ -170,362 +153,188 @@
   }
 }
 
-/* ── the road sign ─────────────────────────────────────────────────────── */
-
-.sign {
-  --sign: var(--color-sage-600);
-  --shift: -50%;
-  --post: 50%;
-  position: absolute;
-  left: 0;
-  bottom: calc(var(--pin) * 1.18 + 0.5rem);
-  display: flex;
-  align-items: center;
-  gap: 0.4em;
-  padding: 0.5em 0.75em 0.48em 0.55em;
-  border-radius: 0.45rem;
-  background: var(--sign);
-  color: var(--color-paper-2);
-  box-shadow:
-    inset 0 0 0 2px var(--sign),
-    inset 0 0 0 3.5px rgb(244 244 240 / 0.85),
-    rgb(45 47 43 / 0.4) 3px 3px 0 1px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  translate: var(--shift) 0;
-  pointer-events: none;
-  animation: sign-up 0.34s var(--ease-sketch) both;
-}
-
-.sign[data-kind="landmark"] {
-  --sign: var(--color-sienna-600);
-}
-
-.sign[data-align="start"] {
-  --shift: -14%;
-  --post: 14%;
-}
-
-.sign[data-align="end"] {
-  --shift: -86%;
-  --post: 86%;
-}
-
-/* its post, down to the pin */
-.sign::after {
-  content: "";
-  position: absolute;
-  left: var(--post);
-  top: 100%;
-  width: 2px;
-  height: 0.5rem;
-  translate: -50% 0;
-  background: var(--color-concrete-600);
-}
-
-.sign[data-side="below"] {
-  bottom: auto;
-  top: 0.55rem;
-  animation-name: sign-down;
-}
-
-.sign[data-side="below"]::after {
-  top: auto;
-  bottom: 100%;
-}
-
-@keyframes sign-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.85);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes sign-down {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.85);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* the sign's picture: slides in on the road, grows up out of the ground on a landmark */
-.signIcon {
-  display: grid;
-  overflow: hidden;
-  width: 1.15em;
-  height: 1.15em;
-}
-
-.signIcon svg {
-  width: 100%;
-  height: 100%;
-  animation: slide-in 0.5s ease-out 0.08s both;
-}
-
-.sign[data-kind="landmark"] .signIcon svg {
-  animation: grow 0.55s ease-in 0.08s both;
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(-200%);
-  }
-  to {
-    transform: none;
-  }
-}
-
-@keyframes grow {
-  0% {
-    transform: translate(0, 200%);
-  }
-  20% {
-    transform: translate(-10%, 160%);
-  }
-  40% {
-    transform: translate(12%, 120%);
-  }
-  60% {
-    transform: translate(-12%, 80%);
-  }
-  80% {
-    transform: translate(5%, 40%);
-  }
-  100% {
-    transform: none;
-  }
-}
-
+/* on the side of the pin away from its card */
 .here {
   position: absolute;
-  left: 0.45rem;
-  top: 0.3rem;
-  font-size: 0.58rem;
+  z-index: 3;
+  right: calc(100% - var(--x) + 1rem);
+  top: 4.4rem;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   white-space: nowrap;
   color: var(--color-sienna-600);
   rotate: -4deg;
+}
+
+/* ── the card, popped up on the map beside its stop ─────────────────────── */
+
+.card {
+  position: relative;
+  z-index: 4;
+  width: min(21.5rem, calc(50% - 6rem));
+  padding: 1.05rem 1.15rem 1.1rem;
   opacity: 0;
-  transition: opacity 0.4s ease 0.3s;
-}
-
-.map[data-in] .here {
-  opacity: 1;
-  transition-delay: 2.4s;
-}
-
-/* each place's name, written on the map beside it, as towns are */
-.label {
-  position: absolute;
-  top: calc(var(--pin) * -0.66);
-  translate: 0 -50%;
-  font-size: 0.56rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--color-concrete-700);
-  text-shadow:
-    0 0 2px #e8ebe1,
-    0 0 3px #e8ebe1,
-    0 0 4px #e8ebe1;
-  pointer-events: none;
-  animation: label-in 0.4s ease both;
-}
-
-.label[data-label="right"] {
-  left: calc(var(--pin) * 0.5);
-}
-
-.label[data-label="left"] {
-  right: calc(var(--pin) * 0.5);
-}
-
-.stop:not([data-road]) .label[data-label="right"] {
-  left: calc(var(--pin) * 0.62);
-}
-
-.stop:not([data-road]) .label[data-label="left"] {
-  right: calc(var(--pin) * 0.3);
-}
-
-.label[data-label="above"] {
-  top: calc(var(--pin) * -1.18 - 0.55rem);
-  left: 0;
-  translate: -50% 0;
-}
-
-.stop:not([data-road]) .label[data-label="above"] {
-  left: calc(var(--pin) * 0.26);
-}
-
-.label[data-label="below"] {
-  top: 0.55rem;
-  left: 0;
-  translate: -50% 0;
-}
-
-/* names wait for their pins */
-.map .label {
-  opacity: 0;
-}
-
-.map[data-in] .label {
-  animation: label-in 0.4s ease calc(var(--d, 0s) + 0.35s) both;
-}
-
-@keyframes label-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* ── where the road goes next ──────────────────────────────────────────── */
-
-.next {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: var(--color-paper-2);
-  border: 1.5px dashed var(--color-concrete-500);
-  color: var(--color-concrete-600);
-  font-size: 0.72rem;
-  font-weight: 700;
-  pointer-events: auto;
+  scale: 0.35;
+  translate: 0 12px;
   transition:
-    scale 0.3s var(--ease-sketch),
-    border-color 0.3s ease,
-    color 0.3s ease;
+    opacity 0.3s ease,
+    scale 0.55s var(--ease-sketch),
+    translate 0.55s var(--ease-sketch);
 }
 
-.next:hover,
-.next:focus-visible {
-  scale: 1.15;
-  border-color: var(--color-sienna-500);
-  color: var(--color-sienna-600);
+.row[data-side="right"] .card {
+  width: min(21.5rem, calc(100% - var(--x) - 4rem));
+  margin-left: calc(var(--x) + 3rem);
+  transform-origin: 0 1.6rem;
 }
 
-.nextSign {
-  position: absolute;
-  right: -0.2rem;
-  top: calc(100% + 0.45rem);
-  padding: 0.45em 0.7em;
-  border-radius: 0.45rem;
-  background: var(--color-paper-2);
-  box-shadow: rgb(45 47 43 / 0.4) 3px 3px 0 1px;
-  border: 1.5px dashed var(--color-sienna-500);
-  color: var(--color-sienna-600);
-  font-size: 0.64rem;
-  white-space: nowrap;
-  opacity: 0;
-  translate: 0 -4px;
-  pointer-events: none;
-  transition:
-    opacity 0.25s ease,
-    translate 0.25s ease;
+.row[data-side="left"] .card {
+  width: min(21.5rem, calc(var(--x) - 4rem));
+  margin-left: auto;
+  margin-right: calc(100% - var(--x) + 3rem);
+  transform-origin: 100% 1.6rem;
 }
 
-.next:hover .nextSign,
-.next:focus-visible .nextSign {
+.card[data-shown] {
   opacity: 1;
+  scale: 1;
   translate: 0 0;
 }
 
-/* ── the drawing's moving parts ────────────────────────────────────────── */
-
-.start {
-  opacity: 0;
-  transition: opacity 0.5s ease 0.1s;
-}
-
-.map[data-in] .start {
-  opacity: 1;
-}
-
-.future {
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-
-.map[data-in] .future {
-  opacity: 1;
-  transition-delay: 2.2s;
-}
-
-/* the van, in a layer of its own the size of the map, slid to its place by its translate */
-.van {
+/* its point, towards the pin */
+.tail {
   position: absolute;
-  inset: 0;
-  z-index: 2;
+  top: 1.6rem;
+  z-index: -1;
+  width: 0.95rem;
+  height: 0.95rem;
+  background: var(--color-paper-2);
+  border: 1.5px solid rgb(45 47 43 / 0.55);
+  translate: 0 -50%;
+  rotate: 45deg;
+}
+
+.row[data-side="right"] .tail {
+  left: -0.5rem;
+  border-top: 0;
+  border-right: 0;
+}
+
+.row[data-side="left"] .tail {
+  right: -0.5rem;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.stamp {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 4.1rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-sienna-500);
+  outline: 1.2px solid var(--color-sienna-500);
+  outline-offset: -6px;
+  color: var(--color-sienna-500);
+  font-size: 0.44rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  mix-blend-mode: multiply;
+  filter: url(#handDrawnNoise);
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.4s ease;
-  will-change: translate;
+  rotate: -30deg;
+  scale: 1.6;
 }
 
-/* it waits for the road to be drawn before it shows */
-.map[data-in] .van {
-  opacity: 1;
-  transition-delay: 1.9s;
+/* the stamp thumps on just after the card opens */
+.card[data-shown] .stamp {
+  opacity: 0.9;
+  rotate: -12deg;
+  scale: 1;
+  transition:
+    opacity 0.2s ease 0.25s,
+    rotate 0.45s var(--ease-sketch) 0.25s,
+    scale 0.45s var(--ease-sketch) 0.25s;
 }
 
-.vanBody {
+.stamp strong {
+  margin: 0.08rem 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── the van, and where the road goes next ─────────────────────────────── */
+
+.van {
   position: absolute;
   left: 0;
   top: 0;
-  width: 3.4%;
+  z-index: 2;
+  width: 2.5rem;
   aspect-ratio: 26 / 16;
-  translate: -50% -50%;
-  animation: idle 0.9s ease-in-out infinite alternate;
+  margin: -0.77rem 0 0 -1.25rem;
+  pointer-events: none;
+  will-change: transform;
 }
 
-.vanBody svg {
+.van svg {
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.vanBody[data-driving] {
-  animation: rattle 0.18s linear infinite alternate;
+.end {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4rem;
+  display: flex;
+  justify-content: center;
 }
 
-@keyframes idle {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-0.4px);
-  }
+.next {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem 0.55rem 0.55rem;
+  border-radius: 2rem;
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-ink) 3px 3px 0 1px;
+  filter: url(#sketchChip);
+  color: var(--color-sienna-600);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition:
+    translate 0.25s var(--ease-sketch),
+    box-shadow 0.25s ease;
 }
 
-@keyframes rattle {
-  from {
-    transform: translateY(-0.5px) rotate(-1deg);
-  }
-  to {
-    transform: translateY(0.5px) rotate(1deg);
-  }
+.next:hover {
+  translate: -1px -2px;
+  box-shadow: var(--shadow-ink) 4px 5px 0 1px;
 }
+
+.nextMark {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  border: 1.5px dashed var(--color-sienna-500);
+  font-size: 0.85rem;
+}
+
+/* ── the drawing's moving parts ────────────────────────────────────────── */
 
 .waves path {
   animation: lap 3.2s ease-in-out infinite alternate;
@@ -555,163 +364,44 @@
   }
 }
 
-.cloud {
-  animation: drift 80s linear infinite;
-}
-
-@keyframes drift {
-  from {
-    transform: translateX(200px);
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  to {
-    transform: translateX(650px);
-    opacity: 0;
-  }
-}
-
-/* ── the card of the place the van is at ───────────────────────────────── */
-
-/* on the map, beside its pin, pointing at it */
-.log {
-  position: absolute;
-  z-index: 6;
-  width: 20.5rem;
-  padding: 1.05rem 1.15rem 1.1rem;
-}
-
-.tail {
-  position: absolute;
-  top: var(--tail);
-  z-index: -1;
-  width: 0.95rem;
-  height: 0.95rem;
-  background: var(--color-paper-2);
-  border: 1.5px solid rgb(45 47 43 / 0.55);
-  translate: 0 -50%;
-  rotate: 45deg;
-}
-
-.log[data-side="right"] .tail {
-  left: -0.5rem;
-  border-top: 0;
-  border-right: 0;
-}
-
-.log[data-side="left"] .tail {
-  right: -0.5rem;
-  border-bottom: 0;
-  border-left: 0;
-}
-
-/* on a phone, under the map */
-.under {
-  position: relative;
-  min-height: 15.5rem;
-  margin-top: 0.8rem;
-}
-
-.under .log {
-  position: relative;
-  width: auto;
-}
-
-.stamp {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.75rem;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  width: 4.1rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 2.5px solid var(--color-sienna-500);
-  outline: 1.2px solid var(--color-sienna-500);
-  outline-offset: -6px;
-  color: var(--color-sienna-500);
-  font-size: 0.44rem;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: 0.08em;
-  text-align: center;
-  text-transform: uppercase;
-  mix-blend-mode: multiply;
-  filter: url(#handDrawnNoise);
-  pointer-events: none;
-}
-
-.stamp strong {
-  margin: 0.08rem 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-}
-
-/* a nudge to start scrolling, until the van has set off */
-.hint {
-  position: absolute;
-  left: 50%;
-  bottom: 0.8rem;
-  z-index: 3;
-  padding: 0.4em 0.85em;
-  border-radius: 2rem;
-  background: var(--color-paper-2);
-  box-shadow: var(--shadow-ink) 2px 2px 0 1px;
-  color: var(--color-sienna-600);
-  font-size: 0.66rem;
-  font-weight: 700;
-  translate: -50% 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  animation: nudge 1.6s ease-in-out infinite;
-}
-
-.hint[data-hidden] {
-  opacity: 0;
-}
-
-@keyframes nudge {
-  50% {
-    transform: translateY(3px);
-  }
-}
-
-/* ── smaller screens ───────────────────────────────────────────────────── */
+/* ── on a phone: the road down the left, and the cards beside it ───────── */
 
 @media (width < 48rem) {
-  .track {
-    height: calc(100svh + var(--stops) * 44svh);
+  .sheet {
+    --pin: 1.8rem;
   }
-}
-
-@media (width < 40rem) {
-  .map {
-    --pin: 1.35rem;
+  .column {
+    padding-top: 8.5rem;
+    padding-bottom: 9rem;
   }
-  .hint {
-    font-size: 0.56rem;
+  .row {
+    min-height: 0;
+    padding: 1.3rem 0 1.3rem 3.1rem;
   }
-  .sign {
-    font-size: 0.47rem;
+  .pin {
+    left: 1.35rem;
+    top: 3.9rem;
+  }
+  .row[data-side] .card {
+    flex: 1;
+    width: auto;
+    margin: 0;
+    transform-origin: 0 1.6rem;
+  }
+  .row[data-side] .tail {
+    left: -0.5rem;
+    right: auto;
+    border: 1.5px solid rgb(45 47 43 / 0.55);
+    border-top: 0;
+    border-right: 0;
   }
   .here {
-    display: none;
+    right: auto;
+    left: 0.2rem;
+    top: 4.3rem;
+    font-size: 0.5rem;
   }
-  .next {
-    width: 1.05rem;
-    height: 1.05rem;
-    font-size: 0.6rem;
-  }
-  .nextSign {
-    font-size: 0.52rem;
-  }
-  .log {
+  .card {
     padding: 0.9rem 1rem 0.95rem;
   }
   .stamp {
@@ -722,30 +412,19 @@
     outline-offset: -5px;
   }
   .stamp strong {
-    font-size: 0.7rem;
-  }
-  .label {
-    font-size: 0.42rem;
-    letter-spacing: 0.08em;
+    font-size: 0.66rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .map .pin {
-    opacity: 1;
-    animation: none;
-  }
   .cloth,
   .waves path,
   .boat,
-  .cloud,
-  .vanBody,
-  .hint,
-  .stop[data-active]::before {
+  .pin[data-reached]::after {
     animation: none;
   }
-  .sign,
-  .signIcon svg {
-    animation-duration: 0.01s;
+  .card,
+  .card .stamp {
+    transition-duration: 0.01s;
   }
 }
