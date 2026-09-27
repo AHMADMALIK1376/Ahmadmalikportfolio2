@@ -1,0 +1,773 @@
+/*
+ * The experience map: the land as an SVG, with the places laid over it as
+ * buttons, each at its own point in percent of the map. A pin's tip sits on
+ * its point; its road sign stands on a post above it (or hangs below), green
+ * for the places on the road and brown, like a tourist sign, for the landmarks.
+ */
+
+.map {
+  --pin: 2.15rem;
+}
+
+.canvas {
+  position: relative;
+  aspect-ratio: 8 / 5;
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stops {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* ── a place: a point with no size, that its pin and sign hang off ─────── */
+
+.stop {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 1;
+}
+
+.stop[data-on] {
+  z-index: 3;
+}
+
+.pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(var(--pin) * 0.78);
+  height: var(--pin);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  translate: -50% -100%;
+  transform-origin: 50% 100%;
+  filter: url(#sketchChip) drop-shadow(2px 2px 0 rgb(45 47 43 / 0.35));
+  transition:
+    translate 0.3s var(--ease-sketch),
+    scale 0.3s var(--ease-sketch);
+}
+
+/* a flag stands on its pole, a fifth of the way across */
+.stop:not([data-road]) .pin {
+  translate: -21% -100%;
+}
+
+.pin:hover {
+  translate: -50% calc(-100% - 5px);
+}
+
+.stop:not([data-road]) .pin:hover {
+  translate: -21% calc(-100% - 5px);
+}
+
+.stop[data-active] .pin {
+  scale: 1.18;
+}
+
+/* pins drop onto the map as the road reaches them */
+.map .pin {
+  opacity: 0;
+}
+
+.map[data-in] .pin {
+  animation: drop 0.65s var(--ease-sketch) var(--d, 0s) both;
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.6);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.06, 0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* the chosen place: a ring spreading out on the ground */
+.stop[data-active]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.7rem;
+  height: 0.75rem;
+  translate: -50% -50%;
+  border: 2px solid var(--color-sienna-500);
+  border-radius: 50%;
+  animation: ripple 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+.stop[data-active]:not([data-road])::before {
+  border-color: var(--color-sage-600);
+}
+
+@keyframes ripple {
+  from {
+    opacity: 0.9;
+    scale: 0.35;
+  }
+  to {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+.cloth {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: flap 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes flap {
+  from {
+    transform: skewY(-5deg) scaleX(1);
+  }
+  to {
+    transform: skewY(4deg) scaleX(0.9);
+  }
+}
+
+/* ── the road sign ─────────────────────────────────────────────────────── */
+
+.sign {
+  --sign: var(--color-sage-600);
+  --shift: -50%;
+  --post: 50%;
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--pin) * 1.18 + 0.5rem);
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.5em 0.75em 0.48em 0.55em;
+  border-radius: 0.45rem;
+  background: var(--sign);
+  color: var(--color-paper-2);
+  box-shadow:
+    inset 0 0 0 2px var(--sign),
+    inset 0 0 0 3.5px rgb(244 244 240 / 0.85),
+    rgb(45 47 43 / 0.4) 3px 3px 0 1px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  translate: var(--shift) 0;
+  pointer-events: none;
+  animation: sign-up 0.34s var(--ease-sketch) both;
+}
+
+.sign[data-kind="landmark"] {
+  --sign: var(--color-sienna-600);
+}
+
+.sign[data-align="start"] {
+  --shift: -14%;
+  --post: 14%;
+}
+
+.sign[data-align="end"] {
+  --shift: -86%;
+  --post: 86%;
+}
+
+/* its post, down to the pin */
+.sign::after {
+  content: "";
+  position: absolute;
+  left: var(--post);
+  top: 100%;
+  width: 2px;
+  height: 0.5rem;
+  translate: -50% 0;
+  background: var(--color-concrete-600);
+}
+
+.sign[data-side="below"] {
+  bottom: auto;
+  top: 0.55rem;
+  animation-name: sign-down;
+}
+
+.sign[data-side="below"]::after {
+  top: auto;
+  bottom: 100%;
+}
+
+@keyframes sign-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sign-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* the sign's picture: slides in on the road, grows up out of the ground on a landmark */
+.signIcon {
+  display: grid;
+  overflow: hidden;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.signIcon svg {
+  width: 100%;
+  height: 100%;
+  animation: slide-in 0.5s ease-out 0.08s both;
+}
+
+.sign[data-kind="landmark"] .signIcon svg {
+  animation: grow 0.55s ease-in 0.08s both;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-200%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes grow {
+  0% {
+    transform: translate(0, 200%);
+  }
+  20% {
+    transform: translate(-10%, 160%);
+  }
+  40% {
+    transform: translate(12%, 120%);
+  }
+  60% {
+    transform: translate(-12%, 80%);
+  }
+  80% {
+    transform: translate(5%, 40%);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.here {
+  position: absolute;
+  left: 0.45rem;
+  top: 0.3rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--color-sienna-600);
+  rotate: -4deg;
+  opacity: 0;
+  transition: opacity 0.4s ease 0.3s;
+}
+
+.map[data-in] .here {
+  opacity: 1;
+  transition-delay: 2.4s;
+}
+
+/* each place's name, written on the map beside it, as towns are */
+.label {
+  position: absolute;
+  top: calc(var(--pin) * -0.66);
+  translate: 0 -50%;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-concrete-700);
+  text-shadow:
+    0 0 2px #e8ebe1,
+    0 0 3px #e8ebe1,
+    0 0 4px #e8ebe1;
+  pointer-events: none;
+  animation: label-in 0.4s ease both;
+}
+
+.label[data-label="right"] {
+  left: calc(var(--pin) * 0.5);
+}
+
+.label[data-label="left"] {
+  right: calc(var(--pin) * 0.5);
+}
+
+.stop:not([data-road]) .label[data-label="right"] {
+  left: calc(var(--pin) * 0.62);
+}
+
+.stop:not([data-road]) .label[data-label="left"] {
+  right: calc(var(--pin) * 0.3);
+}
+
+.label[data-label="above"] {
+  top: calc(var(--pin) * -1.18 - 0.55rem);
+  left: 0;
+  translate: -50% 0;
+}
+
+.stop:not([data-road]) .label[data-label="above"] {
+  left: calc(var(--pin) * 0.26);
+}
+
+.label[data-label="below"] {
+  top: 0.55rem;
+  left: 0;
+  translate: -50% 0;
+}
+
+/* names wait for their pins */
+.map .label {
+  opacity: 0;
+}
+
+.map[data-in] .label {
+  animation: label-in 0.4s ease calc(var(--d, 0s) + 0.35s) both;
+}
+
+@keyframes label-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── where the road goes next ──────────────────────────────────────────── */
+
+.next {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--color-paper-2);
+  border: 1.5px dashed var(--color-concrete-500);
+  color: var(--color-concrete-600);
+  font-size: 0.72rem;
+  font-weight: 700;
+  pointer-events: auto;
+  transition:
+    scale 0.3s var(--ease-sketch),
+    border-color 0.3s ease,
+    color 0.3s ease;
+}
+
+.next:hover,
+.next:focus-visible {
+  scale: 1.15;
+  border-color: var(--color-sienna-500);
+  color: var(--color-sienna-600);
+}
+
+.nextSign {
+  position: absolute;
+  right: -0.2rem;
+  top: calc(100% + 0.45rem);
+  padding: 0.45em 0.7em;
+  border-radius: 0.45rem;
+  background: var(--color-paper-2);
+  box-shadow: rgb(45 47 43 / 0.4) 3px 3px 0 1px;
+  border: 1.5px dashed var(--color-sienna-500);
+  color: var(--color-sienna-600);
+  font-size: 0.64rem;
+  white-space: nowrap;
+  opacity: 0;
+  translate: 0 -4px;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    translate 0.25s ease;
+}
+
+.next:hover .nextSign,
+.next:focus-visible .nextSign {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* ── the drawing's moving parts ────────────────────────────────────────── */
+
+.start {
+  opacity: 0;
+  transition: opacity 0.5s ease 0.1s;
+}
+
+.map[data-in] .start {
+  opacity: 1;
+}
+
+.future {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.map[data-in] .future {
+  opacity: 1;
+  transition-delay: 2.2s;
+}
+
+.van {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* the van waits for the road to be drawn before it shows */
+.map[data-in] .van {
+  opacity: 1;
+  transition-delay: 2.45s;
+}
+
+.vanBody {
+  animation: idle 0.9s ease-in-out infinite alternate;
+}
+
+.van[data-driving] .vanBody {
+  animation: rattle 0.18s linear infinite alternate;
+}
+
+@keyframes idle {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-0.4px);
+  }
+}
+
+@keyframes rattle {
+  from {
+    transform: translateY(-0.5px) rotate(-1deg);
+  }
+  to {
+    transform: translateY(0.5px) rotate(1deg);
+  }
+}
+
+.waves path {
+  animation: lap 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes lap {
+  from {
+    transform: translateX(-2.5px);
+  }
+  to {
+    transform: translateX(2.5px);
+  }
+}
+
+.boat {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: bob 3.4s ease-in-out infinite alternate;
+}
+
+@keyframes bob {
+  from {
+    transform: rotate(-5deg) translateY(0);
+  }
+  to {
+    transform: rotate(5deg) translateY(1.5px);
+  }
+}
+
+.cloud {
+  animation: drift 80s linear infinite;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(200px);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(650px);
+    opacity: 0;
+  }
+}
+
+/* ── the log, and its stamp ────────────────────────────────────────────── */
+
+.log {
+  display: flex;
+  flex-direction: column;
+  min-height: 19rem;
+  padding: 1.3rem 1.4rem 1.05rem;
+}
+
+@media (width >= 64rem) {
+  .log {
+    min-height: 22.5rem;
+  }
+}
+
+/* beside the map on a wide screen: exactly as tall as the map */
+@media (width >= 80rem) {
+  .log {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+.page {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* the stop's picture, large and faint in the corner of the page */
+.doodle {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.2rem;
+  width: 5.2rem;
+  height: 5.2rem;
+  fill: none;
+  stroke: var(--color-concrete-300);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  rotate: -8deg;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1.5px dashed rgb(45 47 43 / 0.18);
+}
+
+.stamp {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.9rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 4.6rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2.5px solid var(--color-sienna-500);
+  outline: 1.2px solid var(--color-sienna-500);
+  outline-offset: -7px;
+  color: var(--color-sienna-500);
+  font-size: 0.48rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  mix-blend-mode: multiply;
+  filter: url(#handDrawnNoise);
+  pointer-events: none;
+}
+
+.stamp strong {
+  margin: 0.08rem 0;
+  font-size: 0.86rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── the row of stops, joined by a little road ──────────────────────── */
+
+.steps {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.steps::before {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  top: 50%;
+  border-top: 2px dashed var(--color-sienna-300);
+  z-index: -1;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-ink) 1.5px 1.5px 0 1px;
+  filter: url(#sketchChip);
+  color: var(--color-sienna-600);
+  font-size: 0.66rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    scale 0.25s var(--ease-sketch),
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.step:not([data-road]) {
+  color: var(--color-sage-600);
+}
+
+.step:hover {
+  scale: 1.12;
+}
+
+.step[aria-pressed="true"] {
+  scale: 1.15;
+  background: var(--color-sienna-500);
+  color: var(--color-paper-2);
+}
+
+.step:not([data-road])[aria-pressed="true"] {
+  background: var(--color-sage-500);
+}
+
+.replay {
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--color-sienna-600);
+  cursor: pointer;
+}
+
+.replay:hover:not(:disabled) {
+  text-decoration: underline wavy;
+  text-underline-offset: 4px;
+}
+
+.replay:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+/* ── smaller screens ───────────────────────────────────────────────────── */
+
+@media (width < 40rem) {
+  .map {
+    --pin: 1.35rem;
+  }
+  .sign {
+    font-size: 0.47rem;
+  }
+  .here {
+    left: 0.25rem;
+    font-size: 0.42rem;
+    letter-spacing: 0;
+  }
+  .next {
+    width: 1.05rem;
+    height: 1.05rem;
+    font-size: 0.6rem;
+  }
+  .nextSign {
+    font-size: 0.52rem;
+  }
+  .log {
+    padding: 1rem 1.05rem 0.85rem;
+  }
+  .stamp {
+    top: 0.6rem;
+    right: 0.6rem;
+    width: 3.4rem;
+    font-size: 0.4rem;
+    outline-offset: -5px;
+  }
+  .stamp strong {
+    font-size: 0.7rem;
+  }
+  .label {
+    font-size: 0.42rem;
+    letter-spacing: 0.08em;
+  }
+  .log {
+    min-height: 0;
+  }
+  .page {
+    min-height: 13rem;
+  }
+  .doodle {
+    display: none;
+  }
+  .step {
+    width: 1.4rem;
+    height: 1.4rem;
+    font-size: 0.6rem;
+  }
+  .steps {
+    gap: 0.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map .pin {
+    opacity: 1;
+    animation: none;
+  }
+  .cloth,
+  .waves path,
+  .boat,
+  .cloud,
+  .vanBody,
+  .stop[data-active]::before {
+    animation: none;
+  }
+  .sign,
+  .signIcon svg {
+    animation-duration: 0.01s;
+  }
+}

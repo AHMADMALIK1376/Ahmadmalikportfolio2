@@ -390,13 +390,14 @@ export const EDUCATION = {
   degree: "BS Computer Science",
   school: "Iqra University, Islamabad (H-9)",
   period: "Dec 2023 – Present",
+  note: "Studying computer science, alongside the freelance work and everything else on this map.",
 };
 
-export const CERTIFICATIONS: { kind: string; title: string; where: string }[] = [
-  { kind: "Internship", title: "Website Development", where: "Growstep Technologies" },
-  { kind: "Workshop", title: "GitHub Open Source Collaboration", where: "Iqra University Islamabad" },
-  { kind: "Hackathon", title: "CUST Hackathon 2026", where: "National Hackathon" },
-  { kind: "Hackathon", title: "Atom Camp Hackathon", where: "Agentic AI · 16–17 Jun 2026" },
+export const CERTIFICATIONS: { kind: string; title: string; where: string; note: string }[] = [
+  { kind: "Internship", title: "Website Development", where: "Growstep Technologies", note: "A React.js website development internship, delivered within a professional team." },
+  { kind: "Workshop", title: "GitHub Open Source Collaboration", where: "Iqra University Islamabad", note: "A hands-on workshop on collaborating in open source with Git and GitHub." },
+  { kind: "Hackathon", title: "CUST Hackathon 2026", where: "National Hackathon", note: "A national hackathon at CUST, Islamabad: from an idea to a working build, against the clock." },
+  { kind: "Hackathon", title: "Atom Camp Hackathon", where: "Agentic AI · 16–17 Jun 2026", note: "Two days of building with agentic AI at Atom Camp's hackathon." },
 ];
 
 /** Every tool named anywhere on the page, once each: the marquee under Skills. */
