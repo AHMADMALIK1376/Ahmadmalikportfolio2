@@ -9,7 +9,7 @@ const STAMP_TILTS = [-3, 2, -1.5, 3];
 
 export default function Experience() {
   return (
-    <section id="experience" aria-labelledby="experience-title" className="gutter py-16 sm:py-24 md:py-32">
+    <section id="experience" aria-labelledby="experience-title" className="gutter py-14 sm:py-20 md:py-24">
       <SectionHeading number="05" kicker="experience" id="experience-title">
         Where I&apos;ve been <Highlight ink="sienna">shipping</Highlight>.
       </SectionHeading>
@@ -28,7 +28,7 @@ export default function Experience() {
                     <span className="sketch-chip">{role.period}</span>
                     <span className="text-xs font-bold text-muted sm:text-sm">{role.detail}</span>
                   </div>
-                  <h3 className="mt-3 text-xl sm:mt-4 sm:text-3xl">{role.title}</h3>
+                  <h3 className="mt-3 text-lg sm:mt-4 sm:text-2xl">{role.title}</h3>
                   <p className="mt-1 text-base font-bold text-(--ink-text) sm:text-lg">
                     {role.url ? (
                       <a href={role.url} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-1 rounded hover:underline hover:decoration-wavy hover:underline-offset-4">
@@ -51,8 +51,8 @@ export default function Experience() {
         </ol>
       </Timeline>
 
-      <div className="mt-16 sm:mt-24">
-        <h3 className="ink-wobble text-xl sm:text-3xl">
+      <div className="mt-14 sm:mt-20">
+        <h3 className="ink-wobble text-lg sm:text-2xl">
           Badges &amp; <Highlight mark="underline" ink="sage">hackathons</Highlight>
         </h3>
         <ul className="mt-8 grid gap-5 sm:mt-10 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">

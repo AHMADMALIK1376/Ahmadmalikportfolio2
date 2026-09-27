@@ -72,7 +72,7 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
 
 export default function Services() {
   return (
-    <section id="services" aria-labelledby="services-title" className="gutter py-16 sm:py-24 md:py-32">
+    <section id="services" aria-labelledby="services-title" className="gutter py-14 sm:py-20 md:py-24">
       <SectionHeading number="02" kicker="what i do" id="services-title" intro="Five kinds of work, from training a model to polishing the last pixel of the interface it lives behind.">
         From the <Highlight ink="sienna">model</Highlight> to the <Highlight mark="underline">pixel</Highlight>.
       </SectionHeading>

@@ -8,29 +8,49 @@ import Polaroid from "@/components/Polaroid";
 
 const now = EXPERIENCE[0];
 
-const STATS = [
-  { value: new Date().getFullYear() - BUILDING_SINCE, suffix: "+", label: "years building for clients", ink: "ink-sage" },
-  { value: PROJECTS.length, suffix: "", label: "projects on this page", ink: "ink-sienna" },
-  { value: TOOLBOX.length, suffix: "+", label: "tools in the kit", ink: "ink-concrete" },
-  { value: CERTIFICATIONS.filter((c) => c.kind === "Hackathon").length, suffix: "", label: "hackathons shipped", ink: "ink-sage" },
+/** Quick facts, worn as badges under the photo. */
+const BADGES = [
+  { value: new Date().getFullYear() - BUILDING_SINCE, suffix: "+", label: "years building", ink: "ink-sage", tilt: -3 },
+  { value: PROJECTS.length, suffix: "", label: "projects", ink: "ink-sienna", tilt: 2 },
+  { value: TOOLBOX.length, suffix: "+", label: "tools", ink: "ink-concrete", tilt: 2.5 },
+  { value: CERTIFICATIONS.filter((c) => c.kind === "Hackathon").length, suffix: "", label: "hackathons", ink: "ink-sage", tilt: -2 },
 ];
 
-const TILTS = [-2, 1.5, 1, -1.5];
-
+/**
+ * About: the heading, the photo with its badges, the three paragraphs and two
+ * small cards, sized to be seen all at once on a laptop screen.
+ */
 export default function About() {
   return (
-    <section id="about" aria-labelledby="about-title" className="gutter py-16 sm:py-24 md:py-32">
+    <section id="about" aria-labelledby="about-title" className="gutter py-14 sm:py-20 md:pb-24 md:pt-20">
       <SectionHeading number="01" kicker="about me" id="about-title">
         I turn hard <Highlight>AI problems</Highlight> into things people can use.
       </SectionHeading>
 
-      <div className="grid items-start gap-12 sm:gap-16 lg:grid-cols-[0.8fr_1.2fr]">
-        <Reveal tilt={8} y={40}>
-          <Polaroid />
-        </Reveal>
+      <div className="grid items-start gap-10 md:grid-cols-[16rem_1fr] md:gap-12 lg:grid-cols-[17rem_1fr] lg:gap-16">
+        <div>
+          <Reveal tilt={8} y={40}>
+            <Polaroid />
+          </Reveal>
+
+          <ul className="mx-auto mt-9 flex max-w-[17rem] flex-wrap justify-center gap-x-2.5 gap-y-3" aria-label="Quick facts">
+            {BADGES.map((badge, i) => (
+              <li key={badge.label}>
+                <Reveal delay={0.2 + i * 0.07} y={14} tilt={badge.tilt * 3} rest={badge.tilt}>
+                  <span className={`sketch-badge ${badge.ink}`}>
+                    <span className="sketch-badge__value">
+                      <Counter to={badge.value} suffix={badge.suffix} />
+                    </span>
+                    {badge.label}
+                  </span>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div>
-          <div className="space-y-5 text-[0.95rem] leading-relaxed sm:space-y-6 sm:text-lg">
+          <div className="space-y-4 text-[0.95rem] leading-relaxed sm:text-base">
             {PROFILE.map((paragraph, i) => (
               <Reveal key={i} delay={i * 0.08}>
                 <p>{paragraph}</p>
@@ -38,11 +58,11 @@ export default function About() {
             ))}
           </div>
 
-          <div className="mt-10 grid gap-6 sm:mt-12 sm:grid-cols-2 sm:gap-7">
-            <Reveal delay={0.2} tilt={-3} rest={-1} className="h-full">
-              <div className="sketch-box sketch-box--tinted ink-sienna h-full p-5 sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-sienna-600">currently</p>
-                <p className="mt-2 text-lg font-bold sm:text-xl">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2">
+            <Reveal delay={0.2} tilt={-3} rest={-0.8} className="h-full">
+              <div className="sketch-box sketch-box--tinted ink-sienna h-full rounded-[1.4rem] p-4 sm:p-5">
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sienna-600">currently</p>
+                <p className="mt-1.5 text-base font-bold leading-snug">
                   {now.title} @{" "}
                   {now.url ? (
                     <a href={now.url} target="_blank" rel="noopener noreferrer" className="underline decoration-sienna-500 decoration-wavy decoration-2 underline-offset-4 hover:text-sienna-600">
@@ -52,37 +72,22 @@ export default function About() {
                     now.company
                   )}
                 </p>
-                <p className="mt-2 text-sm text-muted">{now.detail}</p>
-                <Doodle kind="bulb" className="absolute -right-3 -top-8 w-12 rotate-12 text-sienna-500" />
+                <p className="mt-1.5 text-xs text-muted">{now.detail}</p>
+                <Doodle kind="bulb" className="absolute -right-2 -top-6 w-9 rotate-12 text-sienna-500" />
               </div>
             </Reveal>
 
-            <Reveal delay={0.3} tilt={3} rest={0.8} className="h-full">
-              <div className="sketch-box h-full p-5 sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-700">education</p>
-                <p className="mt-2 text-lg font-bold sm:text-xl">{EDUCATION.degree}</p>
-                <p className="text-sm text-muted">{EDUCATION.school}</p>
-                <p className="mt-3 inline-block sketch-chip ink-sage">{EDUCATION.period}</p>
+            <Reveal delay={0.3} tilt={3} rest={0.6} className="h-full">
+              <div className="sketch-box h-full rounded-[1.4rem] p-4 sm:p-5">
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sage-700">education</p>
+                <p className="mt-1.5 text-base font-bold leading-snug">{EDUCATION.degree}</p>
+                <p className="mt-0.5 text-xs text-muted">{EDUCATION.school}</p>
+                <p className="mt-2.5 inline-block sketch-chip ink-sage">{EDUCATION.period}</p>
               </div>
             </Reveal>
           </div>
         </div>
       </div>
-
-      <ul className="mt-14 grid grid-cols-2 gap-4 sm:mt-20 sm:gap-6 lg:grid-cols-4">
-        {STATS.map((stat, i) => (
-          <li key={stat.label}>
-            <Reveal delay={i * 0.08} tilt={TILTS[i] * 3} rest={TILTS[i]}>
-              <div className={`sketch-box sketch-box--tinted sketch-box--lift ${stat.ink} flex min-h-28 flex-col justify-between gap-3 p-4 sm:aspect-[1/0.8] sm:p-5`}>
-                <span className="ink-wobble text-[2rem] font-bold leading-none text-(--ink-text) sm:text-[clamp(2.4rem,5vw,3.4rem)]">
-                  <Counter to={stat.value} suffix={stat.suffix} />
-                </span>
-                <span className="text-xs font-bold leading-snug sm:text-sm">{stat.label}</span>
-              </div>
-            </Reveal>
-          </li>
-        ))}
-      </ul>
     </section>
   );
 }

@@ -31,7 +31,7 @@ function Marquee() {
 
 export default function Skills() {
   return (
-    <section id="skills" aria-labelledby="skills-title" className="overflow-x-clip py-16 sm:py-24 md:py-32">
+    <section id="skills" aria-labelledby="skills-title" className="overflow-x-clip py-14 sm:py-20 md:py-24">
       <div className="gutter">
         <SectionHeading number="04" kicker="toolbox" id="skills-title" intro="The tools I reach for, pinned to the wall where I can see them.">
           My <Highlight>toolbox</Highlight>.

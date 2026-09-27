@@ -11,7 +11,7 @@ import CopyEmail from "./CopyEmail";
 
 export default function Contact() {
   return (
-    <section id="contact" aria-labelledby="contact-title" className="gutter py-16 sm:py-24 md:py-32">
+    <section id="contact" aria-labelledby="contact-title" className="gutter py-14 sm:py-20 md:py-24">
       <SectionHeading number="06" kicker="contact" id="contact-title">
         Let&apos;s build something <Highlight mark="circle" ink="sienna">together</Highlight>.
       </SectionHeading>

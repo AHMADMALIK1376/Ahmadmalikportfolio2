@@ -28,17 +28,17 @@ export default function Polaroid() {
   };
 
   return (
-    <div className="relative mx-auto w-full max-w-[15rem] sm:max-w-[20rem] lg:max-w-[22rem] [perspective:1000px]">
-      <Doodle kind="sparkle" className="absolute -right-3 -top-6 z-10 size-9 text-sienna-500 sm:-right-4 sm:-top-8 sm:size-12" delay={0.5} strokeWidth={3.5} />
-      <Doodle kind="star" className="absolute -bottom-5 -left-5 z-10 size-9 text-sage-500 sm:-bottom-6 sm:-left-6 sm:size-12" delay={0.8} />
-      <Doodle kind="spiral" className="absolute -right-10 bottom-24 hidden size-14 text-concrete-500 sm:block" delay={1.1} strokeWidth={2.5} />
+    <div className="relative mx-auto w-full max-w-[14rem] sm:max-w-[16rem] md:max-w-none [perspective:1000px]">
+      <Doodle kind="sparkle" className="absolute -right-3 -top-6 z-10 size-9 text-sienna-500 sm:size-10" delay={0.5} strokeWidth={3.5} />
+      <Doodle kind="star" className="absolute -bottom-5 -left-5 z-10 size-9 text-sage-500 sm:size-10" delay={0.8} />
+      <Doodle kind="spiral" className="absolute -right-9 bottom-20 hidden size-11 text-concrete-500 sm:block" delay={1.1} strokeWidth={2.5} />
 
       <div className="float rotate-[2.5deg]">
         <motion.div
           onPointerMove={lean}
           onPointerLeave={settle}
           style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-          className="sketch-box p-2.5 pb-12 sm:p-3.5 sm:pb-16 [--box-fill:var(--color-paper-2)]"
+          className="sketch-box p-2.5 pb-11 sm:p-3 sm:pb-12 [--box-fill:var(--color-paper-2)]"
         >
           <span className="sketch-tape -left-5 top-2 -rotate-[28deg]" />
           <span className="sketch-tape -right-6 top-3 rotate-[32deg]" />
@@ -47,11 +47,11 @@ export default function Polaroid() {
             <Image
               src={photo}
               alt="Muhammad Ahmad Malik standing against a wall, typing on a laptop."
-              sizes="(min-width: 1024px) 352px, (min-width: 640px) 320px, 240px"
+              sizes="(min-width: 1024px) 272px, 256px"
               className="h-auto w-full saturate-[0.88]"
             />
           </div>
-          <p className="ink-wobble absolute inset-x-0 bottom-3 text-center text-sm font-bold sm:bottom-4 sm:text-base">
+          <p className="ink-wobble absolute inset-x-0 bottom-3 text-center text-sm font-bold">
             ahmad<span className="text-sage-600">,</span> mid-deploy <span className="text-sienna-500">✶</span>
           </p>
         </motion.div>

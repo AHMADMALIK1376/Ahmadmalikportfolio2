@@ -82,7 +82,8 @@
 
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: calc(var(--nav-h) + 1rem);
+    /* sections carry their own top padding, deeper than the bar, so a jump lands them almost at the top */
+    scroll-padding-top: 1.5rem;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -588,6 +589,33 @@
     .sketch-chip {
       font-size: 0.72rem;
     }
+  }
+
+  /* a small badge: a chip with a number on it, for quick facts */
+  .sketch-badge {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.45em;
+    padding: 0.45em 0.9em 0.4em;
+    border-radius: 2rem;
+    background: var(--ink-fill, var(--color-paper-2));
+    color: var(--color-ink);
+    box-shadow: var(--shadow-ink) 2px 2px 0 1px;
+    filter: url(#sketchChip);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: rotate 0.25s var(--ease-sketch);
+  }
+
+  .sketch-badge:hover {
+    rotate: -3deg;
+  }
+
+  .sketch-badge__value {
+    font-size: 1.05rem;
+    color: var(--ink-text, var(--color-ink));
   }
 
   /* a line drawn by hand under or across something */

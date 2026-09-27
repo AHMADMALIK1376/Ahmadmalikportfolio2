@@ -110,7 +110,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             </SketchButton>
           </div>
 
-          <h3 id="project-title" className="ink-wobble mt-4 text-[clamp(1.9rem,5vw,2.8rem)]">
+          <h3 id="project-title" className="ink-wobble mt-4 text-[1.5rem] sm:text-[2rem]">
             <Highlight ink={project.ink} now delay={0.35}>
               {project.title}
             </Highlight>
@@ -163,7 +163,7 @@ export default function Projects() {
   const close = useCallback(() => setOpen(null), []);
 
   return (
-    <section id="work" aria-labelledby="work-title" className="gutter py-16 sm:py-24 md:py-32">
+    <section id="work" aria-labelledby="work-title" className="gutter py-14 sm:py-20 md:py-24">
       <SectionHeading number="03" kicker="selected work" id="work-title" intro="Things I've designed, built and shipped — AI engines, full-stack products, and a few tools made for the fun of it.">
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>

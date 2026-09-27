@@ -3,18 +3,18 @@ import type { ReactNode } from "react";
 /** A section's title: its number and name in the margin, then the heading in ink. */
 export default function SectionHeading({ number, kicker, children, intro, id }: { number: string; kicker: string; children: ReactNode; intro?: ReactNode; id?: string }) {
   return (
-    <header className="mb-9 sm:mb-12 md:mb-16">
-      <p className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.22em] text-muted sm:text-sm">
+    <header className="mb-7 sm:mb-9 md:mb-10">
+      <p className="flex items-center gap-3 text-[0.7rem] font-bold uppercase tracking-[0.22em] text-muted sm:text-xs">
         <span className="text-sienna-600">{number}</span>
-        <svg aria-hidden="true" viewBox="0 0 60 8" className="h-2 w-12 text-concrete-400">
+        <svg aria-hidden="true" viewBox="0 0 60 8" className="h-2 w-10 text-concrete-400">
           <path d="M2 5c12-3 26-3 56-1" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
         {kicker}
       </p>
-      <h2 id={id} className="ink-wobble mt-3 text-[1.7rem] sm:mt-4 sm:text-[clamp(2.1rem,5.5vw,4rem)]">
+      <h2 id={id} className="ink-wobble mt-2.5 text-[1.45rem] sm:mt-3 sm:text-[clamp(1.75rem,3vw,2.35rem)]">
         {children}
       </h2>
-      {intro && <p className="mt-4 max-w-2xl text-[0.95rem] text-muted sm:mt-5 sm:text-lg">{intro}</p>}
+      {intro && <p className="mt-3 max-w-xl text-sm text-muted sm:mt-4 sm:text-base">{intro}</p>}
     </header>
   );
 }
