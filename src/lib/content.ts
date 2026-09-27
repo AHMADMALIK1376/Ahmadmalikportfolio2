@@ -212,6 +212,8 @@ export type Project = {
   category: Category;
   stack: string[];
   points: string[];
+  /** how it works, in the steps its drawing shows */
+  flow: string[];
   repo?: string;
   ink: Ink;
 };
@@ -220,6 +222,7 @@ export type Project = {
 export const PROJECTS: Project[] = [
   {
     slug: "folium",
+    flow: ["TipTap editor", "Live sync · y-sweet", "FastAPI · auth", "Postgres · versions"],
     title: "Folium",
     tagline: "Collaborative document editor",
     role: "Full-Stack Developer",
@@ -237,6 +240,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "bid-response-engine",
+    flow: ["Upload a tender", "Claude extracts", "TF-IDF matching", "GO / NO-GO · DOCX"],
     title: "Bid & Proposal Engine",
     tagline: "AI-powered RFP and tender automation",
     role: "Full Stack AI Developer",
@@ -254,6 +258,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "hireme-agent",
+    flow: ["CV → fields", "Adzuna search", "Top 3 letters", "You review"],
     title: "HireMe Agent",
     tagline: "AI job matching and cover letter generator",
     role: "Full Stack AI Developer",
@@ -270,6 +275,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "focusflow",
+    flow: ["Tasks · schedule", "Attendance triggers", "Midnight cron", "Email reminders"],
     title: "FocusFlow",
     tagline: "Student productivity management system",
     role: "Full-Stack Developer",
@@ -286,6 +292,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "graphforge",
+    flow: ["Import data", "69+ chart types", "Registry pattern", "Export client-side"],
     title: "GraphForge",
     tagline: "Universal client-side data visualization platform",
     role: "Solo Developer",
@@ -302,6 +309,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "animated-github-profile",
+    flow: ["Daily workflow", "GitHub API", "Python → SVG", "Profile panels"],
     title: "Animated GitHub Profile",
     tagline: "A README that rebuilds itself from live data",
     role: "Solo Developer",
@@ -318,6 +326,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "neuracache",
+    flow: ["A message in", "LangGraph state", "Memory profile", "Qwen replies"],
     title: "NeuraCache",
     tagline: "AI agent with persistent memory",
     role: "Hackathon Developer",
@@ -334,6 +343,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "routine-dashboard",
+    flow: ["Groups · tasks", "Live progress", "Firebase sync", "Dark mode"],
     title: "Routine Dashboard",
     tagline: "Task management web application",
     role: "Full-Stack Developer",
@@ -348,6 +358,7 @@ export const PROJECTS: Project[] = [
   },
   {
     slug: "bugistan",
+    flow: ["Diagnostics", "Creatures spawn", "Game engine", "60 FPS canvas"],
     title: "Bugistan",
     tagline: "VS Code extension for gamified debugging",
     role: "Solo Developer",

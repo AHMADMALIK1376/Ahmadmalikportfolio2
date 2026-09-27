@@ -101,3 +101,11 @@
     opacity: 0;
   }
 }
+
+/* a room that goes dark: the dashboard in its dark mode */
+.night {
+  transition: filter 0.6s ease;
+}
+.night[data-lit] {
+  filter: brightness(0.62) saturate(0.85);
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, useInView } from "motion/react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type ReactNode } from "react";
 import { SERVICES } from "@/lib/content";
 import { Sketch } from "@/components/sketch/Doodle";
 import Doodle from "@/components/sketch/Doodle";
@@ -20,7 +20,7 @@ const POCKET =
 const STITCH =
   "M 8 22 C 8 16, 12 16, 15 16 C 23 16, 27 29, 40 29 L 240 29 C 253 29, 257 16, 265 16 C 268 16, 272 16, 272 22 L 272 120 C 272 150, 255 152, 240 152 L 40 152 C 25 152, 8 152, 8 120 Z";
 
-export default function ServiceWallet() {
+export default function ServiceWallet({ heading }: { heading: ReactNode }) {
   const wallet = useRef<HTMLDivElement>(null);
   const seen = useInView(wallet, { once: true, amount: 0.35 });
   const [peek, setPeek] = useState<number | null>(null);
@@ -40,33 +40,36 @@ export default function ServiceWallet() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
-      {/* the list: every kind of work, by name */}
-      <ol className="min-w-0 space-y-2" aria-label="What I do">
-        {SERVICES.map((service, i) => (
-          <li key={service.title}>
-            <button
-              type="button"
-              onClick={(e) => show(i, e.currentTarget)}
-              onPointerEnter={() => setPeek(i)}
-              onPointerLeave={() => setPeek(null)}
-              onFocus={() => setPeek(i)}
-              onBlur={() => setPeek(null)}
-              className={`ink-${service.ink} group flex w-full items-baseline gap-4 rounded-2xl px-3 py-2.5 text-left transition-colors hover:bg-(--ink-fill) focus-visible:bg-(--ink-fill)`}
-            >
-              <span className="text-xs font-bold text-sienna-600">0{i + 1}</span>
-              <span className="min-w-0 flex-1">
-                <span className="ink-wobble relative isolate inline-block text-base font-bold sm:text-lg">
-                  <span className="absolute inset-x-0 bottom-0.5 -z-10 h-[0.45em] origin-left scale-x-0 rounded bg-(--ink-hl) transition-transform duration-300 group-hover:scale-x-100 group-focus-visible:scale-x-100" />
-                  {service.title}
+    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-10">
+      {/* the heading, and the list: every kind of work, by name */}
+      <div className="min-w-0">
+        {heading}
+        <ol className="-mx-3 space-y-0.5" aria-label="What I do">
+          {SERVICES.map((service, i) => (
+            <li key={service.title}>
+              <button
+                type="button"
+                onClick={(e) => show(i, e.currentTarget)}
+                onPointerEnter={() => setPeek(i)}
+                onPointerLeave={() => setPeek(null)}
+                onFocus={() => setPeek(i)}
+                onBlur={() => setPeek(null)}
+                className={`ink-${service.ink} group flex w-full items-baseline gap-4 rounded-2xl px-3 py-2 text-left transition-colors hover:bg-(--ink-fill) focus-visible:bg-(--ink-fill)`}
+              >
+                <span className="text-xs font-bold text-sienna-600">0{i + 1}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="ink-wobble relative isolate inline-block text-base font-bold sm:text-lg">
+                    <span className="absolute inset-x-0 bottom-0.5 -z-10 h-[0.45em] origin-left scale-x-0 rounded bg-(--ink-hl) transition-transform duration-300 group-hover:scale-x-100 group-focus-visible:scale-x-100" />
+                    {service.title}
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs text-muted">{service.steps.join(" → ")}</span>
                 </span>
-                <span className="mt-0.5 block truncate text-xs text-muted">{service.steps.join(" → ")}</span>
-              </span>
-              <span className="text-xs font-bold text-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">open ↗</span>
-            </button>
-          </li>
-        ))}
-      </ol>
+                <span className="text-xs font-bold text-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">open ↗</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
 
       {/* the wallet */}
       <div className="relative">
@@ -133,11 +136,11 @@ export default function ServiceWallet() {
         </div>
 
         {/* a note in the margin */}
-        <p aria-hidden="true" className="mt-5 flex items-center justify-center gap-2 text-sm font-bold text-sienna-600 [@media(hover:none)]:hidden">
+        <p aria-hidden="true" className="mt-3 flex items-center justify-center gap-2 text-sm font-bold text-sienna-600 [@media(hover:none)]:hidden">
           <Doodle kind="arrow-down" className="h-8 w-5 rotate-180 text-sienna-500" />
           point at the wallet · click a card
         </p>
-        <p aria-hidden="true" className="mt-5 hidden text-center text-sm font-bold text-sienna-600 [@media(hover:none)]:block">
+        <p aria-hidden="true" className="mt-3 hidden text-center text-sm font-bold text-sienna-600 [@media(hover:none)]:block">
           tap a card to open it
         </p>
       </div>

@@ -88,6 +88,20 @@ app in layers shipped down a belt, a backend rack serving requests, and a page u
 magnifying glass. Each draws itself as the card opens and then runs on its own clock
 (`kit.tsx`). The arrows, or ← and →, step to the next card; Escape closes it.
 
+## Stuff I've built: the ring
+
+The projects stand in a revolving 3D ring (`src/components/sections/Projects.tsx`, styled in
+`Ring.module.css`). Each card is solid, drawn like the site's cards, with a sage patterned
+back for when it faces away. The ring turns slowly on its own and stops while pointed at;
+it can be dragged and flung, stepped with the arrows, or turned by the keyboard, which
+brings each focused card to the front. The card at the front is named under the ring, and
+the filter dims the projects it sets aside.
+
+Clicking a card opens it (`ProjectModal.tsx`) with that project's working drawing — the
+first portfolio's nine project animations, redrawn in this one's style
+(`src/components/rigs/projects/`, sharing the parts-pipes-packets engine in `flow.tsx`).
+Every pop-up fits on one screen, on a laptop and on a phone, with nothing to scroll.
+
 ## Content
 
 Everything the site says is in `src/lib/content.ts` — profile, services, projects,

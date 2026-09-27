@@ -1,207 +1,254 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CATEGORIES, PROJECTS, type Category, type Project } from "@/lib/content";
+import { AnimatePresence } from "motion/react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { CATEGORIES, PROJECTS, type Category } from "@/lib/content";
 import SectionHeading from "@/components/sketch/SectionHeading";
 import Highlight from "@/components/sketch/Highlight";
-import Reveal from "@/components/sketch/Reveal";
 import SketchButton from "@/components/sketch/SketchButton";
-import Doodle from "@/components/sketch/Doodle";
-import { Close, GitHub, Plus } from "@/components/sketch/Icons";
+import { Sketch } from "@/components/sketch/Doodle";
+import { ArrowRight } from "@/components/sketch/Icons";
+import { DRAWINGS } from "./drawings";
+import ProjectModal from "./ProjectModal";
+import styles from "./Ring.module.css";
 
+/**
+ * Stuff I've built: the projects stood in a ring that turns.
+ *
+ * The ring turns slowly on its own, and stops while it is pointed at. It can be
+ * dragged round and flung, stepped a card at a time with the arrows, or turned
+ * by the keyboard, which brings each card it reaches to the front. The card at
+ * the front is named underneath. The filter sets aside the projects it does
+ * not want. Clicking a card opens it, with its working drawing.
+ */
+
+const COUNT = PROJECTS.length;
+const STEP = 360 / COUNT;
+const AUTO = -7; // degrees a second, so the next card comes round from the right
 const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<Category | "all", string>;
-const number = (project: Project) => String(PROJECTS.indexOf(project) + 1).padStart(2, "0");
+const ICON = { ai: DRAWINGS.llm, fullstack: DRAWINGS.web, tools: DRAWINGS.frontend } as const;
 
-function ProjectCard({ project, onOpen }: { project: Project; onOpen: (p: Project, from: HTMLElement) => void }) {
-  const extra = project.stack.length - 4;
-  return (
-    <article className={`sketch-box sketch-box--lift ink-${project.ink} flex h-full flex-col p-5 sm:p-7`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="ink-wobble text-3xl font-bold leading-none text-(--ink-text) sm:text-4xl">#{number(project)}</span>
-        <span className="sketch-chip">{LABEL[project.category]}</span>
-      </div>
-      <h3 className="mt-4 text-xl sm:mt-5 sm:text-2xl">{project.title}</h3>
-      <p className="mt-1 text-sm font-bold text-(--ink-text) sm:text-base">{project.tagline}</p>
-      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted sm:mt-4 sm:text-[0.95rem]">{project.points[0]}</p>
-      <ul className="mt-5 flex flex-wrap gap-2" aria-label="Built with">
-        {project.stack.slice(0, 4).map((tool) => (
-          <li key={tool} className="sketch-chip">
-            {tool}
-          </li>
-        ))}
-        {extra > 0 && <li className="sketch-chip">+{extra}</li>}
-      </ul>
-      <div className="mt-auto flex flex-wrap items-center gap-3 pt-6 sm:pt-7">
-        <SketchButton size="sm" calm aria-haspopup="dialog" onClick={(e) => onOpen(project, e.currentTarget)} icon={<Plus className="sketch-btn__icon" />}>
-          Details<span className="sr-only"> about {project.title}</span>
-        </SketchButton>
-        {project.repo && (
-          <SketchButton href={project.repo} size="sm" calm icon={<GitHub className="sketch-btn__icon" />}>
-            Code<span className="sr-only"> for {project.title} on GitHub</span>
-          </SketchButton>
-        )}
-      </div>
-    </article>
-  );
-}
+/** Which card faces the viewer when the ring has turned by `angle`. */
+const frontAt = (angle: number) => ((Math.round(-angle / STEP) % COUNT) + COUNT) % COUNT;
+/** The turn that brings card `i` to the front, as near as can be to `angle`. */
+const turnTo = (i: number, angle: number) => {
+  const want = -i * STEP;
+  return angle + ((((want - angle) % 360) + 540) % 360) - 180;
+};
 
-function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
-  const panel = useRef<HTMLDivElement>(null);
-  const closeButton = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const before = root.style.overflow;
-    root.style.overflow = "hidden";
-    closeButton.current?.focus();
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab" || !panel.current) return;
-      // keep the keyboard inside the dialog
-      const stops = panel.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
-      const first = stops[0];
-      const last = stops[stops.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      root.style.overflow = before;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-[60] grid place-items-center p-4 sm:p-6">
-      <motion.div
-        aria-hidden="true"
-        className="absolute inset-0 bg-concrete-900/45 backdrop-blur-[3px]"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-      <motion.div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="project-title"
-        className={`sketch-box ink-${project.ink} relative w-full max-w-2xl`}
-        initial={{ opacity: 0, y: 70, rotate: -4, scale: 0.94 }}
-        animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 50, rotate: 3, scale: 0.96 }}
-        transition={{ type: "spring", stiffness: 220, damping: 22 }}
-      >
-        <span className="sketch-tape -top-3 left-1/2 -translate-x-1/2 -rotate-3" />
-        <div className="max-h-[85svh] overflow-y-auto p-5 sm:p-10">
-          <div className="flex items-start justify-between gap-4">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-(--ink-text)">
-              #{number(project)} · {LABEL[project.category]}
-            </p>
-            <SketchButton ref={closeButton} size="sm" calm onClick={onClose} icon={<Close className="sketch-btn__icon" />}>
-              Close
-            </SketchButton>
-          </div>
-
-          <h3 id="project-title" className="ink-wobble mt-4 text-[1.5rem] sm:text-[2rem]">
-            <Highlight ink={project.ink} now delay={0.35}>
-              {project.title}
-            </Highlight>
-          </h3>
-          <p className="mt-2 text-base font-bold sm:text-lg">{project.tagline}</p>
-          <p className="mt-4 flex flex-wrap gap-2">
-            <span className="sketch-chip">{project.role}</span>
-            <span className="sketch-chip">{project.period}</span>
-          </p>
-
-          <h4 className="mt-8 text-sm uppercase tracking-[0.2em] text-muted">what i did</h4>
-          <ul className="sketch-list mt-4 space-y-3 text-sm leading-relaxed sm:text-base">
-            {project.points.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-
-          <h4 className="mt-8 text-sm uppercase tracking-[0.2em] text-muted">built with</h4>
-          <ul className="mt-4 flex flex-wrap gap-2">
-            {project.stack.map((tool) => (
-              <li key={tool} className="sketch-chip">
-                {tool}
-              </li>
-            ))}
-          </ul>
-
-          {project.repo && (
-            <div className="mt-10">
-              <SketchButton href={project.repo} lasso icon={<GitHub className="sketch-btn__icon" />}>
-                View the code
-              </SketchButton>
-            </div>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
+type Spin = { angle: number; speed: number; target: number | null; held: boolean; drag: null | { x: number; t: number; moved: number } };
 
 export default function Projects() {
   const [filter, setFilter] = useState<Category | "all">("all");
-  const [open, setOpen] = useState<Project | null>(null);
+  const [front, setFront] = useState(0);
+  const [open, setOpen] = useState<number | null>(null);
+  const [direction, setDirection] = useState(1);
+  const stage = useRef<HTMLDivElement>(null);
+  const ring = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
-  const shown = filter === "all" ? PROJECTS : PROJECTS.filter((p) => p.category === filter);
+  const dragged = useRef(false);
+  // the ring's motion, kept out of React: where it is, how fast it turns, where it is going, and whether it is held
+  const spin = useRef<Spin>({ angle: 0, speed: AUTO, target: null, held: false, drag: null });
+  const isOpen = useRef(false);
+  useEffect(() => {
+    isOpen.current = open !== null;
+  }, [open]);
 
-  const openProject = (project: Project, from: HTMLElement) => {
+  const matches = useCallback((i: number) => filter === "all" || PROJECTS[i].category === filter, [filter]);
+
+  // the clock that turns the ring
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let frame = 0;
+    let last = performance.now();
+    let shown = -1;
+    const tick = (now: number) => {
+      const dt = Math.min(0.1, (now - last) / 1000);
+      last = now;
+      const s = spin.current;
+      if (s.drag) {
+        // the pointer has it
+      } else if (s.target !== null) {
+        s.angle = reduce ? s.target : s.angle + (s.target - s.angle) * (1 - Math.exp(-dt * 9));
+        if (Math.abs(s.target - s.angle) < 0.05) {
+          s.angle = s.target;
+          s.target = null;
+          s.speed = 0;
+        }
+      } else {
+        const want = s.held || isOpen.current || reduce ? 0 : AUTO;
+        s.speed += (want - s.speed) * (1 - Math.exp(-dt * 2.5));
+        s.angle += s.speed * dt;
+      }
+      ring.current?.style.setProperty("--angle", `${s.angle.toFixed(2)}deg`);
+      const facing = frontAt(s.angle);
+      if (facing !== shown) {
+        shown = facing;
+        setFront(facing);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // when the filter changes, bring a card it keeps to the front
+  useEffect(() => {
+    const s = spin.current;
+    const facing = frontAt(s.angle);
+    if (matches(facing)) return;
+    const next = Array.from({ length: COUNT }, (_, k) => (facing + k) % COUNT).find(matches);
+    if (next !== undefined) s.target = turnTo(next, s.angle);
+  }, [matches]);
+
+  const bring = (i: number) => {
+    spin.current.target = turnTo(i, spin.current.target ?? spin.current.angle);
+  };
+  const step = (by: number) => {
+    let i = frontAt(spin.current.target ?? spin.current.angle);
+    for (let k = 0; k < COUNT; k++) {
+      i = (i + by + COUNT) % COUNT;
+      if (matches(i)) break;
+    }
+    bring(i);
+  };
+
+  // dragging the ring round, and flinging it
+  const grab = (event: PointerEvent<HTMLDivElement>) => {
+    dragged.current = false;
+    spin.current.drag = { x: event.clientX, t: performance.now(), moved: 0 };
+    spin.current.target = null;
+  };
+  const pull = (event: PointerEvent<HTMLDivElement>) => {
+    const s = spin.current;
+    if (!s.drag) return;
+    const dx = event.clientX - s.drag.x;
+    const now = performance.now();
+    s.angle += dx * 0.22;
+    s.speed = (dx * 0.22) / Math.max(0.016, (now - s.drag.t) / 1000);
+    s.drag = { x: event.clientX, t: now, moved: s.drag.moved + Math.abs(dx) };
+    if (s.drag.moved > 6) {
+      dragged.current = true;
+      stage.current?.setAttribute("data-dragging", "");
+    }
+  };
+  const letGo = () => {
+    const s = spin.current;
+    s.drag = null;
+    s.speed = Math.max(-240, Math.min(240, s.speed));
+    stage.current?.removeAttribute("data-dragging");
+  };
+
+  const show = (i: number, from: HTMLElement) => {
+    if (dragged.current) return;
     opener.current = from;
-    setOpen(project);
+    setDirection(1);
+    setOpen(i);
   };
   const close = useCallback(() => setOpen(null), []);
+  const stepOpen = useCallback((by: number) => {
+    setDirection(by);
+    setOpen((i) => (i === null ? i : (i + by + COUNT) % COUNT));
+  }, []);
+
+  const current = PROJECTS[front];
 
   return (
-    <section id="work" aria-labelledby="work-title" className="gutter py-14 sm:py-20 md:py-24">
-      <SectionHeading number="03" kicker="selected work" id="work-title" intro="Things I've designed, built and shipped — AI engines, full-stack products, and a few tools made for the fun of it.">
+    <section id="work" aria-labelledby="work-title" className="gutter py-14 sm:py-20 md:pb-24 md:pt-16">
+      <SectionHeading number="03" kicker="selected work" id="work-title" intro="Things I've designed, built and shipped. Drag the ring round or let it turn, and open any card to watch it work.">
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>
 
-      <div role="group" aria-label="Filter projects" className="-mt-3 mb-9 flex flex-wrap items-center gap-2.5 sm:-mt-4 sm:mb-12 sm:gap-3">
+      <div role="group" aria-label="Filter projects" className="-mt-3 flex flex-wrap items-center gap-2.5 sm:-mt-4 sm:gap-3">
         {CATEGORIES.map((category) => (
           <SketchButton key={category.id} size="sm" calm aria-pressed={filter === category.id} onClick={() => setFilter(category.id)}>
             {category.label}
           </SketchButton>
         ))}
-        <Doodle kind="arrow-curl" className="ml-2 hidden w-16 -scale-x-100 rotate-12 text-concrete-400 sm:block" delay={0.4} />
-        <span className="hidden text-sm font-bold text-muted sm:inline">pick one!</span>
-        <p role="status" className="sr-only">
-          Showing {shown.length} {shown.length === 1 ? "project" : "projects"}
-        </p>
       </div>
 
-      <Reveal>
-        <motion.ul layout className="grid gap-6 sm:gap-7 md:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {shown.map((project) => (
-              <motion.li
-                key={project.slug}
-                layout
-                initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.9, rotate: 3 }}
-                transition={{ type: "spring", stiffness: 220, damping: 24 }}
-              >
-                <ProjectCard project={project} onOpen={openProject} />
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </motion.ul>
-      </Reveal>
+      {/* the ring */}
+      <div
+        ref={stage}
+        className={styles.stage}
+        onPointerEnter={(e) => {
+          if (e.pointerType === "mouse") spin.current.held = true;
+        }}
+        onPointerLeave={() => {
+          spin.current.held = false;
+          letGo();
+        }}
+        onPointerDown={grab}
+        onPointerMove={pull}
+        onPointerUp={letGo}
+        onPointerCancel={letGo}
+        onFocus={() => {
+          spin.current.held = true;
+        }}
+        onBlur={() => {
+          spin.current.held = false;
+        }}
+      >
+        <div ref={ring} className={styles.ring} style={{ "--quantity": COUNT } as CSSProperties}>
+          {PROJECTS.map((project, i) => (
+            <button
+              key={project.slug}
+              type="button"
+              className={`${styles.card} ink-${project.ink}`}
+              style={{ "--index": i } as CSSProperties}
+              data-front={front === i ? "" : undefined}
+              data-dim={matches(i) ? undefined : ""}
+              tabIndex={matches(i) ? 0 : -1}
+              aria-label={`${project.title}: ${project.tagline}. Open`}
+              onFocus={() => bring(i)}
+              onClick={(e) => show(i, e.currentTarget)}
+            >
+              <span className={styles.face}>
+                <span>
+                  <span className={styles.top}>
+                    <span className={styles.number}>#{String(i + 1).padStart(2, "0")}</span>
+                    <span className={styles.kind}>{LABEL[project.category]}</span>
+                  </span>
+                  <Sketch box="0 0 120 90" paths={ICON[project.category]} className={styles.icon} strokeWidth={4} duration={0.4} />
+                  <span className={styles.title}>{project.title}</span>
+                  <span className={styles.tagline}>{project.tagline}</span>
+                </span>
+                <span className={styles.bottom}>
+                  <span className="sketch-chip [--ink-fill:var(--color-paper-2)]">{project.stack[0]}</span>
+                  <span className={styles.open}>open ↗</span>
+                </span>
+              </span>
+              <span className={styles.back} aria-hidden="true">
+                <span className={styles.mark}>
+                  ahmad
+                  <br />
+                  .malik
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* the card at the front, named, with the arrows either side */}
+      <div className="relative z-10 mt-1 flex items-center justify-center gap-3 sm:gap-5">
+        <SketchButton size="sm" calm onClick={() => step(-1)} icon={<ArrowRight className="sketch-btn__icon rotate-180" />}>
+          <span className="sr-only">Previous project</span>
+        </SketchButton>
+        <button type="button" onClick={(e) => show(front, e.currentTarget)} className="group min-w-0 max-w-md rounded-2xl px-3 py-1 text-center">
+          <span className="block text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sienna-600">
+            #{String(front + 1).padStart(2, "0")} · {LABEL[current.category]}
+          </span>
+          <span className="ink-wobble mt-0.5 block truncate text-base font-bold group-hover:underline group-hover:decoration-wavy group-hover:underline-offset-4 sm:text-lg">{current.title}</span>
+          <span className="block truncate text-xs text-muted">{current.tagline}</span>
+        </button>
+        <SketchButton size="sm" calm onClick={() => step(1)} icon={<ArrowRight className="sketch-btn__icon" />}>
+          <span className="sr-only">Next project</span>
+        </SketchButton>
+      </div>
 
       <AnimatePresence onExitComplete={() => opener.current?.focus()}>
-        {open && <ProjectModal key={open.slug} project={open} onClose={close} />}
+        {open !== null && <ProjectModal key="project" index={open} direction={direction} onClose={close} onStep={stepOpen} />}
       </AnimatePresence>
     </section>
   );

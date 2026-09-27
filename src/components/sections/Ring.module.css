@@ -1,0 +1,238 @@
+/*
+ * The projects, stood in a ring that turns.
+ *
+ * Every project is a card, set round a circle and tipped a little towards the
+ * viewer, so the ring is seen from just above. The script turns it — slowly on
+ * its own, or by dragging, the arrows or the keyboard — by setting --angle.
+ * Each card has a face, drawn like the site's cards, and a back, sage and
+ * patterned, for when it is turned away. The card nearest the front is marked,
+ * and the one under the pointer steps out of the ring.
+ */
+
+.stage {
+  --w: 150px;
+  --h: 198px;
+  --r: 350px;
+  --tilt: -10deg;
+  position: relative;
+  height: 21rem;
+  perspective: 1900px;
+  perspective-origin: 50% 30%;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage[data-dragging] {
+  cursor: grabbing;
+}
+
+@media (width < 64rem) {
+  .stage {
+    --w: 146px;
+    --h: 196px;
+    --r: 300px;
+    height: 19.5rem;
+  }
+}
+
+@media (width < 40rem) {
+  .stage {
+    --w: 112px;
+    --h: 152px;
+    --r: 190px;
+    height: 15.5rem;
+  }
+}
+
+.ring {
+  position: absolute;
+  top: 37%;
+  left: 50%;
+  width: var(--w);
+  height: var(--h);
+  margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt)) rotateY(var(--angle, 0deg));
+}
+
+/* ── a card ────────────────────────────────────────────────────────────── */
+
+.card {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transform: rotateY(calc(360deg / var(--quantity) * var(--index))) translateZ(var(--r));
+  transition:
+    transform 0.45s var(--ease-sketch),
+    opacity 0.4s ease;
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: rotateY(calc(360deg / var(--quantity) * var(--index))) translateZ(calc(var(--r) + 26px)) translateY(-8px);
+  outline: none;
+}
+
+.face,
+.back {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* the face: a card in the site's own hand, its edge wobbling on a layer behind the words */
+.face {
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.85rem 0.9rem 0.8rem;
+}
+
+.face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ink-fill);
+  border: 1.5px solid rgb(45 47 43 / 0.55);
+  box-shadow: rgb(45 47 43 / 0.4) 4px 4px 0 1px;
+  filter: url(#sketchFrame);
+  transition: box-shadow 0.3s ease;
+}
+
+.card[data-front] .face::before,
+.card:hover .face::before,
+.card:focus-visible .face::before {
+  box-shadow: rgb(45 47 43 / 0.4) 7px 7px 0 1px;
+}
+
+.card:focus-visible .face::before {
+  border: 2px dashed var(--color-sienna-500);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.number {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-text);
+}
+
+.kind {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.icon {
+  width: 2.6rem;
+  height: 2rem;
+  margin-top: 0.3rem;
+  color: var(--ink-text);
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.tagline {
+  margin-top: 0.3rem;
+  font-size: 0.66rem;
+  line-height: 1.4;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.open {
+  color: var(--color-sienna-600);
+  white-space: nowrap;
+}
+
+/* the back: sage, striped, with the maker's mark */
+.back {
+  transform: rotateY(180deg);
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(135deg, #cbd7bd 0 9px, #dfe7d4 9px 18px);
+  border: 1.5px solid rgb(45 47 43 / 0.55);
+  box-shadow: rgb(45 47 43 / 0.4) 4px 4px 0 1px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f4f4f0;
+  border: 1.5px solid rgb(45 47 43 / 0.55);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--color-ink);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* a card the filter has set aside */
+.card[data-dim] {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+/* small screens: a little less on each card */
+@media (width < 40rem) {
+  .face {
+    padding: 0.6rem 0.65rem;
+  }
+  .number {
+    font-size: 1rem;
+  }
+  .title {
+    font-size: 0.78rem;
+  }
+  .tagline {
+    font-size: 0.56rem;
+    -webkit-line-clamp: 2;
+  }
+  .icon {
+    display: none;
+  }
+  .bottom {
+    font-size: 0.52rem;
+  }
+}

@@ -1,42 +1,30 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, type ComponentType } from "react";
-import { PROJECTS, SERVICES } from "@/lib/content";
+import { useEffect, useRef } from "react";
+import { CATEGORIES, PROJECTS } from "@/lib/content";
 import SketchButton from "@/components/sketch/SketchButton";
 import Highlight from "@/components/sketch/Highlight";
-import { ArrowRight, Close } from "@/components/sketch/Icons";
-import LlmRig from "@/components/rigs/LlmRig";
-import ArchRig from "@/components/rigs/ArchRig";
-import WebRig from "@/components/rigs/WebRig";
-import BackendRig from "@/components/rigs/BackendRig";
-import FrontendRig from "@/components/rigs/FrontendRig";
+import { ArrowRight, Close, GitHub } from "@/components/sketch/Icons";
+import { PROJECT_RIGS } from "@/components/rigs/projects";
 
 /**
- * One kind of work, opened out of the wallet: everything about it on the left,
- * and on the right its working drawing, which builds itself as the card opens
- * and then runs — the same five animations as the first portfolio's What I do,
- * redrawn in this one's hand. The arrows (and the keyboard's) step to the next
- * or the previous card, which builds itself again.
+ * One project, opened from the ring: everything about it on one side, and on
+ * the other its working drawing — the first portfolio's project animations,
+ * redrawn in this one's hand — which builds itself as the card opens and then
+ * runs. The arrows (and the keyboard's) step to the next or previous project.
+ * All of it fits on one screen.
  */
 
-const RIGS: Record<(typeof SERVICES)[number]["doodle"], ComponentType<{ className?: string }>> = {
-  llm: LlmRig,
-  architecture: ArchRig,
-  web: WebRig,
-  backend: BackendRig,
-  frontend: FrontendRig,
-};
-const NAMES = Object.fromEntries(PROJECTS.map((p) => [p.slug, p.title]));
+const LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label])) as Record<string, string>;
 
 type Props = { index: number; direction: number; onClose: () => void; onStep: (by: number) => void };
 
-export default function ServiceModal({ index, direction, onClose, onStep }: Props) {
-  const service = SERVICES[index];
-  const Rig = RIGS[service.doodle];
+export default function ProjectModal({ index, direction, onClose, onStep }: Props) {
+  const project = PROJECTS[index];
+  const Rig = PROJECT_RIGS[project.slug];
   const panel = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
-  const count = SERVICES.length;
 
   useEffect(() => {
     const root = document.documentElement;
@@ -77,8 +65,8 @@ export default function ServiceModal({ index, direction, onClose, onStep }: Prop
         ref={panel}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="service-title"
-        className={`sketch-box ink-${service.ink} relative w-full max-w-5xl`}
+        aria-labelledby="project-title"
+        className={`sketch-box ink-${project.ink} relative w-full max-w-5xl`}
         initial={{ opacity: 0, y: 80, rotate: -3, scale: 0.94 }}
         animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
         exit={{ opacity: 0, y: 60, rotate: 2, scale: 0.96 }}
@@ -88,17 +76,16 @@ export default function ServiceModal({ index, direction, onClose, onStep }: Prop
         <span className="sketch-tape -top-3 right-10 rotate-6" />
 
         <div className="max-h-[calc(100svh-1rem)] overflow-y-auto p-3.5 sm:max-h-[92svh] sm:p-6">
-          {/* where this card is among them, the arrows, and the way out */}
           <div className="flex items-center justify-between gap-3">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-(--ink-text) sm:text-xs">
-              0{index + 1} / 0{count} · what i do
+              #{String(index + 1).padStart(2, "0")} · {LABEL[project.category]}
             </p>
             <div className="flex items-center gap-2">
               <SketchButton size="sm" calm onClick={() => onStep(-1)} icon={<ArrowRight className="sketch-btn__icon rotate-180" />}>
-                <span className="sr-only">Previous</span>
+                <span className="sr-only">Previous project</span>
               </SketchButton>
               <SketchButton size="sm" calm onClick={() => onStep(1)} icon={<ArrowRight className="sketch-btn__icon" />}>
-                <span className="sr-only">Next</span>
+                <span className="sr-only">Next project</span>
               </SketchButton>
               <SketchButton ref={closeButton} size="sm" calm onClick={onClose} icon={<Close className="sketch-btn__icon" />}>
                 Close
@@ -109,60 +96,60 @@ export default function ServiceModal({ index, direction, onClose, onStep }: Prop
           <AnimatePresence mode="wait" initial={false} custom={direction}>
             <motion.div
               key={index}
-              custom={direction}
               className="mt-3 grid gap-4 md:mt-5 md:gap-5 md:grid-cols-[1fr_1.1fr] md:gap-8"
               initial={{ opacity: 0, x: direction * 40 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction * -40 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
             >
-              {/* the working drawing, building itself and then running; as tall as the words beside it */}
-              <div className="order-first h-[9.5rem] rounded-[1.4rem] bg-paper-3/55 p-2 shadow-[inset_3px_3px_0_1px_rgb(45_47_43/0.12)] sm:h-[15rem] md:order-last md:h-auto md:min-h-[21rem]">
-                <Rig className="h-full w-full" />
+              {/* the working drawing, building itself and then running */}
+              <div className="order-first h-[8.5rem] rounded-[1.4rem] bg-paper-3/55 p-2 shadow-[inset_3px_3px_0_1px_rgb(45_47_43/0.12)] sm:h-[15rem] md:order-last md:h-auto md:min-h-[21rem]">
+                {Rig && <Rig className="h-full w-full" />}
               </div>
 
               <div>
-                <h3 id="service-title" className="ink-wobble text-[1.3rem] sm:text-[1.7rem]">
-                  <Highlight ink={service.ink} now delay={0.3}>
-                    {service.title}
+                <h3 id="project-title" className="ink-wobble text-[1.3rem] sm:text-[1.7rem]">
+                  <Highlight ink={project.ink} now delay={0.3}>
+                    {project.title}
                   </Highlight>
                 </h3>
-                <p className="mt-2.5 text-[0.8rem] leading-relaxed text-muted sm:text-sm">{service.summary}</p>
+                <p className="mt-1.5 text-[0.8rem] font-bold sm:text-sm">{project.tagline}</p>
+                <p className="mt-2 flex flex-wrap gap-1.5 sm:mt-2.5">
+                  <span className="sketch-chip">{project.role}</span>
+                  <span className="sketch-chip">{project.period}</span>
+                </p>
 
-                <h4 className="mt-3 text-[0.65rem] uppercase tracking-[0.2em] text-muted sm:mt-4">how it goes</h4>
+                <h4 className="mt-3 text-[0.65rem] uppercase tracking-[0.2em] text-muted sm:mt-4">how it works</h4>
                 <ol className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1.5">
-                  {service.steps.map((step, i) => (
+                  {project.flow.map((step, i) => (
                     <motion.li key={step} className="flex items-center gap-1.5" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.08 }}>
                       <span className="sketch-chip">{step}</span>
-                      {i < service.steps.length - 1 && <ArrowRight className="size-3 text-concrete-500" />}
+                      {i < project.flow.length - 1 && <ArrowRight className="size-3 text-concrete-500" />}
                     </motion.li>
                   ))}
                 </ol>
 
-                <h4 className="mt-3 text-[0.65rem] uppercase tracking-[0.2em] text-muted sm:mt-4">what you get</h4>
-                <ul className="sketch-list mt-2 space-y-1.5 text-[0.78rem] leading-snug sm:text-[0.82rem]">
-                  {service.delivers.map((line) => (
-                    <li key={line}>{line}</li>
+                <h4 className="mt-3 text-[0.65rem] uppercase tracking-[0.2em] text-muted sm:mt-4">what i did</h4>
+                <ul className="sketch-list mt-2 space-y-1 text-[0.7rem] leading-snug sm:text-[0.78rem]">
+                  {project.points.map((point) => (
+                    <li key={point}>{point}</li>
                   ))}
                 </ul>
 
-                <h4 className="mt-3 text-[0.65rem] uppercase tracking-[0.2em] text-muted sm:mt-4">tools</h4>
-                <ul className="mt-2 flex flex-wrap gap-1.5 [--ink-fill:var(--color-paper-2)]">
-                  {service.tools.map((tool) => (
-                    <li key={tool} className="sketch-chip">
-                      {tool}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-3 text-[0.7rem] text-muted">
-                  <span className="font-bold uppercase tracking-[0.2em]">seen in</span>{" "}
-                  {service.seenIn.map((slug, i) => (
-                    <span key={slug}>
-                      <span className="font-bold text-ink">{NAMES[slug]}</span>
-                      {i < service.seenIn.length - 1 ? ", " : ""}
-                    </span>
-                  ))}
-                </p>
+                <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+                  <ul className="flex flex-wrap gap-1.5 [--ink-fill:var(--color-paper-2)]" aria-label="Built with">
+                    {project.stack.map((tool) => (
+                      <li key={tool} className="sketch-chip">
+                        {tool}
+                      </li>
+                    ))}
+                  </ul>
+                  {project.repo && (
+                    <SketchButton href={project.repo} size="sm" tone="sage" icon={<GitHub className="sketch-btn__icon" />}>
+                      Code
+                    </SketchButton>
+                  )}
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

@@ -15,7 +15,7 @@
   width: 25em;
   height: 31em;
   margin-inline: auto;
-  font-size: clamp(11.5px, 3.4vw, 16px);
+  font-size: clamp(11.5px, 3.4vw, 15px);
   -webkit-tap-highlight-color: transparent;
 }
 
