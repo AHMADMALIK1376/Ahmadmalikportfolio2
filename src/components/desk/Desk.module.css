@@ -1,0 +1,155 @@
+/*
+ * Everything in the desk's opening is a function of --p, the scene's progress
+ * from 0 to 1, which the script runs from nothing to one over a few seconds
+ * when the page opens. A group says when its outline starts (--ds) and how long
+ * it takes (--dl), and when its colour comes in (--fs, --fl); a part that
+ * arrives says how far above it starts (--lift) and when it comes down.
+ *
+ * Without scripting the desk is simply shown built.
+ */
+
+.desk {
+  --p: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+@media (scripting: none) {
+  .desk {
+    --p: 1;
+  }
+}
+
+/* an outline, drawn along its length like a pen stroke */
+.part {
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--p) - var(--ds)) / var(--dl), 1));
+  /* a dash of zero length still paints its round cap, so the stroke is hidden outright until it starts */
+  stroke-opacity: clamp(0, (var(--p) - var(--ds)) * 500, 1);
+  fill-opacity: clamp(0, (var(--p) - var(--fs)) / var(--fl), 1);
+}
+
+/* colour, coming in like marker after the line */
+.fill {
+  fill-opacity: clamp(0, (var(--p) - var(--fs)) / var(--fl), 1);
+}
+
+/* fades in */
+.fade {
+  opacity: clamp(0, (var(--p) - var(--s)) / var(--l), 1);
+}
+
+/* lowered into place */
+.lower {
+  --k: clamp(0, (var(--p) - var(--from)) / var(--span), 1);
+  transform: translateY(calc(var(--lift) * (var(--k) * var(--k) * (3 - 2 * var(--k)) - 1) * 1px));
+}
+
+/* dropped into place: falling faster and faster, and landing with a snap */
+.fall {
+  --k: clamp(0, (var(--p) - var(--from)) / var(--span), 1);
+  transform: translateY(calc(var(--lift) * (var(--k) * var(--k) - 1) * 1px));
+  opacity: clamp(0, (var(--p) - var(--from)) * 60, 1);
+}
+
+/* the screen switching on: a line across the middle that opens into the picture */
+.crt {
+  --k: clamp(0, (var(--p) - var(--s)) / var(--l), 1);
+  transform: scale(calc(0.35 + 0.65 * var(--k)), max(0.015, var(--k) * var(--k)));
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: clamp(0, var(--k) * 12, 1);
+}
+
+/* a keycap the typing presses: it drops, and its dish flashes while it is down */
+.cap {
+  transition: transform 60ms ease-out;
+}
+.flash {
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+.cap[data-down] .flash {
+  opacity: 0.75;
+  transition-duration: 30ms;
+}
+
+/* the RUN button on the screen, lit while the mouse clicks it */
+.run rect,
+.run text {
+  transition: fill 80ms ease-out;
+}
+.run[data-lit] rect {
+  fill: #b1c29f;
+}
+.run[data-lit] text {
+  fill: #242623;
+}
+
+/*
+ * The parts of the built desk a visitor can press: the keys, the mouse's
+ * buttons, the monitor's power button and the two cables. They take the
+ * pointer only once the desk is built.
+ */
+.hit {
+  cursor: pointer;
+}
+.live .hit {
+  pointer-events: auto;
+}
+.live .key:hover .cap {
+  translate: 0 -1px;
+}
+.live .key:active .cap {
+  translate: 0 3px;
+}
+.live .key:active .flash {
+  opacity: 0.75;
+  transition-duration: 30ms;
+}
+.live .mouseKey:active {
+  translate: 0 2.6px;
+}
+.live .powerKey:active .knob {
+  translate: 0 1.5px;
+}
+.live .plug:hover {
+  filter: brightness(1.15);
+}
+
+/* the screen, when the power is off: its picture fades out with a last flash across the glass */
+.picture {
+  transition: opacity 0.35s ease-out;
+}
+.picture[data-off] {
+  opacity: 0;
+}
+.lastLight {
+  opacity: 0;
+}
+.picture[data-off] + .lastLight {
+  animation: last-light 0.5s ease-out;
+}
+@keyframes last-light {
+  0% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.blink {
+  animation: blink 1.05s steps(1, end) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink {
+    animation: none;
+  }
+}

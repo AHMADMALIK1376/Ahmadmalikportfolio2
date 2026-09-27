@@ -6,14 +6,14 @@ import Doodle from "@/components/sketch/Doodle";
 import { ArrowDown, Download, Pin, Clock } from "@/components/sketch/Icons";
 import LocalTime from "@/components/LocalTime";
 import Typewriter from "./Typewriter";
-import HeroPhoto from "./HeroPhoto";
+import Desk from "@/components/desk/Desk";
 
 const rise = (i: number) => ({ "--i": i }) as CSSProperties;
 
 export default function Hero() {
   return (
     <section id="top" aria-labelledby="hero-title" className="relative flex min-h-[100svh] flex-col pt-[calc(var(--nav-h)+2.5rem)] pb-16">
-      <div className="gutter grid flex-1 items-center gap-16 lg:grid-cols-[1.2fr_0.8fr] lg:gap-10">
+      <div className="gutter grid flex-1 items-center gap-16 lg:grid-cols-[1.02fr_0.98fr] lg:gap-8">
         <div>
           <p className="hero-rise flex items-center gap-2 text-base font-bold text-muted sm:text-lg" style={rise(0)}>
             <span className="inline-block origin-[70%_70%] animate-[wave_2.4s_ease-in-out_1.2s_infinite]" aria-hidden="true">
@@ -60,7 +60,23 @@ export default function Hero() {
           </p>
         </div>
 
-        <HeroPhoto />
+        {/* the desk, which draws itself and then never stops typing */}
+        <div className="relative mx-auto w-full max-w-[34rem] lg:max-w-none">
+          <Desk className="h-auto w-full" />
+
+          {/* margin notes, written once the desk is built */}
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-0 top-[9%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(38)}>
+            it writes code
+            <br />
+            all by itself
+            <Doodle kind="arrow-curl" now delay={4.9} className="ml-10 mt-1 w-16 rotate-[-10deg] text-sienna-500" />
+          </div>
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute bottom-[3%] left-[2%] hidden rotate-[-4deg] text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(40)}>
+            <Doodle kind="loop" now delay={5.2} className="mb-1 ml-6 w-24 -rotate-[25deg] text-sage-500" />
+            go on — press
+            <br />a key, or the power
+          </div>
+        </div>
       </div>
 
       <a href="#about" className="hero-rise group mx-auto mt-12 flex flex-col items-center gap-1 rounded-lg text-xs font-bold uppercase tracking-[0.3em] text-muted" style={rise(7)}>

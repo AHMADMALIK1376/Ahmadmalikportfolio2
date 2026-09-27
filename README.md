@@ -56,6 +56,20 @@ All of it lives in `src/app/globals.css` and `src/components/sketch/`.
 The three inks (`ink-sage`, `ink-sienna`, `ink-concrete`) are utilities that set a
 component's fill, accent, text and highlighter colours at once.
 
+## The desk
+
+The hero's right side is an isometric desk (`src/components/desk/`), redrawn from the
+first portfolio in this one's hand: a keyboard printed with the stack, a mouse, and an
+old computer. Every outline is generated as a pen stroke — bowed edges, nudged corners,
+a line that runs on past where it closed — seeded from the shape's own coordinates, so
+the server and the browser draw the same wobble and nothing is filtered at runtime.
+
+When the page opens it draws itself (outlines, then colour, the monitor lowered onto its
+stand, the keycaps dropped onto the board, the screen warming up), then types code
+forever while the mouse clicks RUN. Visitors can press the keys and the mouse buttons,
+switch the computer off and on, and pull out either cable. One number, `--p`, drives
+the whole opening; see `Desk.module.css`.
+
 Everything respects `prefers-reduced-motion`.
 
 ## Content
