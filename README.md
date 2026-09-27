@@ -59,10 +59,12 @@ component's fill, accent, text and highlighter colours at once.
 ## The desk
 
 The hero's right side is an isometric desk (`src/components/desk/`), redrawn from the
-first portfolio in this one's hand: a keyboard printed with the stack, a mouse, and an
-old computer. Every outline is generated as a pen stroke — bowed edges, nudged corners,
-a line that runs on past where it closed — seeded from the shape's own coordinates, so
-the server and the browser draw the same wobble and nothing is filtered at runtime.
+first portfolio in the language of this one's cards and buttons: a keyboard printed with
+the stack, a mouse, and an old computer. Every part is a soft rounded block (`Block` in
+`iso.tsx`: a rounded top swept straight down) in paper or a pastel, edged in the cards'
+55% ink, and put through the same kind of noise filter and hard offset shadow the cards
+and chips have (`desk-card`, `desk-chip`). The keycaps are chips. What is on the screen
+stays outside the filters, so the code is crisp.
 
 When the page opens it draws itself (outlines, then colour, the monitor lowered onto its
 stand, the keycaps dropped onto the board, the screen warming up), then types code

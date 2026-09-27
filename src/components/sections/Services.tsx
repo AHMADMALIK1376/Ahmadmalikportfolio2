@@ -49,16 +49,16 @@ const DRAWINGS: Record<Service["doodle"], string[]> = {
 
 function ServiceCard({ service, index }: { service: Service; index: number }) {
   return (
-    <article className={`sketch-box sketch-box--lift ink-${service.ink} flex h-full flex-col p-6 sm:p-7`}>
+    <article className={`sketch-box sketch-box--lift ink-${service.ink} flex h-full flex-col p-5 sm:p-7`}>
       <div className="flex items-start justify-between gap-4">
         <span className="ink-wobble text-sm font-bold text-(--ink-text)">0{index + 1}</span>
-        <span className="grid size-24 place-items-center rounded-[1.4rem] bg-(--ink-fill)">
-          <Sketch box="0 0 120 90" paths={DRAWINGS[service.doodle]} className="ink-wobble w-20 text-(--ink-text)" strokeWidth={2.6} duration={0.55} delay={0.2} />
+        <span className="grid size-20 place-items-center rounded-[1.2rem] bg-(--ink-fill) sm:size-24 sm:rounded-[1.4rem]">
+          <Sketch box="0 0 120 90" paths={DRAWINGS[service.doodle]} className="ink-wobble w-16 text-(--ink-text) sm:w-20" strokeWidth={2.6} duration={0.55} delay={0.2} />
         </span>
       </div>
-      <h3 className="mt-5 text-2xl">{service.title}</h3>
-      <p className="mt-3 flex-1 text-[0.95rem] leading-relaxed text-muted">{service.summary}</p>
-      <ol className="mt-6 flex flex-wrap items-center gap-x-1.5 gap-y-2" aria-label={`${service.title}, step by step`}>
+      <h3 className="mt-4 text-xl sm:mt-5 sm:text-2xl">{service.title}</h3>
+      <p className="mt-3 flex-1 text-sm leading-relaxed text-muted sm:text-[0.95rem]">{service.summary}</p>
+      <ol className="mt-5 flex sm:mt-6 flex-wrap items-center gap-x-1.5 gap-y-2" aria-label={`${service.title}, step by step`}>
         {service.steps.map((step, i) => (
           <li key={step} className="flex items-center gap-1.5">
             <span className="sketch-chip">{step}</span>
@@ -72,12 +72,12 @@ function ServiceCard({ service, index }: { service: Service; index: number }) {
 
 export default function Services() {
   return (
-    <section id="services" aria-labelledby="services-title" className="gutter py-24 md:py-32">
+    <section id="services" aria-labelledby="services-title" className="gutter py-16 sm:py-24 md:py-32">
       <SectionHeading number="02" kicker="what i do" id="services-title" intro="Five kinds of work, from training a model to polishing the last pixel of the interface it lives behind.">
         From the <Highlight ink="sienna">model</Highlight> to the <Highlight mark="underline">pixel</Highlight>.
       </SectionHeading>
 
-      <ul className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-6 sm:gap-7 md:grid-cols-2 lg:grid-cols-3">
         {SERVICES.map((service, i) => (
           <li key={service.title}>
             <Reveal className="h-full" delay={(i % 3) * 0.1} tilt={i % 2 ? 3 : -3}>
@@ -87,8 +87,8 @@ export default function Services() {
         ))}
         <li>
           <Reveal className="h-full" delay={0.2} tilt={3}>
-            <div className="flex h-full min-h-72 flex-col items-center justify-center gap-6 rounded-[1.75rem] border-2 border-dashed border-concrete-400 p-8 text-center">
-              <p className="ink-wobble text-2xl font-bold">
+            <div className="flex h-full min-h-56 flex-col items-center justify-center gap-5 rounded-[1.75rem] border-2 border-dashed border-concrete-400 p-6 text-center sm:min-h-72 sm:gap-6 sm:p-8">
+              <p className="ink-wobble text-xl font-bold sm:text-2xl">
                 Something else
                 <br />
                 in mind?

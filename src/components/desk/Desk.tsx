@@ -4,13 +4,14 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import styles from "./Desk.module.css";
 import Computer, { CHARACTER, KEYBOARD_PORT, MOUSE_PORT, POINTER_REST, RUN_BUTTON, SCREEN, type ComputerTiming } from "./Computer";
 import Mouse, { MOUSE_CABLE_START, type MouseTiming } from "./Mouse";
-import { at, bend, between, Box, COS, Detail, dot, drawn, INK, line, onFront, onTop, Part, poly, Wire, type Point, type Tone } from "./iso";
+import { at, bend, between, Block, COS, DeskFilters, Detail, dot, drawn, INK, line, onFront, onTop, Part, rounded, Wire, type Point, type Tone } from "./iso";
 import { lineLength, PROGRAM, typedPart } from "./program";
 
 /**
  * The desk in the hero: a mechanical keyboard printed with the stack Ahmad
- * works in, a mouse, and the old computer they are plugged into — sketched in
- * the sketchbook's own hand, and in its three inks.
+ * works in, a mouse, and the old computer they are plugged into — made the way
+ * the site's cards and buttons are: soft rounded shapes in paper and pastel, a
+ * thin wobbling edge, and the same hard offset shadow. The keycaps are chips.
  *
  * When the page opens it draws itself: the outlines go down stroke by stroke,
  * the colour goes in after them, the monitor is lowered onto the computer, the
@@ -24,13 +25,17 @@ import { lineLength, PROGRAM, typedPart } from "./program";
  * typing stops, and without the mouse the pointer does.
  */
 
-const CASE: Tone = { top: "#b1c29f", left: "#9caf88", right: "#80966b" };
-const RIM = "#647a52";
-const BOARD: Tone = { top: "#464943", left: "#383b36", right: "#2d2f2b" };
-const CAP: Tone = { top: "#f4f4f0", left: "#dcded8", right: "#c4c8c1" };
-const PLUG: Tone = { top: "#5e625c", left: "#4a4d48", right: "#3b3d39" };
-// the colours a keycap's dish is printed in, in turn
-const DISHES = ["#e2e9da", "#f5dfd5", "#e3e5e0", "#cbd7bd", "#f8ebe4", "#eef1ea"];
+const CASE: Tone = { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" };
+const BOARD: Tone = { top: "#f4f4f0", left: "#e3e5e0", right: "#d2d5cf" };
+const PLUG: Tone = { top: "#7c817a", left: "#6b706a", right: "#5e625c" };
+// the keycaps, chips in the site's pastels, in turn; the big key is sage
+const CHIPS: Tone[] = [
+  { top: "#e2e9da", left: "#cbd7bd", right: "#b8c8a8" },
+  { top: "#f5dfd5", left: "#ecc9b9", right: "#e2b5a1" },
+  { top: "#eceee9", left: "#d9dcd6", right: "#c8ccc5" },
+  { top: "#fafaf7", left: "#e3e5e0", right: "#d2d5cf" },
+];
+const BIG_KEY: Tone = { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" };
 
 // ── the keys ────────────────────────────────────────────────────────────
 const U = 40; // one key width
@@ -57,13 +62,16 @@ const SPACE = KEYS.findIndex((key) => key.label === "FULL-STACK AI");
 
 const BOARD_Z = 22;
 const CAP_Z = 26;
-const CAP_TOP = CAP_Z + 12;
+const CAP_H = 11;
+const CAP_TOP = CAP_Z + CAP_H;
+/** The rounded top of a key, for its flash when it is pressed. */
+const capTop = (key: { x0: number; x1: number; y0: number; y1: number }) =>
+  rounded([at(key.x0, key.y0, CAP_TOP), at(key.x1, key.y0, CAP_TOP), at(key.x1, key.y1, CAP_TOP), at(key.x0, key.y1, CAP_TOP)], 6);
 
 // ── the opening, in progress from 0 to 1 ───────────────────────────────
 /** How long the desk takes to draw itself, and how long it waits for the words to arrive first, in milliseconds. */
 const INTRO = 4200;
 const DELAY = 450;
-const SHADOWS = between(0.02, 0.2);
 const KEYBOARD = { case: 0, board: 0.08, lower: { from: 0.2, span: 0.1 } };
 const COMPUTER: ComputerTiming = { unit: 0.05, monitor: 0.13, lower: 0.3, span: 0.14, on: 0.86 };
 const MOUSE: MouseTiming = { draw: 0.04, lower: 0.26, span: 0.1 };
@@ -163,9 +171,6 @@ const mouseCable = (dx: number, dy: number, pulled = false) =>
     ],
     16,
   );
-
-/** A shadow on the desk under something, drawn in pencil: the outline of its footprint, hatched, a little down and right. */
-const shadow = (x0: number, x1: number, y0: number, y1: number) => poly(at(x0, y0, 0), at(x1, y0, 0), at(x1, y1, 0), at(x0, y1, 0));
 
 export default function Desk({ className }: { className?: string }) {
   const svg = useRef<SVGSVGElement>(null);
@@ -354,23 +359,8 @@ export default function Desk({ className }: { className?: string }) {
 
   return (
     <>
-      <svg ref={svg} viewBox="36 -92 580 648" className={`${styles.desk} ${built ? styles.live : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
-        <defs>
-          {/* pencil shading, for faces turned away from the light and for shadows */}
-          <pattern id="desk-hatch" width="4.5" height="4.5" patternUnits="userSpaceOnUse" patternTransform="rotate(-40)">
-            <path d="M0 0V4.5" stroke={INK} strokeOpacity="0.2" strokeWidth="1.1" />
-          </pattern>
-        </defs>
-
-        {/* shadows on the desk, a little down and to the right of everything */}
-        <g className={styles.fade} style={SHADOWS} transform="translate(10 7)">
-          {[shadow(-255, 5, -270, -156), shadow(-174, 174, -94, 94), shadow(-266, -200, -27, 96)].map((d) => (
-            <g key={d}>
-              <path d={d} fill="#2d2f2b" fillOpacity={0.06} />
-              <path d={d} fill="url(#desk-hatch)" />
-            </g>
-          ))}
-        </g>
+      <svg ref={svg} viewBox="38 -84 582 640" className={`${styles.desk} ${built ? styles.live : ""} ${className ?? ""}`} aria-hidden="true" focusable="false">
+        <DeskFilters />
 
         <Computer
           timing={COMPUTER}
@@ -394,15 +384,15 @@ export default function Desk({ className }: { className?: string }) {
         {/* the mouse's cable, and its plug, in the front of the computer or pulled out onto the desk; click either to pull it out or push it in */}
         <g style={CABLES} className={`${styles.hit} ${styles.plug}`} onClick={() => togglePlug("mouse")}>
           <g ref={mouseWire}>
-            <Wire d={mouseCable(0, 0, !plugged.mouse)} width={2.4} />
+            <Wire d={mouseCable(0, 0, !plugged.mouse)} width={2.6} />
           </g>
           {plugged.mouse ? (
             <g>
-              <Box x0={MOUSE_PORT.x - 4} x1={MOUSE_PORT.x + 4} y0={MOUSE_PORT.y} y1={MOUSE_PORT.y + 10} z={MOUSE_PORT.z - 4} h={8} tone={PLUG} width={1} />
+              <Block x0={MOUSE_PORT.x - 4} x1={MOUSE_PORT.x + 4} y0={MOUSE_PORT.y} y1={MOUSE_PORT.y + 10} z={MOUSE_PORT.z - 4} h={8} tone={PLUG} r={2} width={1} />
               <Detail d={line(at(MOUSE_PORT.x - 4, MOUSE_PORT.y + 10, MOUSE_PORT.z - 1), at(MOUSE_PORT.x + 4, MOUSE_PORT.y + 10, MOUSE_PORT.z - 1))} stroke={MOUSE_PORT.colour} width={1.6} />
             </g>
           ) : (
-            <Box x0={MOUSE_PLUG_OUT.x - 4} x1={MOUSE_PLUG_OUT.x + 4} y0={MOUSE_PLUG_OUT.y} y1={MOUSE_PLUG_OUT.y + 10} z={0} h={8} tone={PLUG} width={1} />
+            <Block x0={MOUSE_PLUG_OUT.x - 4} x1={MOUSE_PLUG_OUT.x + 4} y0={MOUSE_PLUG_OUT.y} y1={MOUSE_PLUG_OUT.y + 10} z={0} h={8} tone={PLUG} r={2} width={1} />
           )}
           <circle cx={at(MOUSE_PORT.x, MOUSE_PORT.y + 10, MOUSE_PORT.z)[0]} cy={at(MOUSE_PORT.x, MOUSE_PORT.y + 10, MOUSE_PORT.z)[1]} r={16} fill="transparent" />
         </g>
@@ -410,53 +400,47 @@ export default function Desk({ className }: { className?: string }) {
         {/* the mouse, to the left of the keyboard and further back along its side, so drawn before it */}
         <Mouse timing={MOUSE} bodyRef={mouse} buttonRef={mouseButton} wheelRef={wheel} />
 
-        {/* ── the keyboard's case, its coiled cable, a name plate and three status lights ── */}
-        <g style={drawn(KEYBOARD.case, KEYBOARD.case + 0.1)}>
-          <g style={CABLES}>
-            <Box x0={122} x1={138} y0={-102} y1={-94} z={2} h={10} tone={PLUG} width={1} />
-            <g className={`${styles.hit} ${styles.plug}`} onClick={() => togglePlug("keyboard")}>
-              {/* the far half of every turn, in shadow, then the near half over it in the light */}
-              <Wire d={COILS[plugged.keyboard ? "in" : "out"].far} width={2.8} colour="#242623" light="#333532" />
-              <Wire d={COILS[plugged.keyboard ? "in" : "out"].near} width={2.8} colour="#5e625c" light="#b8bcb5" />
-              {plugged.keyboard ? (
-                <g>
-                  <Box x0={KEYBOARD_PORT.x} x1={KEYBOARD_PORT.x + 10} y0={KEYBOARD_PORT.y - 4} y1={KEYBOARD_PORT.y + 4} z={KEYBOARD_PORT.z - 4} h={8} tone={PLUG} width={1} />
-                  <Detail d={line(at(KEYBOARD_PORT.x + 10, KEYBOARD_PORT.y + 4, KEYBOARD_PORT.z - 1), at(KEYBOARD_PORT.x + 10, KEYBOARD_PORT.y - 4, KEYBOARD_PORT.z - 1))} stroke={KEYBOARD_PORT.colour} width={1.6} />
-                </g>
-              ) : (
-                <Box x0={KEYBOARD_PLUG.out.x - 10} x1={KEYBOARD_PLUG.out.x} y0={KEYBOARD_PLUG.out.y - 4} y1={KEYBOARD_PLUG.out.y + 4} z={0} h={8} tone={PLUG} width={1} />
-              )}
-              <circle cx={at(KEYBOARD_PLUG.in.x, KEYBOARD_PLUG.in.y, KEYBOARD_PLUG.in.z)[0]} cy={at(KEYBOARD_PLUG.in.x, KEYBOARD_PLUG.in.y, KEYBOARD_PLUG.in.z)[1]} r={16} fill="transparent" />
-            </g>
+        {/* the keyboard's coiled cable and its plug, in the computer's side or pulled out onto the desk; click either to pull it out or push it in */}
+        <g style={CABLES}>
+          <g className={`${styles.hit} ${styles.plug}`} onClick={() => togglePlug("keyboard")}>
+            {/* the far half of every turn, in shade, then the near half over it in the light */}
+            <Wire d={COILS[plugged.keyboard ? "in" : "out"].far} width={2.8} colour="#5e625c" light="#6b706a" />
+            <Wire d={COILS[plugged.keyboard ? "in" : "out"].near} width={2.8} colour="#9a9f98" light="#d2d5cf" />
+            {plugged.keyboard ? (
+              <g>
+                <Block x0={KEYBOARD_PORT.x} x1={KEYBOARD_PORT.x + 10} y0={KEYBOARD_PORT.y - 4} y1={KEYBOARD_PORT.y + 4} z={KEYBOARD_PORT.z - 4} h={8} tone={PLUG} r={2} width={1} />
+                <Detail d={line(at(KEYBOARD_PORT.x + 10, KEYBOARD_PORT.y + 4, KEYBOARD_PORT.z - 1), at(KEYBOARD_PORT.x + 10, KEYBOARD_PORT.y - 4, KEYBOARD_PORT.z - 1))} stroke={KEYBOARD_PORT.colour} width={1.6} />
+              </g>
+            ) : (
+              <Block x0={KEYBOARD_PLUG.out.x - 10} x1={KEYBOARD_PLUG.out.x} y0={KEYBOARD_PLUG.out.y - 4} y1={KEYBOARD_PLUG.out.y + 4} z={0} h={8} tone={PLUG} r={2} width={1} />
+            )}
+            <circle cx={at(KEYBOARD_PLUG.in.x, KEYBOARD_PLUG.in.y, KEYBOARD_PLUG.in.z)[0]} cy={at(KEYBOARD_PLUG.in.x, KEYBOARD_PLUG.in.y, KEYBOARD_PLUG.in.z)[1]} r={16} fill="transparent" />
           </g>
-          <Box x0={-174} x1={174} y0={-94} y1={94} z={0} h={BOARD_Z} tone={CASE} hatch />
-          <Detail d={poly(at(-166, -86, BOARD_Z), at(166, -86, BOARD_Z), at(166, 86, BOARD_Z), at(-166, 86, BOARD_Z))} stroke={RIM} />
-          <Detail d={poly(at(-150, 94, 5), at(-96, 94, 5), at(-96, 94, 17), at(-150, 94, 17))} fill={INK} />
-          <text transform={onFront(at(-123, 94, 11))} y={2.6} textAnchor="middle" fontSize={7.5} fontWeight={700} letterSpacing={1} fill="#f4f4f0" className={styles.fade} style={between(0.14, 0.05)}>
-            MA-01
-          </text>
-          {["#d0714c", "#e6e8e3", "#9caf88"].map((colour, i) => (
-            <Detail key={colour} d={dot(at(112 + i * 16, -90, BOARD_Z), 2.6)} fill={colour} width={0.9} style={{ "--fs": LIGHTS_ON + i * 0.02, "--fl": 0.02 } as CSSProperties} />
-          ))}
         </g>
 
-        {/* ── the board, lowered into the case: dark concrete, with sienna traces and its screws ── */}
+        {/* ── the keyboard: a sage card of a case, with a name plate and three status lights ── */}
+        <g style={drawn(KEYBOARD.case, KEYBOARD.case + 0.1)} filter="url(#desk-card)">
+          <Block x0={122} x1={138} y0={-102} y1={-94} z={2} h={10} tone={PLUG} r={2} width={1} />
+          <Block x0={-174} x1={174} y0={-94} y1={94} z={0} h={BOARD_Z} tone={CASE} r={18} />
+          <Detail d={rounded([at(-150, 94, 17), at(-96, 94, 17), at(-96, 94, 5), at(-150, 94, 5)], 4)} fill="#5e625c" />
+          {["#d0714c", "#f4f4f0", "#80966b"].map((colour, i) => (
+            <Detail key={colour} d={dot(at(112 + i * 16, -89, BOARD_Z), 2.8)} fill={colour} width={0.9} style={{ "--fs": LIGHTS_ON + i * 0.02, "--fl": 0.02 } as CSSProperties} />
+          ))}
+        </g>
+        <text transform={onFront(at(-123, 94, 11))} y={2.6} textAnchor="middle" fontSize={7.5} fontWeight={700} letterSpacing={1} fill="#f4f4f0" className={styles.fade} style={between(0.14, 0.05)}>
+          MA-01
+        </text>
+
+        {/* ── the board, lowered into the case: a paper panel the keys sit on ── */}
         <Part arrival={{ lift: 20, ...KEYBOARD.lower }} style={drawn(KEYBOARD.board, KEYBOARD.board + 0.1)}>
-          <Box x0={-164} x1={164} y0={-84} y1={84} z={BOARD_Z} h={4} tone={BOARD} />
-          <Detail d={[0, 1, 2, 3].map((r) => line(at(-150, -60 + r * U, BOARD_Z + 4), at(150, -60 + r * U, BOARD_Z + 4))).join("")} stroke="#d0714c" width={1.2} />
-          <Detail d={[-156, 156].flatMap((x) => [-76, 76].map((y) => dot(at(x, y, BOARD_Z + 4), 2.6))).join("")} fill="#9a9f98" width={0.8} />
+          <g filter="url(#desk-ink)">
+            <Block x0={-164} x1={164} y0={-84} y1={84} z={BOARD_Z} h={3} tone={BOARD} r={12} width={1.3} />
+          </g>
         </Part>
 
-        {/* ── the keycaps, each dropped onto the board in its turn ── */}
+        {/* ── the keycaps, each a chip, dropped onto the board in its turn ── */}
         {KEYS.map((key, i) => {
-          const inset = 4;
           const legend = Math.min(8.6, (key.x1 - key.x0 - 8) / (key.label.length * 0.6));
-          const dish = poly(
-            at(key.x0 + inset, key.y0 + inset, CAP_TOP),
-            at(key.x1 - inset, key.y0 + inset, CAP_TOP),
-            at(key.x1 - inset, key.y1 - inset, CAP_TOP),
-            at(key.x0 + inset, key.y1 - inset, CAP_TOP),
-          );
           const start = capAt(i);
           return (
             <Part
@@ -472,9 +456,10 @@ export default function Desk({ className }: { className?: string }) {
                 }}
                 className={styles.cap}
               >
-                <Box x0={key.x0} x1={key.x1} y0={key.y0} y1={key.y1} z={CAP_Z} h={12} tone={CAP} width={1.1} />
-                <Detail d={dish} fill={i === SPACE ? "#cbd7bd" : DISHES[i % DISHES.length]} stroke="#b8bcb5" width={0.9} />
-                <path d={dish} fill="#ffffff" className={styles.flash} />
+                <g filter="url(#desk-chip)">
+                  <Block x0={key.x0} x1={key.x1} y0={key.y0} y1={key.y1} z={CAP_Z} h={CAP_H} tone={i === SPACE ? BIG_KEY : CHIPS[i % CHIPS.length]} r={6} width={1.2} />
+                </g>
+                <path d={capTop(key)} fill="#ffffff" className={styles.flash} />
                 <text
                   transform={onTop(at(key.cx, key.cy, CAP_TOP))}
                   y={legend * 0.35}

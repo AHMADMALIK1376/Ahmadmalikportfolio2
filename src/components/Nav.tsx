@@ -71,7 +71,7 @@ export default function Nav() {
       >
         <div className={`transition-colors duration-300 ${scrolled ? "bg-paper/85 backdrop-blur-md" : "bg-transparent"}`}>
           <nav aria-label="Main" className="gutter flex h-(--nav-h) items-center justify-between gap-4">
-            <a href="#top" className="group flex items-center gap-2 rounded-lg text-lg font-bold tracking-tight sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
+            <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
               <span className="text-sienna-500 transition-transform duration-500 group-hover:rotate-[200deg]">
                 <Doodle kind="sparkle" now className="size-6" strokeWidth={4} duration={0.6} />
               </span>
@@ -142,7 +142,7 @@ export default function Nav() {
                     <a
                       href={`#${item.id}`}
                       onClick={() => setOpen(false)}
-                      className="group flex items-baseline gap-4 rounded-lg py-2 text-4xl font-bold sm:text-5xl"
+                      className="group flex items-baseline gap-4 rounded-lg py-2 text-3xl font-bold sm:text-5xl"
                       aria-current={current === item.id ? "location" : undefined}
                     >
                       <span className="text-base text-sienna-600">0{i + 1}</span>

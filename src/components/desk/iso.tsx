@@ -2,23 +2,22 @@ import type { CSSProperties, ReactNode } from "react";
 import styles from "./Desk.module.css";
 
 /**
- * The isometric drawing kit the desk is built with, in the sketchbook's hand.
+ * The isometric drawing kit the desk is built with, in the language of the
+ * site's cards and buttons: soft rounded blocks with a paper or pastel face, a
+ * thin ink edge at the cards' own strength, and — added by the filters the desk
+ * puts them through — the same wobble and the same hard offset shadow.
  *
  * Points are given in the scene's own space — x across the desk, y towards the
- * viewer and z up — and projected onto the view box. Every outline is drawn the
- * way a pen draws it: each edge bowed a little, every corner a little off, and
- * the line running on past where it closed. The colour goes in like marker, a
- * hair out of register with the line. All of it is worked out from the shape's
- * own coordinates, so the server and the browser draw exactly the same wobble,
- * and none of it costs anything while the scene animates.
- *
- * Outlines draw themselves and colour fills in from the timing a group gives
- * them (see `drawn`), driven by --p, the scene's progress from 0 to 1.
+ * viewer and z up — and projected onto the view box. Outlines draw themselves
+ * and colour fills in from the timing a group gives them (see `drawn`), driven
+ * by --p, the scene's progress from 0 to 1.
  */
 
 export type Point = [number, number];
 export type Tone = { top: string; left: string; right: string };
 
+/** The ink every edge is drawn in: the cards' border, not solid black. */
+export const EDGE = "rgba(45, 47, 43, 0.55)";
 export const INK = "#2d2f2b";
 export const CX = 360;
 export const CY = 402;
@@ -52,49 +51,46 @@ export function bend(points: Point[], radius: number) {
   return `M${xy(points[0])}${corners.join("")}L${xy(points[points.length - 1])}`;
 }
 
-// ── the hand ────────────────────────────────────────────────────────────
-
-/** A small, fast random number source, seeded, so the same shape always wobbles the same way. */
-function random(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const seedOf = (points: Point[]) => points.reduce((h, [x, y]) => Math.imul(h ^ Math.round(x * 7) ^ (Math.round(y * 13) << 9), 16777619), 2166136261);
+// ── rounded corners ─────────────────────────────────────────────────────
 
 /**
- * An outline through `points` as a pen would draw it in one stroke: every edge
- * bowed, every corner nudged, and, if it is closed, the line running on a
- * little way past where it started.
+ * One rounded corner: where the curve leaves the edge before it (p1), the
+ * corner it bends round (P), where it joins the edge after (p2), the middle
+ * of the curve (m), and the control points of its two halves (c1, c2).
  */
-export function sketch(points: Point[], closed = true, wobble = 1) {
-  const rand = random(seedOf(points));
-  const jitter = (amount: number) => (rand() * 2 - 1) * amount * wobble;
-  const pts = points.map(([x, y]): Point => [x + jitter(0.8), y + jitter(0.8)]);
-  const n = pts.length;
-  let d = `M${xy(pts[0])}`;
-  for (let i = 0; i < (closed ? n : n - 1); i++) {
-    const a = pts[i];
-    const b = pts[(i + 1) % n];
-    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (length < 0.05) continue;
-    const bow = Math.min(2.2, length * 0.04) * (rand() * 2 - 1) * wobble;
-    const mid: Point = [(a[0] + b[0]) / 2 - ((b[1] - a[1]) / length) * bow, (a[1] + b[1]) / 2 + ((b[0] - a[0]) / length) * bow];
-    d += `Q${xy(mid)} ${xy(b)}`;
-  }
-  if (closed && n > 1) {
-    const [a, b] = pts;
-    const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
-    const run = Math.min(5, length * 0.18) * (0.4 + rand() * 0.6);
-    d += `L${xy([a[0] + ((b[0] - a[0]) / length) * run, a[1] + ((b[1] - a[1]) / length) * run + jitter(0.4)])}`;
-  }
-  return d;
+type Corner = { p1: Point; P: Point; p2: Point; m: Point; c1: Point; c2: Point };
+
+const mix = (a: Point, b: Point, t: number): Point => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+const down = ([x, y]: Point, by: number): Point => [x, y + by];
+
+function round(points: Point[], radius: number): Corner[] {
+  const n = points.length;
+  return points.map((P, i) => {
+    const before = points[(i + n - 1) % n];
+    const after = points[(i + 1) % n];
+    const lb = Math.hypot(before[0] - P[0], before[1] - P[1]);
+    const la = Math.hypot(after[0] - P[0], after[1] - P[1]);
+    const r = Math.min(radius, lb * 0.45, la * 0.45);
+    const p1 = lb ? mix(P, before, r / lb) : P;
+    const p2 = la ? mix(P, after, r / la) : P;
+    const c1 = mix(p1, P, 0.5);
+    const c2 = mix(P, p2, 0.5);
+    return { p1, P, p2, m: mix(c1, c2, 0.5), c1, c2 };
+  });
+}
+
+/** A polygon with its corners rounded, as a closed path. */
+export function rounded(points: Point[], radius: number) {
+  const corners = round(points, radius);
+  return `M${xy(corners[0].p2)}${[...corners.slice(1), corners[0]].map((c) => `L${xy(c.p1)}Q${xy(c.P)} ${xy(c.p2)}`).join("")}Z`;
+}
+
+/** Along a rounded polygon, from the middle of corner i's curve to the middle of its neighbour j's, `by` lower down. */
+function walk(corners: Corner[], i: number, j: number, by = 0) {
+  const X = corners[i];
+  const Y = corners[j];
+  const s = (p: Point) => xy(down(p, by));
+  return j === (i + 1) % corners.length ? `Q${s(X.c2)} ${s(X.p2)}L${s(Y.p1)}Q${s(Y.c1)} ${s(Y.m)}` : `Q${s(X.c1)} ${s(X.p1)}L${s(Y.p2)}Q${s(Y.c2)} ${s(Y.m)}`;
 }
 
 // ── timing ──────────────────────────────────────────────────────────────
@@ -106,64 +102,49 @@ export const between = (start: number, length: number) => ({ "--s": start, "--l"
 
 // ── shapes ──────────────────────────────────────────────────────────────
 
-type Face = { points: Point[]; fill: string; hatch?: boolean };
+type BlockProps = { x0: number; x1: number; y0: number; y1: number; z: number; h: number; tone: Tone; r?: number; width?: number };
 
 /**
- * Flat faces, in the order given: all their colour first, a hair out of
- * register, then pencil hatching on any that are in shade, then every outline
- * over the top, so the lines stay on top of the colour.
+ * A soft block standing on the desk: its top a rounded parallelogram, and its
+ * sides the top swept straight down, so every vertical edge is rounded too. The
+ * side towards the viewer on the left and the one on the right take their own
+ * tones, split where the front corner comes down.
  */
-export function Faces({ faces, width = 1.3 }: { faces: Face[]; width?: number }) {
+export function Block({ x0, x1, y0, y1, z, h, tone, r = 8, width = 1.5 }: BlockProps) {
+  const t = z + h;
+  // back, right, front and left corners of the top
+  const c = round([at(x0, y0, t), at(x1, y0, t), at(x1, y1, t), at(x0, y1, t)], r);
+  const [, right, front, left] = c;
+  const faceLeft = `M${xy(left.m)}L${xy(down(left.m, h))}${walk(c, 3, 2, h)}L${xy(front.m)}${walk(c, 2, 3)}Z`;
+  const faceRight = `M${xy(front.m)}L${xy(down(front.m, h))}${walk(c, 2, 1, h)}L${xy(right.m)}${walk(c, 1, 2)}Z`;
+  const top = rounded(c.map((corner) => corner.P), r);
+  // one stroke: round the top, then down the left, along the bottom and up the right
+  const outline = `M${xy(left.m)}${walk(c, 3, 0)}${walk(c, 0, 1)}${walk(c, 1, 2)}${walk(c, 2, 3)}L${xy(down(left.m, h))}${walk(c, 3, 2, h)}${walk(c, 2, 1, h)}L${xy(right.m)}`;
   return (
     <>
-      {faces.map((face, i) => (
-        <path key={`c${i}`} d={poly(...face.points)} fill={face.fill} transform="translate(0.7 0.5)" className={styles.fill} />
-      ))}
-      {faces.map((face, i) => face.hatch && <path key={`h${i}`} d={poly(...face.points)} fill="url(#desk-hatch)" className={styles.fill} />)}
-      {faces.map((face, i) => (
-        <path key={`o${i}`} d={sketch(face.points)} pathLength={1} fill="none" stroke={INK} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" className={styles.part} />
-      ))}
+      {h > 0 && <path d={faceLeft} fill={tone.left} className={styles.fill} />}
+      {h > 0 && <path d={faceRight} fill={tone.right} className={styles.fill} />}
+      <path d={top} fill={tone.top} className={styles.fill} />
+      <path d={outline} pathLength={1} fill="none" stroke={EDGE} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" className={styles.part} />
     </>
   );
 }
 
-type BoxProps = { x0: number; x1: number; y0: number; y1: number; z: number; h: number; tone: Tone; hatch?: boolean; width?: number };
-
-/** The three faces of a box you can see: front left, front right and top. */
-export function Box({ x0, x1, y0, y1, z, h, tone, hatch = false, width }: BoxProps) {
-  const t = z + h;
-  return (
-    <Faces
-      width={width}
-      faces={[
-        { points: [at(x0, y1, z), at(x1, y1, z), at(x1, y1, t), at(x0, y1, t)], fill: tone.left },
-        { points: [at(x1, y0, z), at(x1, y1, z), at(x1, y1, t), at(x1, y0, t)], fill: tone.right, hatch },
-        { points: [at(x0, y0, t), at(x1, y0, t), at(x1, y1, t), at(x0, y1, t)], fill: tone.top },
-      ]}
-    />
-  );
-}
-
-/** A flat shape of any outline, sketched and coloured like a face. */
-export function Shape({ points, fill, width = 1.1 }: { points: Point[]; fill: string; width?: number }) {
-  return <Faces faces={[{ points, fill }]} width={width} />;
-}
-
 type DetailProps = { d: string; fill?: string; stroke?: string; width?: number; style?: CSSProperties };
 
-/** A small exact shape — a dot, a vent, a trace — drawn and filled with the rest. */
-export function Detail({ d, fill = "none", stroke = INK, width = 1.1, style }: DetailProps) {
+/** A small shape — a panel, a dot, a vent — drawn and filled with the rest. */
+export function Detail({ d, fill = "none", stroke = EDGE, width = 1.2, style }: DetailProps) {
   return <path d={d} pathLength={1} fill={fill} stroke={stroke} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" className={styles.part} style={style} />;
 }
 
 type WireProps = { d: string; width?: number; colour?: string; light?: string; style?: CSSProperties };
 
-/** A cable with thickness to it: an ink outline, its colour, and a highlight along its upper edge. */
-export function Wire({ d, width = 4, colour = "#333532", light = "#7c817a", style }: WireProps) {
+/** A cable: a soft edge, its colour, and a highlight along its upper side. */
+export function Wire({ d, width = 4, colour = "#7c817a", light = "#b8bcb5", style }: WireProps) {
   const path = { d, pathLength: 1, fill: "none", strokeLinecap: "round", strokeLinejoin: "round", className: styles.part } as const;
   return (
     <g style={style}>
-      <path {...path} stroke={INK} strokeWidth={width + 2.4} />
+      <path {...path} stroke={EDGE} strokeWidth={width + 2.2} />
       <path {...path} stroke={colour} strokeWidth={width} />
       <path {...path} stroke={light} strokeWidth={Math.max(0.8, width * 0.3)} transform={`translate(0 ${(-width * 0.22).toFixed(2)})`} />
     </g>
@@ -184,5 +165,39 @@ export function Part({ arrival, style, className, children }: { arrival: Arrival
     <g className={`${fall ? styles.fall : styles.lower} ${className ?? ""}`} style={{ "--lift": lift, "--from": from, "--span": span, ...style } as CSSProperties}>
       {children}
     </g>
+  );
+}
+
+/**
+ * The filters the desk is drawn through, matching the site's own: `desk-card`
+ * wobbles an edge slowly along its length like a card's and throws the cards'
+ * hard shadow, 5 across and 5 down with a unit of spread; `desk-chip` has the
+ * finer grain and smaller shadow of a chip or a button.
+ */
+export function DeskFilters() {
+  const filter = (id: string, frequency: number, octaves: number, scale: number, offset: number, spread: number) => (
+    <filter id={id} x="-15%" y="-15%" width="135%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency={frequency} numOctaves={octaves} result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale={scale} xChannelSelector="R" yChannelSelector="G" result="ink" />
+      <feMorphology in="ink" operator="dilate" radius={spread} result="spread" />
+      <feOffset in="spread" dx={offset} dy={offset} result="moved" />
+      <feFlood floodColor={INK} floodOpacity={0.4} />
+      <feComposite in2="moved" operator="in" result="shadow" />
+      <feMerge>
+        <feMergeNode in="shadow" />
+        <feMergeNode in="ink" />
+      </feMerge>
+    </filter>
+  );
+  return (
+    <defs>
+      {filter("desk-card", 0.035, 2, 4, 5, 1)}
+      {filter("desk-chip", 0.1, 3, 2.5, 2.5, 0.8)}
+      {/* a wobble with no shadow, for the parts laid flat on something else */}
+      <filter id="desk-ink" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence type="fractalNoise" baseFrequency={0.1} numOctaves={3} result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale={2} xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
   );
 }

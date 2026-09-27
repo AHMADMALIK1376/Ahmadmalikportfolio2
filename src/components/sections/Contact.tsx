@@ -11,23 +11,23 @@ import CopyEmail from "./CopyEmail";
 
 export default function Contact() {
   return (
-    <section id="contact" aria-labelledby="contact-title" className="gutter py-24 md:py-32">
+    <section id="contact" aria-labelledby="contact-title" className="gutter py-16 sm:py-24 md:py-32">
       <SectionHeading number="06" kicker="contact" id="contact-title">
         Let&apos;s build something <Highlight mark="circle" ink="sienna">together</Highlight>.
       </SectionHeading>
 
-      <div className="grid gap-16 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
+      <div className="grid gap-12 sm:gap-16 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
         <Reveal>
-          <div className="space-y-8">
-            <p className="text-lg leading-relaxed">
+          <div className="space-y-7 sm:space-y-8">
+            <p className="text-[0.95rem] leading-relaxed sm:text-lg">
               Got a project, a role, or just an idea you want to think out loud about? My inbox is open — I read everything and reply to everything.
             </p>
 
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted">email me</p>
               <div className="mt-3 flex flex-wrap items-center gap-4">
-                <a href={`mailto:${PERSON.email}`} className="ink-wobble group inline-flex items-center gap-2 break-all rounded text-lg font-bold sm:text-xl">
-                  <Mail className="size-6 shrink-0 text-sienna-500" />
+                <a href={`mailto:${PERSON.email}`} className="ink-wobble group inline-flex items-center gap-2 break-all rounded text-base font-bold sm:text-xl">
+                  <Mail className="size-5 shrink-0 text-sienna-500 sm:size-6" />
                   <span className="decoration-sienna-500 decoration-wavy decoration-2 underline-offset-4 group-hover:underline">{PERSON.email}</span>
                 </a>
                 <CopyEmail />
@@ -46,7 +46,7 @@ export default function Contact() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-bold text-muted">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-bold text-muted sm:text-sm">
               <span className="inline-flex items-center gap-1.5">
                 <Pin className="size-4 text-sienna-500" /> {PERSON.location}
               </span>

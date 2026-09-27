@@ -16,14 +16,14 @@ const number = (project: Project) => String(PROJECTS.indexOf(project) + 1).padSt
 function ProjectCard({ project, onOpen }: { project: Project; onOpen: (p: Project, from: HTMLElement) => void }) {
   const extra = project.stack.length - 4;
   return (
-    <article className={`sketch-box sketch-box--lift ink-${project.ink} flex h-full flex-col p-6 sm:p-7`}>
+    <article className={`sketch-box sketch-box--lift ink-${project.ink} flex h-full flex-col p-5 sm:p-7`}>
       <div className="flex items-center justify-between gap-3">
-        <span className="ink-wobble text-4xl font-bold leading-none text-(--ink-text)">#{number(project)}</span>
+        <span className="ink-wobble text-3xl font-bold leading-none text-(--ink-text) sm:text-4xl">#{number(project)}</span>
         <span className="sketch-chip">{LABEL[project.category]}</span>
       </div>
-      <h3 className="mt-5 text-2xl">{project.title}</h3>
-      <p className="mt-1 font-bold text-(--ink-text)">{project.tagline}</p>
-      <p className="mt-4 line-clamp-3 text-[0.95rem] leading-relaxed text-muted">{project.points[0]}</p>
+      <h3 className="mt-4 text-xl sm:mt-5 sm:text-2xl">{project.title}</h3>
+      <p className="mt-1 text-sm font-bold text-(--ink-text) sm:text-base">{project.tagline}</p>
+      <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted sm:mt-4 sm:text-[0.95rem]">{project.points[0]}</p>
       <ul className="mt-5 flex flex-wrap gap-2" aria-label="Built with">
         {project.stack.slice(0, 4).map((tool) => (
           <li key={tool} className="sketch-chip">
@@ -32,7 +32,7 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: (p: Projec
         ))}
         {extra > 0 && <li className="sketch-chip">+{extra}</li>}
       </ul>
-      <div className="mt-auto flex flex-wrap items-center gap-3 pt-7">
+      <div className="mt-auto flex flex-wrap items-center gap-3 pt-6 sm:pt-7">
         <SketchButton size="sm" calm aria-haspopup="dialog" onClick={(e) => onOpen(project, e.currentTarget)} icon={<Plus className="sketch-btn__icon" />}>
           Details<span className="sr-only"> about {project.title}</span>
         </SketchButton>
@@ -100,7 +100,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
         transition={{ type: "spring", stiffness: 220, damping: 22 }}
       >
         <span className="sketch-tape -top-3 left-1/2 -translate-x-1/2 -rotate-3" />
-        <div className="max-h-[85svh] overflow-y-auto p-7 sm:p-10">
+        <div className="max-h-[85svh] overflow-y-auto p-5 sm:p-10">
           <div className="flex items-start justify-between gap-4">
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-(--ink-text)">
               #{number(project)} · {LABEL[project.category]}
@@ -115,14 +115,14 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
               {project.title}
             </Highlight>
           </h3>
-          <p className="mt-2 text-lg font-bold">{project.tagline}</p>
+          <p className="mt-2 text-base font-bold sm:text-lg">{project.tagline}</p>
           <p className="mt-4 flex flex-wrap gap-2">
             <span className="sketch-chip">{project.role}</span>
             <span className="sketch-chip">{project.period}</span>
           </p>
 
           <h4 className="mt-8 text-sm uppercase tracking-[0.2em] text-muted">what i did</h4>
-          <ul className="sketch-list mt-4 space-y-3 leading-relaxed">
+          <ul className="sketch-list mt-4 space-y-3 text-sm leading-relaxed sm:text-base">
             {project.points.map((point) => (
               <li key={point}>{point}</li>
             ))}
@@ -163,12 +163,12 @@ export default function Projects() {
   const close = useCallback(() => setOpen(null), []);
 
   return (
-    <section id="work" aria-labelledby="work-title" className="gutter py-24 md:py-32">
+    <section id="work" aria-labelledby="work-title" className="gutter py-16 sm:py-24 md:py-32">
       <SectionHeading number="03" kicker="selected work" id="work-title" intro="Things I've designed, built and shipped — AI engines, full-stack products, and a few tools made for the fun of it.">
         Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
       </SectionHeading>
 
-      <div role="group" aria-label="Filter projects" className="-mt-4 mb-12 flex flex-wrap items-center gap-3">
+      <div role="group" aria-label="Filter projects" className="-mt-3 mb-9 flex flex-wrap items-center gap-2.5 sm:-mt-4 sm:mb-12 sm:gap-3">
         {CATEGORIES.map((category) => (
           <SketchButton key={category.id} size="sm" calm aria-pressed={filter === category.id} onClick={() => setFilter(category.id)}>
             {category.label}
@@ -182,7 +182,7 @@ export default function Projects() {
       </div>
 
       <Reveal>
-        <motion.ul layout className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+        <motion.ul layout className="grid gap-6 sm:gap-7 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence mode="popLayout" initial={false}>
             {shown.map((project) => (
               <motion.li

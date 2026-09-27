@@ -258,6 +258,27 @@
     animation: none;
   }
 
+  /* on a phone every size steps down, so a row of buttons stays a row and the
+     lasso still hangs where the design put it (its offsets are in em) */
+  @media (width < 40rem) {
+    .sketch-btn {
+      font-size: 1.1rem;
+      padding: 0.85em 1em;
+      box-shadow: var(--shadow-ink) 3px 3px 0 1px;
+    }
+    .sketch-btn--md {
+      font-size: 0.92rem;
+      padding: 0.8em 1.05em;
+    }
+    .sketch-btn--sm {
+      font-size: 0.78rem;
+      padding: 0.7em 1em;
+    }
+    .sketch-btn.sketch-btn--lasso {
+      margin-left: 1.6em;
+    }
+  }
+
   /* no shadow until it is pointed at or current: for the navigation */
   .sketch-btn--ghost {
     box-shadow: none;
@@ -561,6 +582,12 @@
     box-shadow: var(--shadow-ink) 2px 2px 0 1px;
     filter: url(#sketchChip);
     white-space: nowrap;
+  }
+
+  @media (width < 40rem) {
+    .sketch-chip {
+      font-size: 0.72rem;
+    }
   }
 
   /* a line drawn by hand under or across something */

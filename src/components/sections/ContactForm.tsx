@@ -25,7 +25,7 @@ const PROBLEMS: Record<string, string> = {
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-baseline justify-between text-sm font-bold uppercase tracking-[0.18em]">
+      <span className="mb-2 flex items-baseline justify-between text-xs font-bold uppercase tracking-[0.18em] sm:text-sm">
         {label}
         {hint && <span className="text-xs font-normal normal-case tracking-normal text-muted">{hint}</span>}
       </span>
@@ -35,7 +35,7 @@ function Field({ label, children, hint }: { label: string; children: React.React
 }
 
 const input =
-  "block w-full rounded-[1.1rem] bg-transparent px-4 py-3 text-base font-bold text-ink placeholder:font-normal placeholder:text-concrete-500 focus:outline-none";
+  "block w-full rounded-[1.1rem] bg-transparent px-3.5 py-2.5 text-sm font-bold sm:px-4 sm:py-3 sm:text-base text-ink placeholder:font-normal placeholder:text-concrete-500 focus:outline-none";
 
 export default function ContactForm() {
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -67,12 +67,12 @@ export default function ContactForm() {
     <div className="sketch-box relative overflow-visible">
       <span className="sketch-tape -top-3 left-10 -rotate-6" />
       <span className="sketch-tape -top-3 right-10 rotate-6" />
-      <div className="notebook rounded-[1.75rem] px-6 pb-8 pt-10 sm:px-10 sm:pl-16">
+      <div className="notebook rounded-[1.75rem] pb-7 pl-12 pr-5 pt-9 sm:px-10 sm:pb-8 sm:pl-16 sm:pt-10">
         <AnimatePresence mode="wait" initial={false}>
           {state.kind === "sent" ? (
             <motion.div
               key="sent"
-              className="flex min-h-[26rem] flex-col items-center justify-center text-center"
+              className="flex min-h-[22rem] flex-col items-center justify-center text-center sm:min-h-[26rem]"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
@@ -96,8 +96,8 @@ export default function ContactForm() {
               </div>
             </motion.div>
           ) : (
-            <motion.form key="form" onSubmit={send} className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20, rotate: -2 }}>
-              <p className="ink-wobble text-2xl font-bold">Dear Ahmad,</p>
+            <motion.form key="form" onSubmit={send} className="space-y-5 sm:space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20, rotate: -2 }}>
+              <p className="ink-wobble text-xl font-bold sm:text-2xl">Dear Ahmad,</p>
               <div className="grid gap-6 sm:grid-cols-2">
                 <Field label="Name">
                   <input name="name" required maxLength={100} autoComplete="name" placeholder="Your name" className={input} />
@@ -133,7 +133,7 @@ export default function ContactForm() {
               </AnimatePresence>
 
               <div className="flex flex-wrap items-center justify-between gap-6 pt-2">
-                <p className="ink-wobble text-lg font-bold text-muted">— yours,</p>
+                <p className="ink-wobble text-base font-bold text-muted sm:text-lg">— yours,</p>
                 <SketchButton type="submit" lasso disabled={state.kind === "sending"} icon={<ArrowRight className="sketch-btn__icon" />}>
                   {state.kind === "sending" ? "Sending…" : "Send it"}
                 </SketchButton>
