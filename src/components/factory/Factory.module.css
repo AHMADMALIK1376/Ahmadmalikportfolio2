@@ -132,25 +132,54 @@
   will-change: translate, opacity;
 }
 
-/* BUILD's chimney, smoking while the line runs */
-.steam circle {
+/* smoke from the machines' pipes: little clouds that come up out of each pipe, swell, drift and thin away while the
+   line runs, and a bigger puff each time the machine works. They grow from their flat bottoms, at the pipe. */
+.puff,
+.burst {
   opacity: 0;
+  stroke: rgb(45 47 43 / 0.38);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
   transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: 50% 100%;
 }
 
-.live .steam circle {
-  animation: puff 2.7s ease-out infinite;
+.live .puff {
+  animation: puff 3.6s ease-out infinite;
 }
 
 @keyframes puff {
-  from {
-    opacity: 0.9;
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  14% {
+    opacity: 0.95;
+  }
+  65% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(28px, -120px) scale(1.9);
+  }
+}
+
+[data-go] > g > .burst {
+  animation: burst 1.8s ease-out;
+}
+
+@keyframes burst {
+  0% {
+    opacity: 0;
     transform: translate(0, 0) scale(0.5);
   }
-  to {
+  12% {
+    opacity: 1;
+  }
+  100% {
     opacity: 0;
-    transform: translate(10px, -46px) scale(1.7);
+    transform: translate(-12px, -100px) scale(2.3);
   }
 }
 
@@ -222,7 +251,8 @@
   .rover[data-driving] .spoke,
   .lamp[data-go] circle,
   .arm[data-working],
-  .live .steam circle,
+  .live .puff,
+  [data-go] > g > .burst,
   .chart {
     animation: none;
   }

@@ -215,7 +215,12 @@ const BELT_CLIP = `polygon(${topFace(-BELT.half, BELT.half, BELT.y0, BELT.y1, BE
  * The layers, bottom to top. What is on the belt moves between them as it goes: under the first machine before it
  * gets there, inside it (over its far wall, under its tool and its glass), over it once it is out, and so on.
  */
-const LAYER = { base: 1, slats: 2, hopper: 4, steam: 14, test: 16, front: 22, chart: 23, armsBack: 24, stage: 25, store: 26, armsFront: 27, rover: 28 };
+const LAYER = { base: 1, slats: 2, hopper: 4, test: 16, front: 22, chart: 23, armsBack: 24, stage: 25, store: 26, armsFront: 27, rover: 28, smoke: 29 };
+
+/** The pipe on each machine's roof that smoke comes out of: where it stands, how thick it is, and how tall. */
+const PIPES = MACHINES.map((m, n) => (n === 1 ? { x: -18, y: m.y0 + 14, w: 12, h: 34 } : { x: -22, y: m.y0 + 11, w: 8, h: n === 0 ? 30 : 24 }));
+/** A puff of smoke: a little cloud, standing on its flat bottom. */
+const PUFF = "M-14 0c-6 0-7-8-1.5-9.5 0-6.5 8-9 12-4.5 2.5-5.5 11-5 12.5 1 5.5-.5 8 6 3.5 9.5-.5 3.5-2 3.5-4 3.5Z";
 const MACHINE_LAYERS = [
   { back: 5, tool: 7, front: 8 },
   { back: 10, tool: 12, front: 13 },
@@ -671,6 +676,7 @@ export default function Factory({ className }: { className?: string }) {
   const items = useRef<(SVGSVGElement | null)[]>([]);
   const tools = useRef<(SVGSVGElement | null)[]>([]);
   const lights = useRef<(SVGSVGElement | null)[]>([]);
+  const smoke = useRef<(SVGGElement | null)[]>([]);
   const trucks = useRef<(SVGSVGElement | null)[]>([]);
   const faces = useRef<{ x: SVGGElement | null; y: SVGGElement | null }[]>(TRUCKS.map(() => ({ x: null, y: null })));
   const cargo = useRef<{ x: (SVGGElement | null)[]; y: (SVGGElement | null)[] }[]>(TRUCKS.map(() => ({ x: [], y: [] })));
@@ -911,6 +917,7 @@ export default function Factory({ className }: { className?: string }) {
               it.worked = n + 1;
               tools.current[n]?.animate(TOOL_MOVES[n].frames, { duration: TOOL_MOVES[n].ms });
               pulse(lights.current[n]);
+              pulse(smoke.current[n]);
             }
             if (it.stage === n && it.y >= w) look(i, n + 1);
           });
@@ -1288,17 +1295,16 @@ export default function Factory({ className }: { className?: string }) {
             <Layer key={`${m.key}-front`} z={MACHINE_LAYERS[n].front}>
               <Part arrival={arrival} style={drawn(start, start + 0.1)}>
                 <MachineFront m={m} />
+                {/* the pipe the smoke comes out of, with a band round its top */}
+                <g filter="url(#desk-chip)">
+                  <Block x0={PIPES[n].x - PIPES[n].w / 2} x1={PIPES[n].x + PIPES[n].w / 2} y0={PIPES[n].y - PIPES[n].w / 2} y1={PIPES[n].y + PIPES[n].w / 2} z={ROOF + 16} h={PIPES[n].h} tone={TONES.concrete} r={PIPES[n].w / 3} width={1.1} />
+                  <Block x0={PIPES[n].x - PIPES[n].w / 2 - 1} x1={PIPES[n].x + PIPES[n].w / 2 + 1} y0={PIPES[n].y - PIPES[n].w / 2 - 1} y1={PIPES[n].y + PIPES[n].w / 2 + 1} z={ROOF + 12 + PIPES[n].h} h={4} tone={STEEL} r={PIPES[n].w / 3} width={1} />
+                </g>
                 {n === 0 && (
                   // on DESIGN's roof, a big pencil
                   <g filter="url(#desk-chip)">
                     <Block x0={-5} x1={5} y0={mid - 5} y1={mid + 5} z={ROOF + 16} h={34} tone={PENCIL} r={2} width={1.1} />
                     <Block x0={-5} x1={5} y0={mid - 5} y1={mid + 5} z={ROOF + 50} h={6} tone={TONES.concrete} r={2} width={1} />
-                  </g>
-                )}
-                {n === 1 && (
-                  // on BUILD's roof, a chimney
-                  <g filter="url(#desk-chip)">
-                    <Block x0={-24} x1={-12} y0={m.y0 + 8} y1={m.y0 + 20} z={ROOF + 16} h={34} tone={TONES.concrete} r={4} width={1.1} />
                   </g>
                 )}
                 {n === 2 && (
@@ -1324,11 +1330,28 @@ export default function Factory({ className }: { className?: string }) {
           ];
         })}
 
-        {/* BUILD's chimney, smoking */}
-        <Layer z={LAYER.steam} className={styles.steam}>
-          {[0, 1, 2].map((k) => {
-            const [x, y] = at(-18, MACHINES[1].y0 + 14, ROOF + 56);
-            return <circle key={k} cx={x} cy={y} r={6 + k * 1.5} fill="#fafaf7" stroke="rgba(45,47,43,0.35)" strokeWidth={1} style={{ animationDelay: `${k * -0.9}s` }} />;
+        {/* smoke, puffing up out of each machine's pipe the whole time, and a big puff each time the machine works */}
+        <Layer z={LAYER.smoke}>
+          {PIPES.map((pipe, n) => {
+            const [x, y] = at(pipe.x, pipe.y, ROOF + 18 + pipe.h);
+            const fill = n === 1 ? "#e6e8e3" : "#fafaf7";
+            return (
+              <g
+                key={n}
+                ref={(el) => {
+                  smoke.current[n] = el;
+                }}
+              >
+                {[0, 1, 2, 3, 4].map((k) => (
+                  <g key={k} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(0.66 + (k % 2) * 0.14).toFixed(2)})`}>
+                    <path className={styles.puff} d={PUFF} fill={fill} style={{ animationDelay: `${-(k * 0.72 + n * 0.45).toFixed(2)}s` }} />
+                  </g>
+                ))}
+                <g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(0.9)`}>
+                  <path className={styles.burst} d={PUFF} fill={fill} />
+                </g>
+              </g>
+            );
           })}
         </Layer>
 

@@ -68,8 +68,9 @@ Ideas (named after Ahmad's projects) drop out of a hopper fed from a thought clo
 conveyor that runs from the top right of the picture to the bottom left, across a factory floor.
 The belt runs right through three machines, each a tunnel with an open frame at either end and
 glass along the near side, so the work inside can be watched: at DESIGN a pen comes down and
-draws the idea into a wireframe, at BUILD (smoking, with a tank piped into it) a press stamps it
-into a laptop running the app, and at SHIP a box is lowered over it. A robot arm at TEST scans
+draws the idea into a wireframe, at BUILD (with a tank piped into it) a press stamps it into a
+laptop running the app, and at SHIP a box is lowered over it. Little clouds of smoke puff up out
+of a pipe on each machine's roof, with a bigger puff each time the machine works. A robot arm at TEST scans
 each laptop and ticks it off. Two jointed robot arms stand at the end of the belt: the first
 lifts each box off the belt and stacks it at the right side of the belt, two high, and the second
 takes the boxes off the stack and carries them into the warehouse. A robot on wheels, with an arm
