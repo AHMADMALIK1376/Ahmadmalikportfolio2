@@ -18,23 +18,27 @@ import styles from "./Factory.module.css";
  * comes down and draws the idea into a wireframe, at BUILD a press stamps the
  * wireframe into a laptop running the app, and at SHIP a box is lowered over
  * it. Between the last two a robot arm at TEST scans each laptop and ticks it
- * off. At the end of the line a gantry lifts each box off the belt and stacks
- * it in storage, two high, and a jointed robot arm picks the boxes off the
- * stack and packs them into a truck in two neat rows of three. Full, the truck
- * drives off behind the words of the hero and up behind the bar along the top
- * of the page, and the next truck, in another colour, pulls in. Clicking the
- * factory drops in an idea.
+ * off.
+ *
+ * Two robot arms stand at the end of the belt. The first lifts each box off the
+ * belt and stacks it at the right side of the belt, two high; the second takes
+ * the boxes off the stack and carries them into the warehouse. A robot on
+ * wheels, with an arm of its own, takes them from the warehouse and drives them
+ * one at a time to the truck, and packs it, six boxes to a truck, in two rows
+ * of three. Full, the truck drives off behind the words of the hero and up
+ * behind the bar along the top of the page, and the next truck, in another
+ * colour, pulls in. Clicking the factory drops in an idea.
  *
  * It is drawn in layers, one SVG over another in the same view box, stacked in
  * the order they are painted, so a thing on the belt really goes into a
  * machine, is seen through its glass, and comes out of the other side.
  * Everything that moves is moved by its CSS translate where it can be, so its
- * wobbling edges are not redrawn; only the loading arm, whose joints bend, is
- * drawn afresh as it moves.
+ * wobbling edges are not redrawn; the robot arms, whose joints bend, are drawn
+ * afresh from their pose as they move, each part a shaded block.
  */
 
 // ── the view, and moving within it ──────────────────────────────────────
-const VB = { x: 40, y: 50, w: 712, h: 556 };
+const VB = { x: 16, y: 52, w: 866, h: 608 };
 const VIEW = `${VB.x} ${VB.y} ${VB.w} ${VB.h}`;
 /** A shift on screen, in view box units, as a CSS translate of a layer the size of the view. */
 const shift = (dx: number, dy: number) => `${((dx / VB.w) * 100).toFixed(3)}% ${((dy / VB.h) * 100).toFixed(3)}%`;
@@ -45,12 +49,26 @@ const moveBy = (dx: number, dy: number, dz = 0) => `translate(${(COS * (dx - dy)
 const percentOf = ([x, y]: Point) => `${(((x - VB.x) / VB.w) * 100).toFixed(2)}% ${(((y - VB.y) / VB.h) * 100).toFixed(2)}%`;
 const smooth = (k: number) => k * k * (3 - 2 * k);
 
+// ── points in the scene ─────────────────────────────────────────────────
+type V3 = { x: number; y: number; z: number };
+const v3 = (x: number, y: number, z: number): V3 => ({ x, y, z });
+const plus = (a: V3, b: V3) => v3(a.x + b.x, a.y + b.y, a.z + b.z);
+const minus = (a: V3, b: V3) => v3(a.x - b.x, a.y - b.y, a.z - b.z);
+const times = (a: V3, k: number) => v3(a.x * k, a.y * k, a.z * k);
+const dot = (a: V3, b: V3) => a.x * b.x + a.y * b.y + a.z * b.z;
+const cross = (a: V3, b: V3) => v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+const unit = (a: V3) => times(a, 1 / (Math.hypot(a.x, a.y, a.z) || 1));
+const flat = (p: V3) => at(p.x, p.y, p.z);
+const above = (p: V3, by: number) => v3(p.x, p.y, p.z + by);
+/** How near the viewer a point is: the viewer looks down from along x, y and z at once. */
+const depthOf = (p: V3) => p.x + p.y + p.z;
+
 // ── the line, in the scene's own units: y along the belt, x across it, z up ──
-const BELT = { y0: -286, y1: 244, half: 26, z: 34 };
+const BELT = { y0: -300, y1: 140, half: 26, z: 34 };
 const FRAME = { half: 30, h: 30 };
-const FLOOR = { x0: -98, x1: 132, y0: -332, y1: 270 };
+const FLOOR = { x0: -130, x1: 236, y0: -350, y1: 250 };
 /** Where the ideas drop onto the belt, and from how high. */
-const SPAWN_Y = -282;
+const SPAWN_Y = -296;
 const FALL_FROM = 64;
 /** How far a thing on the belt reaches either way along it, at its biggest. */
 const REACH = 20;
@@ -59,9 +77,9 @@ const REACH = 20;
  * a wall along the far side, glass along the near one, and a roof.
  */
 const MACHINES = [
-  { key: "design", label: "DESIGN", y0: -238, y1: -154, tone: { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" } },
-  { key: "build", label: "BUILD", y0: -110, y1: -26, tone: { top: "#f5dfd5", left: "#ecc9b9", right: "#e2b5a1" } },
-  { key: "ship", label: "SHIP", y0: 70, y1: 154, tone: TONES.paper },
+  { key: "design", label: "DESIGN", y0: -256, y1: -172, tone: { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" } },
+  { key: "build", label: "BUILD", y0: -140, y1: -56, tone: { top: "#f5dfd5", left: "#ecc9b9", right: "#e2b5a1" } },
+  { key: "ship", label: "SHIP", y0: 12, y1: 96, tone: TONES.paper },
 ] as const;
 type Machine = (typeof MACHINES)[number];
 const HALF = 34; // either side of the belt
@@ -76,21 +94,27 @@ const ROOF = 112;
 const WORK_AT = 26;
 const work = (m: { y0: number }) => m.y0 + WORK_AT;
 /** Where the robot arm scans what goes by. */
-const TEST_Y = 22;
-/** Where boxes wait at the end of the belt for the gantry, and the storage it stacks them in: three across, two high. */
-const PICK_Y = 228;
-const STORE = { xs: [52, 74, 96], layers: 2, table: 10 };
-const STORE_SLOTS = STORE.xs.length * STORE.layers;
-/** The gantry's gripper, when it holds a box on the belt: its underside just over the box. */
-const GRIP_Z = BELT.z + 19;
-/** The jointed arm that loads the trucks: where its shoulder is, the length of each link, and where it rests. */
-const SHOULDER = { x: 74, y: 255, z: 28 };
-const ARM = { upper: 50, fore: 46, hand: 12 };
-type Arm = { x: number; y: number; z: number };
-const REST: Arm = { x: 82, y: 244, z: 76 };
+const TEST_Y = -22;
+/** Where a box waits at the end of the belt to be lifted off. */
+const PICK_Y = 122;
+
+// ── the end of the line ─────────────────────────────────────────────────
+/** A box is 18 high; a gripper holding one has its wrist this far over the bottom of the box. */
+const BOX_H = 18;
+const HAND = 14;
+const GRIP = BOX_H + 1 + HAND;
+/**
+ * The end of the line is a row to the right of the belt's end: the stack at the side of the belt (three across, two
+ * high, on a low table), then the warehouse (three bays, two high), with an arm standing behind each gap to work
+ * across it. The robot on wheels runs along a lane in front of the row, between the warehouse and the truck.
+ */
+const STAGE = { xs: [63, 85, 107], y: 132, table: 10, layers: 2, x0: 50, x1: 120 };
+const STORE = { xs: [163, 185, 207], y: 132, floor: 4, layers: 2, x0: 150, x1: 220, y0: 116, y1: 148 };
+const LANE = 170;
+const ROVER = { x: 120, deck: 20, shoulder: 34, speed: 280 };
 /** Where a truck waits to be loaded, and the six places in its bed: three along it, two across. */
-const BAY = { x: 16, y: 294 };
-/** The places in the bed in the order they are filled, which is the order they are painted: the furthest first. */
+const BAY = { x: -30, y: 212 };
+/** The places in the bed in the order they are painted: the furthest first. */
 const SLOTS: [number, number][] = [
   [0, 0],
   [1, 0],
@@ -99,11 +123,14 @@ const SLOTS: [number, number][] = [
   [1, 1],
   [2, 1],
 ];
+/** The order the robot fills them in: the row nearer it first, then the other, each from the cab back. */
+const FILL = [0, 1, 3, 2, 4, 5];
 const ALONG = [-1, 20, 41];
 const ACROSS = [-11.5, 11.5];
 /** Where a place in the bed is, as the truck stands in the bay facing along −x, or once it has turned to face along −y. */
 const slotAt = ([a, b]: [number, number], facing: "x" | "y") => (facing === "x" ? { x: BAY.x + ALONG[a], y: BAY.y + ACROSS[b] } : { x: BAY.x + ACROSS[b], y: BAY.y + ALONG[a] });
 
+// ── colours ─────────────────────────────────────────────────────────────
 const BELT_TONE: Tone = { top: "#5e625c", left: "#4a4d48", right: "#3b3d39" };
 const KRAFT: Tone = { top: "#ecbea9", left: "#e2b5a1", right: "#de9372" };
 const LAPTOP: Tone = { top: "#e6e8e3", left: "#d3d6d0", right: "#b9bdb6" };
@@ -112,28 +139,32 @@ const STEEL: Tone = { top: "#b8bcb5", left: "#9a9f98", right: "#7c817a" };
 const INSIDE: Tone = { top: "#9a9f98", left: "#7c817a", right: "#6b706a" };
 const SIENNA: Tone = { top: "#de9372", left: "#d0714c", right: "#bc4e26" };
 const PENCIL: Tone = { top: "#f5dfd5", left: "#de9372", right: "#d0714c" };
+const SAGE: Tone = { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" };
+const SAGE_DEEP: Tone = { top: "#b1c29f", left: "#9caf88", right: "#80966b" };
+const GRIPPER: Tone = { top: "#7c817a", left: "#5e625c", right: "#4a4d48" };
+const WOOD: Tone = { top: "#e2b5a1", left: "#d0a58f", right: "#c0947f" };
 const NOTES = ["#e2e9da", "#f5dfd5", "#fafaf7"];
 const IDEAS = ["FOLIUM", "GRAPHFORGE", "NEURACACHE", "HIREME", "FOCUSFLOW", "BUGISTAN", "BID ENGINE", "ROUTINE"];
 /** The trucks, which take turns: each its own colour. */
-const TRUCKS: Tone[] = [SIENNA, { top: "#b1c29f", left: "#9caf88", right: "#80966b" }, { top: "#9a9f98", left: "#7c817a", right: "#5e625c" }];
+const TRUCKS: Tone[] = [SIENNA, SAGE_DEEP, { top: "#9a9f98", left: "#7c817a", right: "#5e625c" }];
 
 // ── the timing ──────────────────────────────────────────────────────────
 const INTRO = 3200;
 const DELAY = 450;
 const SPEED = 44; // along the belt, units a second
-const SPAWN_EVERY = 1900;
+const SPAWN_EVERY = 3000;
 const FALL = 420;
 const SLAT = 16;
 const POOL = 12;
 const GAP = 40; // the least room between two things on the belt
 const DRIVE = 220; // a truck's speed, units a second
 const ARRIVE = 1300;
-/** How far before the middle of a machine a thing is when the machine's tool starts on it. */
+/** How far before where a machine's tool works a thing is when the tool starts on it. */
 const LEAD = 10;
-/** Where the line is already running when the factory is built: things along the belt, boxes in storage and in the truck. */
-const SEED = { belt: [-240, -170, -100, -40, 30, 100, 170], stored: 2, loaded: 2 };
+/** Where the line is already running when the factory is built: things along the belt, boxes stacked, stored and loaded. */
+const SEED = { belt: [-268, -195, -150, -80, -10, 60, PICK_Y], staged: 2, stored: 2, loaded: 2 };
 
-// ── the tools at work: each a set of moves of its layer, starting as a thing reaches LEAD before the middle ──
+// ── the tools at work: each a set of moves of its layer, starting as a thing reaches LEAD before where it works ──
 const PEN_UP = 16;
 const PRESS_DOWN = 34;
 const DROP_DOWN = 38;
@@ -184,7 +215,7 @@ const BELT_CLIP = `polygon(${topFace(-BELT.half, BELT.half, BELT.y0, BELT.y1, BE
  * The layers, bottom to top. What is on the belt moves between them as it goes: under the first machine before it
  * gets there, inside it (over its far wall, under its tool and its glass), over it once it is out, and so on.
  */
-const LAYER = { base: 1, slats: 2, hopper: 4, steam: 14, test: 16, store: 22, hoist: 23, trolley: 24, front: 25, chart: 26 };
+const LAYER = { base: 1, slats: 2, hopper: 4, steam: 14, test: 16, front: 22, chart: 23, armsBack: 24, stage: 25, store: 26, armsFront: 27, rover: 28 };
 const MACHINE_LAYERS = [
   { back: 5, tool: 7, front: 8 },
   { back: 10, tool: 12, front: 13 },
@@ -195,6 +226,158 @@ const ZONE_LAYERS = [3, 6, 9, 11, 15, 18, 21];
 /** In at a machine once its middle is through the frame at the start; out once all of it is past the frame at the end. */
 const ZONES = MACHINES.flatMap((m) => [m.y0 + PORTAL / 2, m.y1 + REACH]);
 
+// ── the robot arms ──────────────────────────────────────────────────────
+
+/** A robot arm: the length and thickness of its two links, its turret, and its colours. */
+type Rig = { upper: number; fore: number; widths: [number, number]; turret: { base: number; w: number; tone: Tone }; tone: Tone; joints: [number, number, number]; hub: string };
+/** The arm at the belt's end that stacks the boxes at the side of it. */
+const STACKER: Rig = { upper: 56, fore: 52, widths: [13, 11], turret: { base: 8, w: 20, tone: SIENNA }, tone: SAGE, joints: [8, 7, 5.5], hub: "#d0714c" };
+const STACKER_AT = v3(52, 104, 30);
+const STACKER_REST = v3(30, 112, 92);
+/** The arm beside it that takes the boxes off the stack into the warehouse. */
+const SHELVER: Rig = { upper: 56, fore: 52, widths: [13, 11], turret: { base: 8, w: 20, tone: SAGE_DEEP }, tone: STEEL, joints: [8, 7, 5.5], hub: "#80966b" };
+const SHELVER_AT = v3(138, 102, 30);
+const SHELVER_REST = v3(148, 114, 94);
+/** The arm on the robot with wheels. */
+const ROVER_ARM: Rig = { upper: 44, fore: 40, widths: [10, 9], turret: { base: ROVER.deck, w: 14, tone: TONES.dark }, tone: TONES.paper, joints: [6.5, 5.5, 4.5], hub: "#d0714c" };
+/** How the robot on wheels carries a box as it drives: its wrist over its deck. */
+const CARRY = { wx: -6, wy: 0, wz: 44 };
+
+type Face = { d: string; fill: string };
+const NO_FACE: Face = { d: "", fill: "none" };
+
+/**
+ * A block from a to b, `w` across and `t` through, and turned about its length so that its width lies level (or along
+ * `across`, if it stands upright): the faces of it the viewer sees, shaded by which way each one faces.
+ */
+function beam(a: V3, b: V3, w: number, t: number, tone: Tone, across = v3(1, 0, 0)): Face[] {
+  const d = unit(minus(b, a));
+  let h = cross(d, v3(0, 0, 1));
+  if (Math.hypot(h.x, h.y, h.z) < 0.25) h = across;
+  h = unit(minus(h, times(d, dot(h, d))));
+  const u = cross(h, d);
+  const H = times(h, w / 2);
+  const U = times(u, t / 2);
+  const c = (p: V3, sh: number, su: number) => flat(plus(plus(p, times(H, sh)), times(U, su)));
+  const faces: [V3, Point[]][] = [
+    [u, [c(a, 1, 1), c(b, 1, 1), c(b, -1, 1), c(a, -1, 1)]],
+    [times(u, -1), [c(a, 1, -1), c(b, 1, -1), c(b, -1, -1), c(a, -1, -1)]],
+    [h, [c(a, 1, 1), c(b, 1, 1), c(b, 1, -1), c(a, 1, -1)]],
+    [times(h, -1), [c(a, -1, 1), c(b, -1, 1), c(b, -1, -1), c(a, -1, -1)]],
+    [d, [c(b, 1, 1), c(b, -1, 1), c(b, -1, -1), c(b, 1, -1)]],
+    [times(d, -1), [c(a, 1, 1), c(a, -1, 1), c(a, -1, -1), c(a, 1, -1)]],
+  ];
+  const shown: Face[] = faces
+    .filter(([n]) => n.x + n.y + n.z > 0.02)
+    .map(([n, points]) => ({ d: rounded(points, 1.4), fill: n.z > 0.55 ? tone.top : n.y > n.x ? tone.left : tone.right }));
+  while (shown.length < 3) shown.push(NO_FACE);
+  return shown.slice(0, 3);
+}
+
+/** A part of a robot arm, and how near the viewer it is: the parts are painted furthest first. */
+type RigPart = { key: string; depth: number; faces?: Face[]; joint?: { c: Point; r: number }; box?: string };
+
+/**
+ * A robot arm with its shoulder at `s` and its wrist at `w`: its turret turned to face the wrist, its upper arm lifted
+ * and its elbow bent so the two links reach it, and its gripper hanging from the wrist with a finger either side of
+ * the box it holds.
+ */
+function rigParts(rig: Rig, s: V3, w: V3): RigPart[] {
+  const dx = w.x - s.x;
+  const dy = w.y - s.y;
+  const r = Math.hypot(dx, dy);
+  const dir = r > 0.5 ? { x: dx / r, y: dy / r } : { x: -1, y: 0 };
+  const rise = w.z - s.z;
+  const span = Math.min(rig.upper + rig.fore - 0.5, Math.max(Math.abs(rig.upper - rig.fore) + 1, Math.hypot(r, rise)));
+  const lift = Math.atan2(rise, r) + Math.acos(Math.min(1, Math.max(-1, (rig.upper ** 2 + span ** 2 - rig.fore ** 2) / (2 * rig.upper * span))));
+  const out = rig.upper * Math.cos(lift);
+  const e = v3(s.x + dir.x * out, s.y + dir.y * out, s.z + rig.upper * Math.sin(lift));
+  const g = w.z - HAND;
+  const foot = v3(s.x, s.y, rig.turret.base);
+  const finger = (y: number) => beam(v3(w.x, y, g), v3(w.x, y, g - 10), 8, 2.5, GRIPPER);
+  return [
+    { key: "turret", depth: depthOf(foot), faces: beam(foot, above(s, rig.turret.w * 0.3), rig.turret.w, rig.turret.w, rig.turret.tone, v3(-dir.y, dir.x, 0)) },
+    { key: "upper", depth: depthOf(times(plus(s, e), 0.5)), faces: beam(s, e, rig.widths[0], rig.widths[0], rig.tone) },
+    { key: "fore", depth: depthOf(times(plus(e, w), 0.5)), faces: beam(e, w, rig.widths[1], rig.widths[1], rig.tone) },
+    { key: "hand", depth: depthOf(v3(w.x, w.y, g + 4)), faces: [...beam(w, v3(w.x, w.y, g + 3), 8, 8, GRIPPER), ...beam(v3(w.x, w.y - 14, g + 1.5), v3(w.x, w.y + 14, g + 1.5), 9, 3, GRIPPER)] },
+    { key: "far", depth: depthOf(v3(w.x, w.y - 12.5, g - 5)), faces: finger(w.y - 12.5) },
+    { key: "near", depth: depthOf(v3(w.x, w.y + 12.5, g - 5)), faces: finger(w.y + 12.5) },
+    { key: "box", depth: depthOf(v3(w.x, w.y, g - 10)), box: moveBy(w.x, w.y, g - 1 - BOX_H) },
+    ...[s, e, w].map((p, k) => ({ key: `j${k}`, depth: depthOf(p) + 12, joint: { c: flat(p), r: rig.joints[k] } })),
+  ];
+}
+
+/**
+ * The parts of an arm standing behind the stacks it works over, which are drawn behind them: its turret, its upper arm
+ * and its shoulder. The rest of it, which reaches over the stacks, is drawn in front of them.
+ */
+const BACK_PARTS = ["turret", "upper", "j0"];
+
+/**
+ * Keeps the drawing of a robot arm in step with its pose: its parts redrawn, and put back in painting order when that
+ * changes. Its parts may be split between layers (see BACK_PARTS); each layer keeps its own order.
+ */
+function rigDrawing(svgs: (SVGSVGElement | null)[], rig: Rig) {
+  const holders = svgs.flatMap((svg) => svg?.querySelector<SVGGElement>("[data-rig]") ?? []);
+  const groups = new Map<string, SVGGElement>();
+  holders.forEach((holder) => holder.querySelectorAll<SVGGElement>(":scope > [data-part]").forEach((g) => groups.set(g.dataset.part ?? "", g)));
+  const paths = new Map([...groups].map(([key, g]) => [key, Array.from(g.querySelectorAll<SVGPathElement>(":scope > path"))]));
+  let order = "";
+  return {
+    draw(s: V3, w: V3) {
+      const parts = rigParts(rig, s, w);
+      for (const part of parts) {
+        const g = groups.get(part.key);
+        part.faces?.forEach((face, k) => {
+          const path = paths.get(part.key)?.[k];
+          path?.setAttribute("d", face.d);
+          path?.setAttribute("fill", face.fill);
+        });
+        if (part.joint) g?.firstElementChild?.setAttribute("transform", `translate(${part.joint.c[0].toFixed(1)} ${part.joint.c[1].toFixed(1)})`);
+        if (part.box) g?.firstElementChild?.setAttribute("transform", part.box);
+      }
+      const sorted = parts.sort((a, b) => a.depth - b.depth).map((part) => part.key);
+      const next = sorted.join();
+      if (next !== order) {
+        order = next;
+        for (const holder of holders) holder.append(...sorted.flatMap((key) => (groups.get(key)?.parentNode === holder ? (groups.get(key) ?? []) : [])));
+      }
+    },
+    hold(on: boolean) {
+      groups.get("box")?.setAttribute("display", on ? "inline" : "none");
+    },
+  };
+}
+
+/** A robot arm as first drawn, before it moves: the same parts the script redraws, in painting order; or some of them. */
+function RigShape({ rig, s, w, only }: { rig: Rig; s: V3; w: V3; only?: (key: string) => boolean }) {
+  const parts = rigParts(rig, s, w)
+    .filter((part) => !only || only(part.key))
+    .sort((a, b) => a.depth - b.depth);
+  return (
+    <g data-rig="">
+      {parts.map((part) => (
+        <g key={part.key} data-part={part.key} display={part.box ? "none" : undefined}>
+          {part.faces?.map((face, k) => (
+            <path key={k} d={face.d} fill={face.fill} stroke="rgba(45,47,43,0.62)" strokeWidth={1} strokeLinejoin="round" />
+          ))}
+          {part.joint && (
+            <g transform={`translate(${part.joint.c[0].toFixed(1)} ${part.joint.c[1].toFixed(1)})`}>
+              <circle r={part.joint.r} fill="#fafaf7" stroke="rgba(45,47,43,0.62)" strokeWidth={1.1} />
+              <circle r={part.joint.r * 0.42} fill={rig.hub} />
+            </g>
+          )}
+          {part.box && (
+            <g transform={part.box}>
+              <Parcel z={0} label={false} />
+            </g>
+          )}
+        </g>
+      ))}
+    </g>
+  );
+}
+
 /** A flat rectangle at height z, turned by `angle`: a note lying on the belt at an angle. */
 function quad(cx: number, cy: number, hw: number, hd: number, angle: number, z: number): Point[] {
   const [c, s] = [Math.cos(angle), Math.sin(angle)];
@@ -204,31 +387,6 @@ function quad(cx: number, cy: number, hw: number, hd: number, angle: number, z: 
     [hw, hd],
     [-hw, hd],
   ].map(([x, y]) => at(cx + x * c - y * s, cy + x * s + y * c, z));
-}
-
-/** How the loading arm stands with its wrist at `w`: its shoulder turned towards it, and its elbow bent up to reach. */
-function armPose(w: Arm) {
-  const s = SHOULDER;
-  const dx = w.x - s.x;
-  const dy = w.y - s.y;
-  const r = Math.max(0.001, Math.hypot(dx, dy));
-  const h = w.z - s.z;
-  const d = Math.min(ARM.upper + ARM.fore - 0.5, Math.hypot(r, h));
-  const lift = Math.atan2(h, r) + Math.acos(Math.min(1, (ARM.upper ** 2 + d ** 2 - ARM.fore ** 2) / (2 * ARM.upper * d)));
-  const reach = ARM.upper * Math.cos(lift);
-  const e = { x: s.x + (dx / r) * reach, y: s.y + (dy / r) * reach, z: s.z + ARM.upper * Math.sin(lift) };
-  const g = w.z - ARM.hand;
-  const [S, E, W] = [at(s.x, s.y, s.z), at(e.x, e.y, e.z), at(w.x, w.y, w.z)];
-  return {
-    links: {
-      upper: line(S, E),
-      fore: line(E, W),
-      // the wrist, a bar across and a finger down either side of the box it holds
-      hand: `${line(W, at(w.x, w.y, g))}${line(at(w.x, w.y - 12.5, g - 9), at(w.x, w.y - 12.5, g), at(w.x, w.y + 12.5, g), at(w.x, w.y + 12.5, g - 9))}`,
-    },
-    joints: [S, E, W],
-    box: moveBy(w.x, w.y, g - 19),
-  };
 }
 
 /** A layer: one SVG the size of the view, stacked at `z`. */
@@ -246,10 +404,23 @@ function Parcel({ x = 0, y = 0, z = BELT.z, along = "x", label = true }: { x?: n
   return (
     <>
       <g filter="url(#desk-chip)">
-        <Block x0={x - hx} x1={x + hx} y0={y - hy} y1={y + hy} z={z} h={18} tone={KRAFT} r={2.5} width={1.1} />
+        <Block x0={x - hx} x1={x + hx} y0={y - hy} y1={y + hy} z={z} h={BOX_H} tone={KRAFT} r={2.5} width={1.1} />
       </g>
-      <path d={poly(...(along === "x" ? topFace(x - hx, x + hx, y - 2.4, y + 2.4, z + 18) : topFace(x - 2.4, x + 2.4, y - hy, y + hy, z + 18)))} fill="#d0714c" fillOpacity={0.75} />
+      <path d={poly(...(along === "x" ? topFace(x - hx, x + hx, y - 2.4, y + 2.4, z + BOX_H) : topFace(x - 2.4, x + 2.4, y - hy, y + hy, z + BOX_H)))} fill="#d0714c" fillOpacity={0.75} />
       {label && <path d={rounded(sideFace(x + hx, y - 7, y + 8, z + 5, z + 12.5), 1.5)} fill="#fafaf7" stroke="rgba(45,47,43,0.4)" strokeWidth={0.6} />}
+    </>
+  );
+}
+
+/** A group of boxes shown one at a time as they are put there: the places in a stack, `cols` across and two high. */
+function Stack({ xs, y, z, groupRef }: { xs: number[]; y: number; z: number; groupRef: (k: number) => (el: SVGGElement | null) => void }) {
+  return (
+    <>
+      {Array.from({ length: xs.length * 2 }, (_, k) => (
+        <g key={k} ref={groupRef(k)} display="none">
+          <Parcel x={xs[k % xs.length]} y={y} z={z + BOX_H * Math.floor(k / xs.length)} label={false} />
+        </g>
+      ))}
     </>
   );
 }
@@ -276,7 +447,7 @@ function Things({ index }: { index: number }) {
         </g>
       </g>
       {/* a wireframe of it */}
-      <g data-stage="1" visibility="hidden" transform={bigger}>
+      <g data-stage="1" display="none" transform={bigger}>
         <g filter="url(#desk-chip)">
           <Block x0={-12} x1={12} y0={-16} y1={16} z={z} h={2} tone={TONES.paper} r={3} width={1.1} />
         </g>
@@ -289,7 +460,7 @@ function Things({ index }: { index: number }) {
         </g>
       </g>
       {/* the app, running on a laptop */}
-      <g data-stage="2" visibility="hidden" transform={bigger}>
+      <g data-stage="2" display="none" transform={bigger}>
         <g filter="url(#desk-chip)">
           <Block x0={-10} x1={12} y0={-16} y1={16} z={z} h={3} tone={LAPTOP} r={3} width={1.1} />
           <Block x0={-13} x1={-10} y0={-16} y1={16} z={z + 3} h={24} tone={TONES.dark} r={2.5} width={1.1} />
@@ -304,7 +475,7 @@ function Things({ index }: { index: number }) {
         </g>
       </g>
       {/* and boxed, for the truck */}
-      <g data-stage="3" visibility="hidden">
+      <g data-stage="3" display="none">
         <Parcel />
         <text data-label="" transform={onSide(at(10, 7, z + 7.4))} fontSize={3.8} fontWeight={700} fill="#2d2f2b" textLength={13} lengthAdjust="spacingAndGlyphs">
           IDEA
@@ -322,7 +493,7 @@ function Truck({ tone, facing, cargo }: { tone: Tone; facing: "x" | "y"; cargo: 
   const boxes = SLOTS.map((slot, k) => {
     const p = slotAt(slot, facing);
     return (
-      <g key={k} ref={cargo(k)} visibility="hidden">
+      <g key={k} ref={cargo(k)} display="none">
         <Parcel x={p.x} y={p.y} z={16} along={facing} label={false} />
       </g>
     );
@@ -463,9 +634,19 @@ function Tool({ n, y }: { n: number; y: number }) {
   const bottom = BELT.z + DROP_DOWN;
   return (
     <>
-      {rod(0, y, bottom + 18)}
+      {rod(0, y, bottom + BOX_H)}
       <Parcel y={y} z={bottom} label={false} />
     </>
+  );
+}
+
+/** A wheel of the robot, standing on the floor at (x, y), with a spoke that turns as it drives. */
+function Wheel({ x, y }: { x: number; y: number }) {
+  return (
+    <g transform={onFront(at(x, y, 6))}>
+      <circle r={6} fill="#3b3d39" stroke="rgba(45,47,43,0.7)" strokeWidth={1.1} />
+      <path className={styles.spoke} d="M-3.6 0H3.6M0 -3.6V3.6" stroke="#b8bcb5" strokeWidth={1.3} strokeLinecap="round" />
+    </g>
   );
 }
 
@@ -473,10 +654,15 @@ function Tool({ n, y }: { n: number; y: number }) {
 type Item = { on: boolean; y: number; dz: number; stage: number; state: "fall" | "belt"; t: number; zone: number; rank: number; scanned: boolean; worked: number };
 /** A truck, and where it is on its round: coming in, waiting to be loaded, or driving off (first along −x, then along −y). */
 type Lorry = { state: "away" | "arriving" | "loading" | "leaving"; t: number; loaded: number; leg1: number; leg2: number; facing: "x" | "y" };
-/** A robot, easing from where it was to each of its moves in turn, and doing what each says on arriving. */
-type Move<T> = { to: T; ms: number; then?: () => void };
-type Robot<T> = { at: T; from: T; moves: Move<T>[]; t: number };
-/** A place in storage: empty, a box on its way in, a box, or a box about to be taken. */
+/**
+ * A robot, easing from where it was to each of its moves in turn. A move can wait until it may go (for a place no
+ * other robot is working in, or a truck to load), be settled only as it starts, and do something on arriving.
+ */
+type Move<T> = { to: T; ms: number; wait?: () => boolean; start?: (move: Move<T>) => void; then?: () => void };
+type Robot<T> = { at: T; from: T; moves: Move<T>[]; t: number; going: boolean };
+/** Where the robot on wheels is along its lane, and where its wrist is from its shoulder. */
+type RoverAt = { x: number; wx: number; wy: number; wz: number };
+/** A place in a stack: empty, a box on its way in, a box, or a box about to be taken. */
 type Slot = "empty" | "in" | "full" | "out";
 
 export default function Factory({ className }: { className?: string }) {
@@ -488,11 +674,12 @@ export default function Factory({ className }: { className?: string }) {
   const trucks = useRef<(SVGSVGElement | null)[]>([]);
   const faces = useRef<{ x: SVGGElement | null; y: SVGGElement | null }[]>(TRUCKS.map(() => ({ x: null, y: null })));
   const cargo = useRef<{ x: (SVGGElement | null)[]; y: (SVGGElement | null)[] }[]>(TRUCKS.map(() => ({ x: [], y: [] })));
+  const staged = useRef<(SVGGElement | null)[]>([]);
   const stored = useRef<(SVGGElement | null)[]>([]);
-  const hoist = useRef<SVGSVGElement>(null);
-  const trolley = useRef<SVGSVGElement>(null);
-  const hoistBox = useRef<SVGGElement>(null);
-  const loaderLayer = useRef<SVGSVGElement>(null);
+  const stackerLayers = useRef<(SVGSVGElement | null)[]>([]);
+  const shelverLayers = useRef<(SVGSVGElement | null)[]>([]);
+  const roverLayer = useRef<SVGSVGElement>(null);
+  const roverArmLayer = useRef<SVGSVGElement>(null);
   const scanner = useRef<SVGSVGElement>(null);
   const tick = useRef<SVGSVGElement>(null);
   /** set while running: drops a new idea into the hopper */
@@ -522,12 +709,14 @@ export default function Factory({ className }: { className?: string }) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const state: Item[] = Array.from({ length: POOL }, () => ({ on: false, y: 0, dz: 0, stage: 0, state: "belt", t: 0, zone: -1, rank: -1, scanned: false, worked: 0 }));
     const lorries: Lorry[] = TRUCKS.map((_, n) => ({ state: n === 0 ? "loading" : "away", t: 0, loaded: 0, leg1: 0, leg2: 0, facing: "x" }));
-    const slots: Slot[] = Array.from({ length: STORE_SLOTS }, () => "empty");
+    const staging: Slot[] = Array.from({ length: STAGE.xs.length * STAGE.layers }, () => "empty");
+    const store: Slot[] = Array.from({ length: STORE.xs.length * STORE.layers }, () => "empty");
     let spawned = 0;
 
     // ── drawing ──
+    const show = (el: Element | null | undefined, on: boolean) => el?.setAttribute("display", on ? "inline" : "none");
     const look = (i: number, next: number) => {
-      items.current[i]?.querySelectorAll<SVGGElement>("[data-stage]").forEach((g) => g.setAttribute("visibility", g.dataset.stage === String(next) ? "visible" : "hidden"));
+      items.current[i]?.querySelectorAll<SVGGElement>("[data-stage]").forEach((g) => show(g, g.dataset.stage === String(next)));
       state[i].stage = next;
     };
     const place = (i: number) => {
@@ -549,11 +738,13 @@ export default function Factory({ className }: { className?: string }) {
       void el.getBoundingClientRect();
       el.setAttribute("data-go", "");
     };
-    const showCargo = (n: number, count: number) =>
-      (["x", "y"] as const).forEach((f) => cargo.current[n][f].forEach((g, k) => g?.setAttribute("visibility", k < count ? "visible" : "hidden")));
+    const showCargo = (n: number, count: number) => {
+      const filled = FILL.slice(0, count);
+      (["x", "y"] as const).forEach((f) => cargo.current[n][f].forEach((g, k) => show(g, filled.includes(k))));
+    };
     const face = (n: number, facing: "x" | "y") => {
-      faces.current[n].x?.setAttribute("visibility", facing === "x" ? "visible" : "hidden");
-      faces.current[n].y?.setAttribute("visibility", facing === "y" ? "visible" : "hidden");
+      show(faces.current[n].x, facing === "x");
+      show(faces.current[n].y, facing === "y");
     };
     const moveTruck = (n: number, dx: number, dy: number, opacity: number) => {
       const svg = trucks.current[n];
@@ -561,54 +752,71 @@ export default function Factory({ className }: { className?: string }) {
       svg.style.translate = move(dx, dy);
       svg.style.opacity = String(opacity);
     };
-    const showStore = () => stored.current.forEach((g, k) => g?.setAttribute("visibility", slots[k] === "full" || slots[k] === "out" ? "visible" : "hidden"));
-    /** Where the top of a box in a place in storage is. */
-    const storeAt = (k: number) => ({ x: STORE.xs[k % STORE.xs.length], top: STORE.table + 18 * (Math.floor(k / STORE.xs.length) + 1) });
-
-    // ── the gantry over the end of the belt: its trolley runs along x, and its hoist goes up and down ──
-    const gantry: Robot<{ x: number; z: number }> = { at: { x: 0, z: GRIP_Z + 28 }, from: { x: 0, z: GRIP_Z + 28 }, moves: [], t: 0 };
-    const putGantry = () => {
-      if (trolley.current) trolley.current.style.translate = move(gantry.at.x, 0);
-      if (hoist.current) hoist.current.style.translate = move(gantry.at.x, 0, gantry.at.z - GRIP_Z);
+    const showStacks = () => {
+      staged.current.forEach((g, k) => show(g, staging[k] === "full" || staging[k] === "out"));
+      stored.current.forEach((g, k) => show(g, store[k] === "full" || store[k] === "out"));
     };
-    const gantryHolds = (on: boolean) => hoistBox.current?.setAttribute("visibility", on ? "visible" : "hidden");
+    /** Where a place in a stack is, as the bottom of the box in it. */
+    const stagedAt = (k: number) => v3(STAGE.xs[k % STAGE.xs.length], STAGE.y, STAGE.table + BOX_H * Math.floor(k / STAGE.xs.length));
+    const storedAt = (k: number) => v3(STORE.xs[k % STORE.xs.length], STORE.y, STORE.floor + BOX_H * Math.floor(k / STORE.xs.length));
+    /** Where a gripper's wrist is to hold a box standing at p. */
+    const grip = (p: V3) => above(p, GRIP);
+    /** The first place in a stack with room, on the floor or on a box. */
+    const room = (slots: Slot[], cols: number) => slots.findIndex((s, k) => s === "empty" && (k < cols || slots[k - cols] === "full"));
+    /** The boxes on top of a stack, with nothing on them or coming. */
+    const tops = (slots: Slot[], cols: number) => slots.flatMap((s, k) => (s === "full" && (k + cols >= slots.length || slots[k + cols] === "empty") ? [k] : []));
 
-    // ── the jointed arm between the storage and the bay: its wrist is steered, and the rest of it follows ──
-    const loader: Robot<Arm> & { holding: boolean } = { at: { ...REST }, from: { ...REST }, moves: [], t: 0, holding: false };
-    const layer = loaderLayer.current;
-    const links = layer ? Array.from(layer.querySelectorAll<SVGPathElement>("[data-link]")) : [];
-    const joints = layer ? Array.from(layer.querySelectorAll<SVGCircleElement>("[data-joint]")) : [];
-    const carried = layer?.querySelector<SVGGElement>("[data-carried]");
-    const drawArm = () => {
-      const pose = armPose(loader.at);
-      links.forEach((path) => path.setAttribute("d", pose.links[path.dataset.link as keyof typeof pose.links]));
-      joints.forEach((dot) => {
-        const [x, y] = pose.joints[Number(dot.dataset.joint)];
-        dot.setAttribute("cx", x.toFixed(1));
-        dot.setAttribute("cy", y.toFixed(1));
-      });
-      carried?.setAttribute("transform", pose.box);
+    // ── the robots, and the places only one of them may work in at a time ──
+    const arms = { stacker: rigDrawing(stackerLayers.current, STACKER), shelver: rigDrawing(shelverLayers.current, SHELVER), rover: rigDrawing([roverArmLayer.current], ROVER_ARM) };
+    const robot = <T,>(at: T): Robot<T> => ({ at, from: at, moves: [], t: 0, going: false });
+    const stacker = robot<V3>(STACKER_REST);
+    const shelver = robot<V3>(SHELVER_REST);
+    const rover = robot<RoverAt>({ x: ROVER.x, ...CARRY });
+    let roverHolds = false;
+    const locks: Record<"stage" | "store", string | null> = { stage: null, store: null };
+    const take = (zone: "stage" | "store", who: string) => () => {
+      if (locks[zone] && locks[zone] !== who) return false;
+      locks[zone] = who;
+      return true;
     };
-    const armHolds = (on: boolean) => {
-      loader.holding = on;
-      carried?.setAttribute("visibility", on ? "visible" : "hidden");
+    const free = (zone: "stage" | "store", who: string) => () => {
+      if (locks[zone] === who) locks[zone] = null;
     };
-
-    /** Steps a robot along its moves. */
-    const run = <T extends Record<string, number>>(robot: Robot<T>, dt: number, apply: () => void) => {
-      const next = robot.moves[0];
+    const roverShoulder = (x: number) => v3(x, LANE, ROVER.shoulder);
+    /** A move of the rover's wrist to a point in the scene, with the rover standing at x. */
+    const reach = (x: number, p: V3): RoverAt => ({ x, wx: p.x - x, wy: p.y - LANE, wz: p.z - ROVER.shoulder });
+    const drawStacker = () => arms.stacker.draw(STACKER_AT, stacker.at);
+    const drawShelver = () => arms.shelver.draw(SHELVER_AT, shelver.at);
+    const drawRover = () => {
+      const { x, wx, wy, wz } = rover.at;
+      if (roverLayer.current) roverLayer.current.style.translate = move(x - ROVER.x, 0);
+      const s = roverShoulder(x);
+      const w = plus(s, v3(wx, wy, wz));
+      arms.rover.draw(s, w);
+      // over the trucks while it reaches into one, under them otherwise
+      if (roverArmLayer.current) roverArmLayer.current.style.zIndex = w.y > BAY.y - 30 ? "31" : "29";
+    };
+    const run = <T extends Record<string, number>>(bot: Robot<T>, dt: number, apply: () => void) => {
+      const next = bot.moves[0];
       if (!next) return;
-      if (robot.t === 0) robot.from = { ...robot.at };
-      robot.t += dt;
-      const k = smooth(Math.min(1, robot.t / next.ms));
-      robot.at = Object.fromEntries(Object.keys(next.to).map((key) => [key, robot.from[key] + (next.to[key] - robot.from[key]) * k])) as T;
+      if (!bot.going) {
+        if (next.wait && !next.wait()) return;
+        next.start?.(next);
+        bot.from = { ...bot.at };
+        bot.going = true;
+        bot.t = 0;
+      }
+      bot.t += dt;
+      const k = smooth(Math.min(1, bot.t / Math.max(1, next.ms)));
+      bot.at = Object.fromEntries(Object.keys(next.to).map((key) => [key, bot.from[key] + (next.to[key] - bot.from[key]) * k])) as T;
       apply();
-      if (robot.t >= next.ms) {
-        robot.moves.shift();
-        robot.t = 0;
+      if (bot.t >= next.ms) {
+        bot.moves.shift();
+        bot.going = false;
         next.then?.();
       }
     };
+    const away = (a: V3, b: V3) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 1;
 
     const name = (i: number) => {
       const label = IDEAS[spawned++ % IDEAS.length];
@@ -639,20 +847,20 @@ export default function Factory({ className }: { className?: string }) {
       if (!reduced) svg?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: "ease-out" });
     };
 
-    // the line as it stands when built: things along the belt, a couple of boxes in storage and in the first truck
+    // the line as it stands when built: things along the belt, boxes stacked, in the warehouse and in the first truck
     SEED.belt.forEach(seed);
-    for (let k = 0; k < SEED.stored; k++) slots[k] = "full";
+    for (let k = 0; k < SEED.staged; k++) staging[k] = "full";
+    for (let k = 0; k < SEED.stored; k++) store[k] = "full";
     lorries[0].loaded = SEED.loaded;
     lorries.forEach((l, n) => {
       face(n, "x");
-      moveTruck(n, l.state === "away" ? 300 : 0, 0, l.state === "away" ? 0 : 1);
+      moveTruck(n, l.state === "away" ? 220 : 0, 0, l.state === "away" ? 0 : 1);
       showCargo(n, l.loaded);
     });
-    showStore();
-    putGantry();
-    gantryHolds(false);
-    drawArm();
-    armHolds(false);
+    showStacks();
+    drawStacker();
+    drawShelver();
+    drawRover();
     if (reduced) return;
 
     let scanning = false;
@@ -721,89 +929,181 @@ export default function Factory({ className }: { className?: string }) {
         scanner.current?.toggleAttribute("data-working", scan);
       }
 
-      // the gantry: when a box waits at the end of the belt and there is a place for it, it lifts it across and stacks it
-      if (!gantry.moves.length) {
+      // the first arm: when a box waits at the end of the belt and there is room on the stack, it lifts it across
+      if (!stacker.moves.length) {
         const i = state.findIndex((it) => it.on && it.state === "belt" && it.y >= PICK_Y - 0.5);
-        const k = slots.findIndex((s, k) => s === "empty" && (k < STORE.xs.length || slots[k - STORE.xs.length] === "full"));
+        const k = room(staging, STAGE.xs.length);
         if (i >= 0 && k >= 0) {
-          slots[k] = "in";
-          const { x, top } = storeAt(k);
-          const high = GRIP_Z + 30;
-          gantry.moves = [
-            { to: { x: 0, z: GRIP_Z }, ms: 240 },
-            {
-              to: { x: 0, z: GRIP_Z },
-              ms: 60,
-              then: () => {
-                state[i].on = false;
-                items.current[i]?.removeAttribute("data-on");
-                gantryHolds(true);
-              },
-            },
-            { to: { x: 0, z: high }, ms: 230 },
-            { to: { x, z: high }, ms: 360 },
-            {
-              to: { x, z: top + 1 },
-              ms: 240,
-              then: () => {
-                gantryHolds(false);
-                slots[k] = "full";
-                showStore();
-              },
-            },
-            { to: { x, z: GRIP_Z + 28 }, ms: 200 },
-            { to: { x: 0, z: GRIP_Z + 28 }, ms: 340 },
-          ];
-        }
-      }
-      run(gantry, dt, putGantry);
-
-      // the arm: when there is a box on top of the stack and a truck in the bay with room, it packs the box into its next place
-      if (!loader.moves.length) {
-        const n = lorries.findIndex((l) => l.state === "loading" && l.loaded < SLOTS.length);
-        let k = -1;
-        for (let j = STORE_SLOTS - 1; j >= 0 && k < 0; j--) if (slots[j] === "full" && (j + STORE.xs.length >= STORE_SLOTS || slots[j + STORE.xs.length] === "empty")) k = j;
-        if (n >= 0 && k >= 0) {
-          const lorry = lorries[n];
-          slots[k] = "out";
-          const { x, top } = storeAt(k);
-          const pick = { x, y: PICK_Y, z: top + 1 + ARM.hand };
-          const into = slotAt(SLOTS[lorry.loaded], "x");
-          const put = { x: into.x, y: into.y, z: 16 + 18 + 1 + ARM.hand };
-          loader.moves = [
-            { to: { ...pick, z: pick.z + 26 }, ms: 300 },
+          staging[k] = "in";
+          const pick = grip(v3(0, PICK_Y, BELT.z));
+          const put = grip(stagedAt(k));
+          stacker.moves = [
+            { to: above(pick, 26), ms: 300 },
             {
               to: pick,
               ms: 180,
               then: () => {
-                slots[k] = "empty";
-                showStore();
-                armHolds(true);
+                state[i].on = false;
+                items.current[i]?.removeAttribute("data-on");
+                arms.stacker.hold(true);
               },
             },
-            { to: { ...pick, z: pick.z + 30 }, ms: 180 },
-            { to: { ...put, z: put.z + 30 }, ms: 400 },
+            { to: above(pick, 36), ms: 200 },
+            { to: above(put, 30), ms: 360, wait: take("stage", "stacker") },
             {
               to: put,
               ms: 200,
               then: () => {
-                armHolds(false);
-                lorry.loaded++;
-                showCargo(n, lorry.loaded);
+                arms.stacker.hold(false);
+                staging[k] = "full";
+                showStacks();
               },
             },
-            { to: { ...put, z: put.z + 28 }, ms: 170 },
+            { to: above(put, 30), ms: 170 },
+            { to: STACKER_REST, ms: 300, then: free("stage", "stacker") },
           ];
-        } else if (Math.hypot(loader.at.x - REST.x, loader.at.y - REST.y, loader.at.z - REST.z) > 1) {
-          loader.moves = [{ to: REST, ms: 420 }];
+        } else if (away(stacker.at, STACKER_REST)) {
+          stacker.moves = [{ to: STACKER_REST, ms: 400 }];
         }
       }
-      run(loader, dt, drawArm);
+      run(stacker, dt, drawStacker);
+
+      // the second arm: when there is a box on top of the stack and room in the warehouse, it carries it in
+      if (!shelver.moves.length) {
+        const from = tops(staging, STAGE.xs.length).at(-1);
+        const k = room(store, STORE.xs.length);
+        if (from !== undefined && k >= 0) {
+          staging[from] = "out";
+          store[k] = "in";
+          const pick = grip(stagedAt(from));
+          const put = grip(storedAt(k));
+          shelver.moves = [
+            { to: above(pick, 30), ms: 340, wait: take("stage", "shelver") },
+            {
+              to: pick,
+              ms: 180,
+              then: () => {
+                staging[from] = "empty";
+                showStacks();
+                arms.shelver.hold(true);
+              },
+            },
+            { to: above(pick, 34), ms: 200 },
+            { to: above(put, 34), ms: 420, wait: take("store", "shelver"), start: free("stage", "shelver") },
+            {
+              to: put,
+              ms: 200,
+              then: () => {
+                arms.shelver.hold(false);
+                store[k] = "full";
+                showStacks();
+              },
+            },
+            { to: above(put, 30), ms: 170 },
+            { to: SHELVER_REST, ms: 320, then: free("store", "shelver") },
+          ];
+        } else if (away(shelver.at, SHELVER_REST)) {
+          shelver.moves = [{ to: SHELVER_REST, ms: 400 }];
+        }
+      }
+      run(shelver, dt, drawShelver);
+
+      // the robot on wheels: it takes the box nearest the truck out of the warehouse, and when a truck has room, drives it over and packs it
+      if (!rover.moves.length) {
+        const k = tops(store, STORE.xs.length).sort((a, b) => (a % STORE.xs.length) - (b % STORE.xs.length))[0];
+        if (k !== undefined) {
+          store[k] = "out";
+          const pick = grip(storedAt(k));
+          const x = pick.x;
+          let lorry = -1;
+          let into = v3(0, 0, 0);
+          const driving = (on: boolean, back = false) => {
+            if (on) roverLayer.current?.setAttribute("data-driving", back ? "back" : "on");
+            else roverLayer.current?.removeAttribute("data-driving");
+          };
+          rover.moves = [
+            {
+              to: { x, ...CARRY },
+              ms: 0,
+              start: (m) => {
+                m.ms = Math.max(260, (Math.abs(x - rover.at.x) / ROVER.speed) * 1000);
+                driving(true, x < rover.at.x);
+              },
+              then: () => driving(false),
+            },
+            { to: reach(x, above(pick, 26)), ms: 240, wait: take("store", "rover") },
+            {
+              to: reach(x, pick),
+              ms: 180,
+              then: () => {
+                store[k] = "empty";
+                showStacks();
+                arms.rover.hold(true);
+                roverHolds = true;
+              },
+            },
+            { to: reach(x, above(pick, 30)), ms: 180 },
+            { to: { x, ...CARRY }, ms: 220, then: free("store", "rover") },
+            {
+              to: { x, ...CARRY },
+              ms: 0,
+              // it waits here, box in hand, for a truck with room
+              wait: () => {
+                lorry = lorries.findIndex((l) => l.state === "loading" && l.loaded < SLOTS.length);
+                return lorry >= 0;
+              },
+              start: (m) => {
+                const p = slotAt(SLOTS[FILL[lorries[lorry].loaded]], "x");
+                into = grip(v3(p.x, p.y, 16));
+                m.to = { x: into.x, ...CARRY };
+                m.ms = Math.max(260, (Math.abs(into.x - rover.at.x) / ROVER.speed) * 1000);
+                driving(true, into.x < rover.at.x);
+              },
+              then: () => driving(false),
+            },
+            {
+              to: { x, ...CARRY },
+              ms: 260,
+              start: (m) => {
+                m.to = reach(into.x, above(into, 30));
+              },
+            },
+            {
+              to: { x, ...CARRY },
+              ms: 200,
+              start: (m) => {
+                m.to = reach(into.x, into);
+              },
+              then: () => {
+                arms.rover.hold(false);
+                roverHolds = false;
+                lorries[lorry].loaded++;
+                showCargo(lorry, lorries[lorry].loaded);
+              },
+            },
+            {
+              to: { x, ...CARRY },
+              ms: 180,
+              start: (m) => {
+                m.to = reach(into.x, above(into, 30));
+              },
+            },
+            {
+              to: { x, ...CARRY },
+              ms: 220,
+              start: (m) => {
+                m.to = { x: into.x, ...CARRY };
+              },
+            },
+          ];
+        }
+      }
+      run(rover, dt, drawRover);
 
       // the trucks
       lorries.forEach((lorry, n) => {
         lorry.t += dt;
-        if (lorry.state === "loading" && lorry.loaded >= SLOTS.length && !loader.holding) {
+        if (lorry.state === "loading" && lorry.loaded >= SLOTS.length && !roverHolds) {
           // full: off it goes, and the next truck comes in
           Object.assign(lorry, { state: "leaving", t: -300, ...route(), facing: "x" });
           const next = lorries.findIndex((l) => l.state === "away");
@@ -813,7 +1113,7 @@ export default function Factory({ className }: { className?: string }) {
           const e = 1 - (1 - k) * (1 - k);
           face(n, "x");
           showCargo(n, 0);
-          moveTruck(n, 300 * (1 - e), 0, Math.min(1, k * 3));
+          moveTruck(n, 220 * (1 - e), 0, Math.min(1, k * 3));
           if (k >= 1) Object.assign(lorry, { state: "loading", t: 0 });
         } else if (lorry.state === "leaving" && lorry.t > 0) {
           // pulling away gently, then at speed: first along −x, round the corner, then along −y
@@ -832,7 +1132,7 @@ export default function Factory({ className }: { className?: string }) {
               Object.assign(lorry, { state: "away", t: 0, loaded: 0 });
               face(n, "x");
               showCargo(n, 0);
-              moveTruck(n, 300, 0, 0);
+              moveTruck(n, 220, 0, 0);
             }
           }
         }
@@ -870,7 +1170,9 @@ export default function Factory({ className }: { className?: string }) {
       <Block x0={x + 10} x1={x + 20} y0={y - 6} y1={y + 6} z={98} h={9} tone={PENCIL} r={3} width={1} />
     </g>
   );
-  const rest = armPose(REST);
+  /** The plate each arm is bolted down on. */
+  const plate = (s: V3) => <Block x0={s.x - 13} x1={s.x + 13} y0={s.y - 13} y1={s.y + 13} z={0} h={8} tone={TONES.dark} r={6} />;
+  const hopperY = SPAWN_Y;
 
   return (
     <div className={`${styles.root} ${className ?? ""}`} onClick={() => drop.current()}>
@@ -880,10 +1182,14 @@ export default function Factory({ className }: { className?: string }) {
           <g style={drawn(0, 0.1)} filter="url(#desk-card)">
             <Block x0={FLOOR.x0} x1={FLOOR.x1} y0={FLOOR.y0} y1={FLOOR.y1} z={-8} h={8} tone={FLOOR_TONE} r={26} />
           </g>
-          {/* a walkway painted on the floor */}
+          {/* a walkway painted on the floor, the robot's lane, and the loading bay */}
           <g style={drawn(0.08, 0.12)}>
-            <Detail d={line(at(66, FLOOR.y0 + 24, 0), at(66, 180, 0))} stroke="#b8bcb5" width={1.6} />
-            <Detail d={line(at(104, FLOOR.y0 + 24, 0), at(104, 180, 0))} stroke="#b8bcb5" width={1.6} />
+            <Detail d={line(at(66, FLOOR.y0 + 24, 0), at(66, 60, 0))} stroke="#b8bcb5" width={1.6} />
+            <Detail d={line(at(104, FLOOR.y0 + 24, 0), at(104, 60, 0))} stroke="#b8bcb5" width={1.6} />
+          </g>
+          <g className={deskStyles.fade} style={between(0.4, 0.1)} fill="none" strokeLinecap="round">
+            <path d={line(at(-56, LANE, 0), at(STORE.x1 + 6, LANE, 0))} stroke="#de9372" strokeWidth={1.4} strokeDasharray="7 6" />
+            <path d={rounded(topFace(BAY.x - 52, BAY.x + 64, BAY.y - 32, BAY.y + 32, 0), 6)} stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="5 5" />
           </g>
           <g style={drawn(0.02, 0.12)} filter="url(#desk-card)">
             <Block x0={-FRAME.half} x1={FRAME.half} y0={BELT.y0} y1={BELT.y1} z={0} h={FRAME.h} tone={TONES.concrete} r={10} />
@@ -893,15 +1199,15 @@ export default function Factory({ className }: { className?: string }) {
           </g>
           {/* rollers along the frame */}
           <g style={drawn(0.14, 0.18, 0.05)}>
-            {Array.from({ length: 12 }, (_, i) => (
+            {Array.from({ length: Math.floor((BELT.y1 - BELT.y0 - 30) / 44) + 1 }, (_, i) => (
               <Detail key={i} d={rounded(sideFace(FRAME.half, BELT.y0 + 26 + i * 44, BELT.y0 + 30 + i * 44, 12, 16), 2)} fill="#9a9f98" width={0.8} />
             ))}
           </g>
-          {/* the hopper's post, the lamps, and the robot arm's column at TEST: all behind the belt */}
+          {/* the hopper's post, a lamp, and the robot arm's column at TEST: all behind the belt */}
           <g style={drawn(0.16, 0.22)} filter="url(#desk-chip)">
-            <Block x0={-44} x1={-36} y0={-300} y1={-292} z={0} h={96} tone={TONES.concrete} r={3} width={1.1} />
+            <Block x0={-44} x1={-36} y0={hopperY - 18} y1={hopperY - 10} z={0} h={96} tone={TONES.concrete} r={3} width={1.1} />
           </g>
-          <g style={drawn(0.18, 0.24)}>{postLamp(-58, -46)}</g>
+          <g style={drawn(0.18, 0.24)}>{postLamp(-58, -160)}</g>
           <g style={drawn(0.3, 0.36)} filter="url(#desk-card)">
             <Block x0={-78} x1={-50} y0={TEST_Y - 14} y1={TEST_Y + 14} z={0} h={12} tone={TONES.dark} r={5} />
             <Block x0={-70} x1={-58} y0={TEST_Y - 6} y1={TEST_Y + 6} z={12} h={90} tone={STEEL} r={4} />
@@ -938,15 +1244,15 @@ export default function Factory({ className }: { className?: string }) {
         <Layer z={LAYER.hopper}>
           <Part arrival={{ lift: 40, from: 0.2, span: 0.1 }} style={drawn(0.18, 0.26)}>
             <g filter="url(#desk-chip)">
-              <Block x0={-6} x1={6} y0={-294} y1={-282} z={124} h={40} tone={STEEL} r={3} width={1.1} />
+              <Block x0={-6} x1={6} y0={hopperY - 12} y1={hopperY} z={124} h={40} tone={STEEL} r={3} width={1.1} />
             </g>
             <g filter="url(#desk-card)">
-              <Block x0={-30} x1={30} y0={-314} y1={-262} z={96} h={28} tone={TONES.paper} r={8} />
+              <Block x0={-30} x1={30} y0={hopperY - 32} y1={hopperY + 20} z={96} h={28} tone={TONES.paper} r={8} />
             </g>
-            <text transform={onSide(at(30, -270, 116))} y={2} fontSize={9.5} fontWeight={700} letterSpacing={1.2} fill="#3b3d39">
+            <text transform={onSide(at(30, hopperY + 12, 116))} y={2} fontSize={9.5} fontWeight={700} letterSpacing={1.2} fill="#3b3d39">
               IDEAS
             </text>
-            <g transform={`translate(${at(0, -288, 176)[0].toFixed(1)} ${at(0, -288, 176)[1].toFixed(1)})`} filter="url(#desk-chip)">
+            <g transform={`translate(${at(0, hopperY - 6, 176)[0].toFixed(1)} ${at(0, hopperY - 6, 176)[1].toFixed(1)})`} filter="url(#desk-chip)">
               <path d="M-30 6c-8 0-11-9-4-13-2-9 9-14 15-8 3-9 17-9 20 0 6-5 16 0 13 8 7 3 5 13-3 13Z" fill="#fafaf7" stroke="rgba(45,47,43,0.5)" strokeWidth={1.3} />
               <g fill="none" stroke="#bc4e26" strokeWidth={1.3} strokeLinecap="round" transform="translate(-4 -12)">
                 <path d="M4 12c-2.2-1.6-3.3-3.4-3.3-5.5a4.3 4.3 0 0 1 8.6 0c0 2.1-1.1 3.9-3.3 5.5ZM4 14h2.2" />
@@ -1047,56 +1353,7 @@ export default function Factory({ className }: { className?: string }) {
           </g>
         </Layer>
 
-        {/* ── the end of the line: the storage table and what is stacked on it, the gantry over them, and the loading arm's turntable ── */}
-        <Layer z={LAYER.store}>
-          <Part arrival={{ lift: 40, from: 0.5, span: 0.12 }} style={drawn(0.48, 0.58)}>
-            <g filter="url(#desk-card)">
-              <Block x0={38} x1={110} y0={PICK_Y - 14} y1={PICK_Y + 14} z={0} h={STORE.table} tone={{ top: "#e2b5a1", left: "#d0a58f", right: "#c0947f" }} r={3} />
-              <Block x0={62} x1={86} y0={SHOULDER.y - 12} y1={SHOULDER.y + 12} z={0} h={8} tone={TONES.dark} r={6} />
-              <Block x0={66} x1={82} y0={SHOULDER.y - 8} y1={SHOULDER.y + 8} z={8} h={SHOULDER.z - 8} tone={SIENNA} r={7} />
-            </g>
-            {Array.from({ length: STORE_SLOTS }, (_, k) => (
-              <g
-                key={k}
-                ref={(el) => {
-                  stored.current[k] = el;
-                }}
-                visibility="hidden"
-              >
-                <Parcel x={STORE.xs[k % STORE.xs.length]} y={PICK_Y} z={STORE.table + 18 * Math.floor(k / STORE.xs.length)} label={false} />
-              </g>
-            ))}
-            <g filter="url(#desk-chip)">
-              <Block x0={-54} x1={-46} y0={PICK_Y - 5} y1={PICK_Y + 5} z={0} h={112} tone={STEEL} r={3} width={1.1} />
-              <Block x0={116} x1={124} y0={PICK_Y - 5} y1={PICK_Y + 5} z={0} h={112} tone={STEEL} r={3} width={1.1} />
-              <Block x0={-54} x1={124} y0={PICK_Y - 5} y1={PICK_Y + 5} z={112} h={8} tone={STEEL} r={3} width={1.1} />
-            </g>
-            <text transform={onFront(at(70, PICK_Y + 5, 118.5))} fontSize={6} fontWeight={700} letterSpacing={1.2} fill="#3b3d39">
-              STORE
-            </text>
-          </Part>
-        </Layer>
-        {/* the gantry's hoist: a mast through the trolley, its gripper, and the box it carries */}
-        <Layer z={LAYER.hoist} className={styles.moving} layerRef={(el) => void (hoist.current = el)}>
-          <Part arrival={{ lift: 40, from: 0.52, span: 0.12 }} style={drawn(0.5, 0.6)}>
-            <g filter="url(#desk-chip)">
-              <Block x0={-2.5} x1={2.5} y0={PICK_Y - 2.5} y1={PICK_Y + 2.5} z={GRIP_Z + 4} h={80} tone={STEEL} r={1.5} width={1} />
-              <Block x0={-12} x1={12} y0={PICK_Y - 13} y1={PICK_Y + 13} z={GRIP_Z} h={4} tone={TONES.dark} r={2} width={1} />
-            </g>
-            <g ref={hoistBox} visibility="hidden">
-              <Parcel y={PICK_Y} z={GRIP_Z - 19} label={false} />
-            </g>
-          </Part>
-        </Layer>
-        <Layer z={LAYER.trolley} className={styles.moving} layerRef={(el) => void (trolley.current = el)}>
-          <Part arrival={{ lift: 40, from: 0.52, span: 0.12 }} style={drawn(0.5, 0.6)}>
-            <g filter="url(#desk-chip)">
-              <Block x0={-10} x1={10} y0={PICK_Y - 9} y1={PICK_Y + 9} z={106} h={18} tone={SIENNA} r={4} width={1.1} />
-            </g>
-          </Part>
-        </Layer>
-
-        {/* ── the floor in front of the line: the control desk, the tank piped into BUILD, and pallets of boxes ── */}
+        {/* ── the floor beside the line: the control desk, the tank piped into BUILD, and a pallet of boxes ── */}
         <Layer z={LAYER.front}>
           <Part arrival={{ lift: 40, from: 0.44, span: 0.12 }} style={drawn(0.42, 0.52)}>
             <g filter="url(#desk-card)">
@@ -1119,14 +1376,14 @@ export default function Factory({ className }: { className?: string }) {
             ))}
             <Wire d={bend([at(56, -68, 22), at(44, -68, 22), at(HALF, -68, 22)], 6)} width={4} colour="#9a9f98" light="#d2d5cf" />
             <g filter="url(#desk-chip)">
-              <Block x0={50} x1={94} y0={96} y1={140} z={0} h={6} tone={{ top: "#e2b5a1", left: "#d0a58f", right: "#c0947f" }} r={2} width={1.1} />
+              <Block x0={150} x1={194} y0={-60} y1={-16} z={0} h={6} tone={WOOD} r={2} width={1.1} />
             </g>
             {[
-              [62, 108, 6],
-              [82, 108, 6],
-              [62, 128, 6],
-              [82, 128, 6],
-              [72, 118, 24],
+              [162, -48, 6],
+              [182, -48, 6],
+              [162, -28, 6],
+              [182, -28, 6],
+              [172, -38, 24],
             ].map(([x, y, z]) => (
               <g key={`${x}-${y}-${z}`}>
                 <Parcel x={x} y={y} z={z} along="y" label={false} />
@@ -1144,6 +1401,138 @@ export default function Factory({ className }: { className?: string }) {
               <path className={styles.chart} d="M0 15 4 12 8 13 12 8 16 10 20 5 24 7 28 4 32 9 36 6 40 10 44 7 48 11" fill="none" stroke="#9caf88" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" />
             </g>
           </g>
+        </Layer>
+
+        {/* ── the end of the line. The two arms stand behind the row they work over: first their plates and the back half of each ── */}
+        <Layer z={LAYER.armsBack}>
+          <Part arrival={{ lift: 40, from: 0.5, span: 0.12 }} style={drawn(0.48, 0.58)}>
+            <g filter="url(#desk-card)">
+              {plate(STACKER_AT)}
+              {plate(SHELVER_AT)}
+            </g>
+          </Part>
+        </Layer>
+        {(
+          [
+            [STACKER, STACKER_AT, STACKER_REST, stackerLayers],
+            [SHELVER, SHELVER_AT, SHELVER_REST, shelverLayers],
+          ] as const
+        ).map(([rig, s, w, layers], n) => (
+          <svg
+            key={n}
+            ref={(el) => {
+              layers.current[0] = el;
+            }}
+            viewBox={VIEW}
+            className={`${styles.layer} ${deskStyles.fade}`}
+            style={{ zIndex: LAYER.armsBack * 100 + 1 + n, ...between(0.56, 0.06) }}
+            aria-hidden="true"
+            focusable="false"
+          >
+            <RigShape rig={rig} s={s} w={w} only={(key) => BACK_PARTS.includes(key)} />
+          </svg>
+        ))}
+
+        {/* the stack at the right side of the belt */}
+        <Layer z={LAYER.stage}>
+          <Part arrival={{ lift: 40, from: 0.5, span: 0.12 }} style={drawn(0.48, 0.58)}>
+            <g filter="url(#desk-card)">
+              <Block x0={STAGE.x0} x1={STAGE.x1} y0={STAGE.y - 14} y1={STAGE.y + 14} z={0} h={STAGE.table} tone={WOOD} r={3} />
+            </g>
+            <Stack
+              xs={STAGE.xs}
+              y={STAGE.y}
+              z={STAGE.table}
+              groupRef={(k) => (el) => {
+                staged.current[k] = el;
+              }}
+            />
+          </Part>
+        </Layer>
+
+        {/* the warehouse: a floor with its bays marked out, a post at each corner, its sign, and the boxes stacked in it */}
+        <Layer z={LAYER.store}>
+          <Part arrival={{ lift: 40, from: 0.52, span: 0.12 }} style={drawn(0.5, 0.6)}>
+            <g filter="url(#desk-card)">
+              <Block x0={STORE.x0} x1={STORE.x1} y0={STORE.y0} y1={STORE.y1} z={0} h={STORE.floor} tone={TONES.concrete} r={4} />
+            </g>
+            {STORE.xs.slice(1).map((x) => (
+              <Detail key={x} d={line(at(x - 11, STORE.y0 + 3, STORE.floor), at(x - 11, STORE.y1 - 3, STORE.floor))} stroke="#7c817a" width={1.2} />
+            ))}
+            <g filter="url(#desk-chip)">
+              {[
+                [STORE.x0, STORE.y0],
+                [STORE.x1 - 4, STORE.y0],
+              ].map(([x, y]) => (
+                <Block key={`${x}-${y}`} x0={x} x1={x + 4} y0={y} y1={y + 4} z={0} h={62} tone={SIENNA} r={1.5} width={1} />
+              ))}
+            </g>
+            <Stack
+              xs={STORE.xs}
+              y={STORE.y}
+              z={STORE.floor}
+              groupRef={(k) => (el) => {
+                stored.current[k] = el;
+              }}
+            />
+            <g filter="url(#desk-chip)">
+              {[
+                [STORE.x0, STORE.y1 - 4],
+                [STORE.x1 - 4, STORE.y1 - 4],
+              ].map(([x, y]) => (
+                <Block key={`${x}-${y}`} x0={x} x1={x + 4} y0={y} y1={y + 4} z={0} h={62} tone={SIENNA} r={1.5} width={1} />
+              ))}
+              <Block x0={STORE.x1 - 4} x1={STORE.x1} y0={STORE.y0} y1={STORE.y1} z={62} h={16} tone={TONES.paper} r={2} width={1.1} />
+            </g>
+            <text transform={onSide(at(STORE.x1, STORE.y1 - 3, 66))} fontSize={8} fontWeight={700} letterSpacing={0.5} fill="#2d2f2b" textLength={27} lengthAdjust="spacingAndGlyphs">
+              WAREHOUSE
+            </text>
+          </Part>
+        </Layer>
+
+        {/* the front half of each arm, over the stacks it reaches into */}
+        {(
+          [
+            [STACKER, STACKER_AT, STACKER_REST, stackerLayers],
+            [SHELVER, SHELVER_AT, SHELVER_REST, shelverLayers],
+          ] as const
+        ).map(([rig, s, w, layers], n) => (
+          <svg
+            key={n}
+            ref={(el) => {
+              layers.current[1] = el;
+            }}
+            viewBox={VIEW}
+            className={`${styles.layer} ${deskStyles.fade}`}
+            style={{ zIndex: LAYER.armsFront * 100 + n, ...between(0.56, 0.06) }}
+            aria-hidden="true"
+            focusable="false"
+          >
+            <RigShape rig={rig} s={s} w={w} only={(key) => !BACK_PARTS.includes(key)} />
+          </svg>
+        ))}
+
+        {/* ── the robot on wheels: its body, moved along its lane; its arm is drawn over it, outside the factory's stacking ── */}
+        <Layer z={LAYER.rover} className={`${styles.moving} ${styles.rover}`} layerRef={(el) => void (roverLayer.current = el)}>
+          <Part arrival={{ lift: 40, from: 0.56, span: 0.1 }} style={drawn(0.54, 0.62)}>
+            {[-10, 10].map((x) => (
+              <Wheel key={x} x={ROVER.x + x} y={LANE - 12} />
+            ))}
+            <g filter="url(#desk-card)">
+              <Block x0={ROVER.x - 17} x1={ROVER.x + 17} y0={LANE - 11} y1={LANE + 11} z={4} h={12} tone={SIENNA} r={4} />
+              <Block x0={ROVER.x - 18} x1={ROVER.x + 18} y0={LANE - 12} y1={LANE + 12} z={16} h={ROVER.deck - 16} tone={TONES.concrete} r={3} />
+            </g>
+            <g filter="url(#desk-chip)">
+              <Block x0={ROVER.x + 10} x1={ROVER.x + 15} y0={LANE - 9} y1={LANE - 4} z={ROVER.deck} h={6} tone={SAGE} r={2} width={1} />
+            </g>
+            <Detail d={rounded(frontFace(ROVER.x - 13, ROVER.x + 13, 7, 13, LANE + 11), 1.5)} fill="#fafaf7" />
+            <text transform={onFront(at(ROVER.x - 11, LANE + 11, 8.2))} fontSize={5} fontWeight={700} letterSpacing={0.8} fill="#2d2f2b">
+              BOT-1
+            </text>
+            {[-10, 10].map((x) => (
+              <Wheel key={x} x={ROVER.x + x} y={LANE + 12} />
+            ))}
+          </Part>
         </Layer>
       </div>
 
@@ -1167,7 +1556,7 @@ export default function Factory({ className }: { className?: string }) {
                 ref={(el) => {
                   faces.current[n][f] = el;
                 }}
-                visibility={f === "x" ? "visible" : "hidden"}
+                display={f === "x" ? "inline" : "none"}
               >
                 <Truck
                   tone={tone}
@@ -1182,29 +1571,9 @@ export default function Factory({ className }: { className?: string }) {
         </svg>
       ))}
 
-      {/* ── the loading arm, over the trucks as it reaches into them: drawn afresh from its joints as it moves ── */}
-      <svg ref={loaderLayer} viewBox={VIEW} className={`${styles.layer} ${deskStyles.fade}`} style={{ zIndex: 31, ...between(0.62, 0.06) }} aria-hidden="true" focusable="false">
-        <g data-carried="" transform={rest.box} visibility="hidden">
-          <Parcel z={0} label={false} />
-        </g>
-        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-          {(
-            [
-              ["upper", 8.5, "#9caf88"],
-              ["fore", 7, "#b1c29f"],
-            ] as const
-          ).map(([link, width, colour]) => (
-            <g key={link}>
-              <path data-link={link} d={rest.links[link]} stroke="#2d2f2b" strokeOpacity={0.6} strokeWidth={width + 2.6} />
-              <path data-link={link} d={rest.links[link]} stroke={colour} strokeWidth={width} />
-              <path data-link={link} d={rest.links[link]} stroke="#fafaf7" strokeOpacity={0.55} strokeWidth={2} transform={`translate(0 ${(-width / 4).toFixed(1)})`} />
-            </g>
-          ))}
-          <path data-link="hand" d={rest.links.hand} stroke="#3b3d39" strokeWidth={2.6} />
-        </g>
-        {[6, 5, 4].map((r, k) => (
-          <circle key={k} data-joint={k} cx={rest.joints[k][0]} cy={rest.joints[k][1]} r={r} fill={k ? "#f4f4f0" : "#de9372"} stroke="rgba(45,47,43,0.6)" strokeWidth={1.2} />
-        ))}
+      {/* the robot's arm: under the trucks, or over them while it reaches into one */}
+      <svg ref={roverArmLayer} viewBox={VIEW} className={`${styles.layer} ${deskStyles.fade}`} style={{ zIndex: 29, ...between(0.62, 0.06) }} aria-hidden="true" focusable="false">
+        <RigShape rig={ROVER_ARM} s={v3(ROVER.x, LANE, ROVER.shoulder)} w={plus(v3(ROVER.x, LANE, ROVER.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
       </svg>
     </div>
   );

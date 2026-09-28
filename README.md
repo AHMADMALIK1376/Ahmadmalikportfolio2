@@ -70,18 +70,23 @@ The belt runs right through three machines, each a tunnel with an open frame at 
 glass along the near side, so the work inside can be watched: at DESIGN a pen comes down and
 draws the idea into a wireframe, at BUILD (smoking, with a tank piped into it) a press stamps it
 into a laptop running the app, and at SHIP a box is lowered over it. A robot arm at TEST scans
-each laptop and ticks it off. At the end of the line a gantry lifts each box off the belt and
-stacks it in storage, two high, and a jointed robot arm picks the boxes off the stack and packs
-them into a truck in two neat rows of three. Full, the truck drives off behind the words of the
-hero and up behind the bar along the top of the page, while the next truck, in another colour,
-pulls in. A control desk charts the output; pallets and a lamp stand about. Clicking the factory
-drops in an idea.
+each laptop and ticks it off. Two jointed robot arms stand at the end of the belt: the first
+lifts each box off the belt and stacks it at the right side of the belt, two high, and the second
+takes the boxes off the stack and carries them into the warehouse. A robot on wheels, with an arm
+of its own, drives them one at a time from the warehouse to the truck and packs it, six to a
+truck, in two rows of three. Full, the truck drives off behind the words of the hero and up
+behind the bar along the top of the page, while the next truck, in another colour, pulls in. A
+control desk charts the output; a pallet and a lamp stand about. Clicking the factory drops in an
+idea. The robot arms are drawn in 3D from their pose each frame (`beam` and `rigParts` in
+`Factory.tsx`): every link is a block whose visible faces are shaded by the way they face, the
+turret turns to face where the arm reaches, and the parts are painted furthest first.
 
 It is drawn as layers of SVG in one view box, stacked in the order they are painted: whatever is
 on the belt moves between them as it goes, from under a machine, to inside it (over its far wall,
 under its tool and glass), to over it once it is out. Everything that moves slides by its CSS
 translate (the tools by the Web Animations API), so the wobbling edges are never redrawn; only
-the loading arm, whose joints bend, is redrawn from its pose each frame.
+the robot arms, whose joints bend, are redrawn. Parts that come and go are switched off with
+`display`, not `visibility`, since in SVG a child can make itself visible inside a hidden parent.
 
 ## What I do: the wallet
 

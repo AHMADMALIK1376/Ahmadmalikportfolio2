@@ -52,13 +52,13 @@
   will-change: translate;
 }
 
-/* a thing on the belt: hidden until it is put there */
+/* a thing on the belt: not there at all until it is put there (not merely hidden, which a part of it could undo) */
 .item {
-  visibility: hidden;
+  display: none;
 }
 
 .item[data-on] {
-  visibility: visible;
+  display: block;
 }
 
 /* the belt's slats, slid along as a whole under a window the shape of the belt */
@@ -104,6 +104,26 @@
   25%,
   75% {
     fill: #de9372;
+  }
+}
+
+/* the robot on wheels: its wheels turn while it drives, one way or the other */
+.spoke {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.rover[data-driving] .spoke {
+  animation: roll 0.45s linear infinite;
+}
+
+.rover[data-driving="back"] .spoke {
+  animation-direction: reverse;
+}
+
+@keyframes roll {
+  to {
+    rotate: 360deg;
   }
 }
 
@@ -199,6 +219,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .slats,
+  .rover[data-driving] .spoke,
   .lamp[data-go] circle,
   .arm[data-working],
   .live .steam circle,

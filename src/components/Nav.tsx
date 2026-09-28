@@ -70,7 +70,7 @@ export default function Nav() {
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
       >
         <div className={`transition-colors duration-300 ${scrolled ? "bg-paper/85 backdrop-blur-md" : "bg-transparent"}`}>
-          <nav aria-label="Main" className="gutter flex h-(--nav-h) items-center justify-between gap-4">
+          <nav aria-label="Main" className="gutter-wide flex h-(--nav-h) items-center justify-between gap-4">
             <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
               <span className="text-sienna-500 transition-transform duration-500 group-hover:rotate-[200deg]">
                 <Doodle kind="sparkle" now className="size-6" strokeWidth={4} duration={0.6} />
