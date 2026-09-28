@@ -2,8 +2,9 @@
  * The factory is drawn in layers: SVGs one over another, each in the same view
  * box and the same box on the page, stacked by z-index in the order they must
  * be painted — the belt, then whatever is on the belt before the first
- * machine, then that machine, then what is between it and the next, and so on
- * to the truck. Everything that moves is moved by its CSS translate, in percent
+ * machine, then the back of that machine, what is inside it, its tool and its
+ * glass front, then what is between it and the next, and so on to the end of
+ * the line. Everything that moves is moved by its CSS translate, in percent
  * of its own box, so the browser slides it without redrawing it.
  *
  * Everything in the opening reads --p, which runs from 0 to 1 as it builds.
@@ -85,58 +86,24 @@
   }
 }
 
-/* ── the machines at work, while something is inside them ── */
+/* ── the machines at work: each tool is moved by the script as something reaches it, and its light flashes ── */
 
-.light {
+.lamp circle {
   fill: #9a9f98;
-  transition: fill 0.2s ease;
 }
 
-[data-working] .light {
-  fill: #9caf88;
-  animation: blink 0.5s steps(1, end) infinite;
+.lamp[data-go] circle {
+  animation: flash 0.9s steps(1, end);
 }
 
-@keyframes blink {
+@keyframes flash {
+  0%,
   50% {
+    fill: #9caf88;
+  }
+  25%,
+  75% {
     fill: #de9372;
-  }
-}
-
-/* the designer's pencil scribbles: its whole layer turns about the pencil's foot */
-.pencil[data-working] {
-  animation: scribble 0.32s ease-in-out infinite alternate;
-}
-
-@keyframes scribble {
-  from {
-    rotate: -2.2deg;
-  }
-  to {
-    rotate: 2deg;
-  }
-}
-
-/* the builder's press comes down */
-.press[data-working] {
-  animation: press 0.6s cubic-bezier(0.5, 0, 0.3, 1) infinite;
-}
-
-@keyframes press {
-  40%,
-  60% {
-    translate: 0 1.8%;
-  }
-}
-
-/* the shipper's label flutters out */
-.tag[data-working] {
-  animation: tag 0.4s ease-in-out infinite alternate;
-}
-
-@keyframes tag {
-  to {
-    rotate: 3deg;
   }
 }
 
@@ -195,7 +162,7 @@
   opacity: 0;
 }
 
-.tick[data-on] {
+.tick[data-go] {
   animation: tick 0.9s ease-out;
 }
 
@@ -232,10 +199,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .slats,
-  [data-working] .light,
-  .pencil[data-working],
-  .press[data-working],
-  .tag[data-working],
+  .lamp[data-go] circle,
   .arm[data-working],
   .live .steam circle,
   .chart {

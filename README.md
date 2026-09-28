@@ -65,16 +65,23 @@ paper or a pastel, edged in the cards' 55% ink, and put through the same kind of
 filter and hard offset shadow the cards and chips have (`desk-card`, `desk-chip`).
 
 Ideas (named after Ahmad's projects) drop out of a hopper fed from a thought cloud onto a
-conveyor that runs from the top right of the picture to the bottom left, across a factory floor:
-DESIGN turns each into a wireframe, BUILD (smoking, with a tank piped into it) into a laptop
-running the app, a robot arm at TEST scans it and ticks it off, and SHIP boxes it. A control desk
-charts the output; pallets and lamps stand about. The boxes drop into a truck at the end of the
-line, and when it is full it drives off behind the words of the hero and up behind the bar along
-the top of the page, while the next truck, in another colour, pulls in. Each machine works while
-something is inside it; clicking the factory drops in an idea. It is drawn as layers of SVG in one
-view box, stacked in the order they are painted, so a thing on the belt really goes into a machine
-and out the other side; everything that moves slides by its CSS translate, so the wobbling edges
-are never redrawn.
+conveyor that runs from the top right of the picture to the bottom left, across a factory floor.
+The belt runs right through three machines, each a tunnel with an open frame at either end and
+glass along the near side, so the work inside can be watched: at DESIGN a pen comes down and
+draws the idea into a wireframe, at BUILD (smoking, with a tank piped into it) a press stamps it
+into a laptop running the app, and at SHIP a box is lowered over it. A robot arm at TEST scans
+each laptop and ticks it off. At the end of the line a gantry lifts each box off the belt and
+stacks it in storage, two high, and a jointed robot arm picks the boxes off the stack and packs
+them into a truck in two neat rows of three. Full, the truck drives off behind the words of the
+hero and up behind the bar along the top of the page, while the next truck, in another colour,
+pulls in. A control desk charts the output; pallets and a lamp stand about. Clicking the factory
+drops in an idea.
+
+It is drawn as layers of SVG in one view box, stacked in the order they are painted: whatever is
+on the belt moves between them as it goes, from under a machine, to inside it (over its far wall,
+under its tool and glass), to over it once it is out. Everything that moves slides by its CSS
+translate (the tools by the Web Animations API), so the wobbling edges are never redrawn; only
+the loading arm, whose joints bend, is redrawn from its pose each frame.
 
 ## What I do: the wallet
 

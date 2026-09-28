@@ -61,8 +61,8 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* the factory: ideas in, apps out */}
-        <div className="relative mx-auto w-full max-w-[22rem] sm:max-w-[30rem] lg:mr-0 lg:max-w-none lg:translate-x-6 min-[1360px]:translate-x-12">
+        {/* the factory: ideas in, apps out. Its own stacking, under the words, so its trucks drive off behind them */}
+        <div className="relative isolate mx-auto w-full max-w-[22rem] sm:max-w-[30rem] lg:mr-0 lg:max-w-none lg:translate-x-6 min-[1360px]:translate-x-12">
           <Factory />
 
           {/* margin notes, written once the factory is built */}
