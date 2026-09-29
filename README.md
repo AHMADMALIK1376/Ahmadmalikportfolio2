@@ -128,12 +128,16 @@ Experience is a long hand-drawn map laid across the whole width of the page
 `MapScenes.tsx` and the styling in `Map.module.css`): every role on one road that flows from the
 top of the map to the bottom in long, smooth curves (a Catmull–Rom curve through the stops,
 which stand at either side of the middle in turn), and the workshop and hackathons as flags
-beside it. As the page scrolls, a ball flies down the road level with the middle of the screen,
-bobbing over its shadow on waves that ripple out over the road under it, and the road behind it is
-inked in. Each stop's card pops up on the outside of its bend as the ball arrives, and across the
+beside it. As the page scrolls, a little robot drone flies down the road level with the middle of
+the screen — a grey shell in panels, split open on a core lit orange, an eye with a segmented ring
+round an orange iris, curved legs folded under it — leaning into the bends and bobbing over its
+shadow on waves that ripple out over the road under it, with its thruster pushing the air down; the
+road behind it is inked in. While the map fills the middle of the screen, a hard flick of the
+wheel or trackpad only scrolls it at a walking pace (about 720px a second, half a screen at most
+waiting); touch screens and reduced motion scroll as usual. Each stop's card pops up on the outside of its bend as the ball arrives, and across the
 road stands the place itself in 3D — a home office, the university, a Git tree, an easel, a
 stepped office, a hackathon tent, a camp, a tower — under 3D mountains, with forests between the
-rows. The ball and the inked road move by their transforms only (the inked road is a window
+rows. The drone and the inked road move by their transforms only (the inked road is a window
 sliding down the sheet over a road sliding back up), so scrolling stays smooth. The road is drawn
 through wherever the stops fall on the page, so it fits any width; below a laptop's width it runs
 straight down the left with the cards beside it.

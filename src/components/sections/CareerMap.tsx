@@ -13,10 +13,12 @@ import styles from "./Map.module.css";
  * curves, swinging gently from one side of the middle to the other. The
  * workshop and hackathons are flags beside the road.
  *
- * As the page scrolls down, a ball flies down the road with it, hovering on
- * waves that ripple out over the road under it, and each stop's card pops up
- * on the map beside the stop as the ball reaches it (and folds away again if
- * it goes back up). The road behind it is inked in; the road ahead is still in
+ * As the page scrolls down, a little robot drone flies down the road with it,
+ * leaning into the bends, hovering on waves that ripple out over the road
+ * under it; and each stop's card pops up
+ * on the map beside the stop as the drone reaches it (and folds away again if
+ * it goes back up). While the map is on the screen, a hard flick of the wheel
+ * or trackpad only scrolls it at a walking pace. The road behind it is inked in; the road ahead is still in
  * pencil. Each card opens on the outside of its bend, and across the road from
  * it stands the place in 3D, with mountains behind it.
  *
@@ -357,6 +359,104 @@ function Land({ geo, ids }: { geo: Geo; ids: string }) {
   );
 }
 
+// ── the drone that flies the road ─────────────────────────────────────────
+
+/** One of its legs: a curved blade from its hip on the body down to its foot, on the left; `mirror` puts it on the right. */
+const leg = (hx: number, hy: number, fx: number, fy: number, mirror = false) => {
+  const m = (x: number) => (mirror ? 120 - x : x);
+  return `M${m(hx)} ${hy}C${m(hx - 10)} ${hy + 2} ${m(fx + 2)} ${fy - 26} ${m(fx)} ${fy}L${m(fx + 5)} ${fy + 1}C${m(fx + 8)} ${fy - 22} ${m(hx - 6)} ${hy + 9} ${m(hx + 2)} ${hy + 7}Z`;
+};
+
+/**
+ * A robot drone, like a ball: a pale grey shell in panels, split open at the front on a dark core lit orange inside,
+ * vents on its top, a big eye with a segmented ring round an orange iris, a status light, and four curved legs folded
+ * under it; and under it all, an orange thruster pushing the air down. Its eye looks the way it is flying (--look).
+ */
+function Drone() {
+  const ink = { stroke: "#2d2f2b", strokeOpacity: 0.6, strokeWidth: 1.4, strokeLinejoin: "round" } as const;
+  const bladeBack = { fill: "#b9bdb6", ...ink };
+  const blade = { fill: "#dfe1dc", ...ink };
+  return (
+    <svg viewBox="0 0 120 128" aria-hidden="true" focusable="false">
+      <defs>
+        <radialGradient id="drone-shell" cx="36%" cy="28%" r="78%">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.35" stopColor="#eceee9" />
+          <stop offset="0.75" stopColor="#c9cdc6" />
+          <stop offset="1" stopColor="#9a9f98" />
+        </radialGradient>
+        <radialGradient id="drone-core" cx="42%" cy="46%" r="62%">
+          <stop offset="0" stopColor="#5e625c" />
+          <stop offset="1" stopColor="#1f2120" />
+        </radialGradient>
+        <filter id="drone-glow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* the two legs behind it */}
+      <path d={leg(44, 73, 24, 110)} {...bladeBack} />
+      <path d={leg(44, 73, 24, 110, true)} {...bladeBack} />
+
+      {/* the thruster underneath, glowing */}
+      <ellipse className={styles.glow} cx={60} cy={93} rx={11} ry={4} fill="#de9372" filter="url(#drone-glow)" />
+
+      {/* the shell */}
+      <circle cx={60} cy={56} r={38} fill="url(#drone-shell)" {...ink} />
+      <path d="M25 45C38 22 82 22 95 45" fill="none" stroke="#2d2f2b" strokeOpacity={0.3} strokeWidth={1.1} />
+      <path d="M60 18.5V26M24 64c9 4 20 6 30 6" fill="none" stroke="#2d2f2b" strokeOpacity={0.28} strokeWidth={1.1} />
+      {/* vents on its top */}
+      {[
+        [49, 23, 12],
+        [47, 27.5, 16],
+        [49, 32, 12],
+      ].map(([x, y, w]) => (
+        <path key={y} d={`M${x} ${y}h${w}`} stroke="#4a4d48" strokeWidth={2} strokeLinecap="round" />
+      ))}
+
+      {/* split open at the front on its core, lit orange inside */}
+      <path d="M27 54C29 39 43 29 60 29C65 35 67 41 67 47C54 47 43 55 37 67C32 63 28 59 27 54Z" fill="url(#drone-core)" {...ink} />
+      <g className={styles.glow} filter="url(#drone-glow)" fill="none" stroke="#de9372" strokeLinecap="round">
+        <path d="M36 55C40 46 48 40 58 38" strokeWidth={2.2} />
+        <path d="M42 60C45 55 49 52 54 50" strokeWidth={1.6} />
+        <path d="M33 49l3-2M38 44l3-2.5M45 39.5l3.5-1.5" strokeWidth={2.4} />
+      </g>
+      <path d="M31 47c3-7 9-12 16-14" fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="3 2.5" strokeLinecap="round" />
+
+      {/* a plate over its lower front */}
+      <path d="M23 61C25 77 39 90 57 94L56 86C44 82 34 73 31 62Z" fill="#e6e8e3" {...ink} />
+      <path d="M29 72l6-3M36 81l5-4" stroke="#2d2f2b" strokeOpacity={0.3} strokeWidth={1.1} strokeLinecap="round" />
+
+      {/* its eye: a housing, a ring of segments, a lens with fins, and an orange iris */}
+      <g className={styles.eye}>
+        <circle cx={78} cy={58} r={18.5} fill="#4a4d48" {...ink} />
+        <circle cx={78} cy={58} r={14.2} fill="none" stroke="#d3d6d0" strokeWidth={3.2} strokeDasharray="5.4 3" />
+        <circle cx={78} cy={58} r={9.8} fill="#2d2f2b" />
+        {Array.from({ length: 12 }, (_, k) => {
+          const a = (k / 12) * Math.PI * 2;
+          return <path key={k} d={`M${(78 + Math.cos(a) * 5.6).toFixed(1)} ${(58 + Math.sin(a) * 5.6).toFixed(1)}L${(78 + Math.cos(a) * 8.6).toFixed(1)} ${(58 + Math.sin(a) * 8.6).toFixed(1)}`} stroke="#5e625c" strokeWidth={1.2} />;
+        })}
+        <circle className={styles.glow} cx={78} cy={58} r={4.8} fill="#de9372" filter="url(#drone-glow)" />
+        <circle cx={78} cy={58} r={2} fill="#3b3d39" />
+        <ellipse cx={73.5} cy={52.5} rx={2.6} ry={1.6} fill="#fafaf7" fillOpacity={0.85} transform="rotate(-30 73.5 52.5)" />
+      </g>
+      <path className={styles.glow} d="M63 67A18 18 0 0 0 71 75" fill="none" stroke="#d0714c" strokeWidth={2} strokeLinecap="round" filter="url(#drone-glow)" />
+      {/* a light on its crown, blinking sage */}
+      <circle className={styles.status} cx={84} cy={31} r={2.4} fill="#9caf88" stroke="#2d2f2b" strokeOpacity={0.5} strokeWidth={0.8} />
+
+      {/* the two legs in front, and their hips */}
+      <path d={leg(33, 68, 6, 118)} {...blade} />
+      <path d={leg(33, 68, 6, 118, true)} {...blade} />
+      <circle cx={33} cy={68} r={3.2} fill="#5e625c" {...ink} strokeWidth={1} />
+      <circle cx={87} cy={68} r={3.2} fill="#5e625c" {...ink} strokeWidth={1} />
+    </svg>
+  );
+}
+
 export default function CareerMap({ heading }: { heading: ReactNode }) {
   const sheet = useRef<HTMLDivElement>(null);
   const column = useRef<HTMLDivElement>(null);
@@ -365,6 +465,7 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
   const cards = useRef<(HTMLElement | null)[]>([]);
   const end = useRef<HTMLAnchorElement>(null);
   const orb = useRef<HTMLDivElement>(null);
+  const drone = useRef<HTMLSpanElement>(null);
   const inked = useRef<HTMLDivElement>(null);
   const inkedIn = useRef<HTMLDivElement>(null);
   const [geo, setGeo] = useState<Geo | null>(null);
@@ -446,6 +547,7 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
     const first = track[0].y;
     const lastY = tips[LAST].y;
     let y = -1;
+    let lean = 0;
     let shown = -2;
     let inkedTo = -1;
     let frame = 0;
@@ -473,6 +575,14 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
       y = y < 0 || reduced ? target : y + (target - y) * (1 - Math.exp(-dt * 6));
       const p = level(y);
       if (orb.current) orb.current.style.transform = `translate3d(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px, 0)`;
+      // it leans into the bends, and looks the way it is going
+      const slope = level(y + 10).x - level(y - 10).x;
+      const tilt = Math.max(-10, Math.min(10, slope * 0.55));
+      if (drone.current && Math.abs(tilt - lean) > 0.4) {
+        lean = tilt;
+        drone.current.style.rotate = `${lean.toFixed(1)}deg`;
+        drone.current.style.setProperty("--look", (lean * 0.35).toFixed(2));
+      }
       // the road behind the ball is inked in: a window over it slides down, and the road inside slides back up by as
       // much, so nothing is redrawn
       if (inked.current && inkedIn.current && Math.abs(y - inkedTo) > 0.3) {
@@ -511,7 +621,55 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
     };
   }, [geo]);
 
-  /** Scrolls the page until the ball reaches stop `i`. */
+  // while the map is on the screen, the page scrolls at a walking pace, however hard the wheel or trackpad is flicked: each
+  // turn of the wheel is taken, but the page is eased towards it at no more than SLOW pixels a second, and no more than
+  // half a screen is ever waiting. (Touch screens scroll as they always do.)
+  useEffect(() => {
+    const el = sheet.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const SLOW = 720;
+    let target = 0;
+    let now = 0;
+    let frame = 0;
+    let last = 0;
+    let running = false;
+    const step = (time: number) => {
+      const dt = last ? Math.min(0.05, (time - last) / 1000) : 1 / 60;
+      last = time;
+      const gap = target - now;
+      now += Math.sign(gap) * Math.min(Math.abs(gap) * (1 - Math.exp(-dt * 9)), SLOW * dt);
+      if (Math.abs(target - now) < 0.5) {
+        now = target;
+        running = false;
+      }
+      window.scrollTo({ top: now, behavior: "instant" });
+      if (running) frame = requestAnimationFrame(step);
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || document.body.style.overflow === "hidden") return;
+      const box = el.getBoundingClientRect();
+      const h = window.innerHeight;
+      if (box.top > h * 0.5 || box.bottom < h * 0.5) return;
+      event.preventDefault();
+      const dy = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? h : 1);
+      if (!running) {
+        now = target = window.scrollY;
+        last = 0;
+        running = true;
+        frame = requestAnimationFrame(step);
+      }
+      // no more than half a screen waiting either way, and never past the top or the foot of the page
+      const ahead = Math.min(now + h * 0.5, Math.max(now - h * 0.5, target + dy));
+      target = Math.max(0, Math.min(document.documentElement.scrollHeight - h, ahead));
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  /** Scrolls the page until the drone reaches stop `i`. */
   const jump = (i: number) => {
     const el = sheet.current;
     const tip = geo?.pins[i];
@@ -540,9 +698,10 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
           </div>
         )}
 
-        {/* the ball, flown down the road by the scroll: it hovers over its shadow, on waves rippling out over the road
-            under it, with the air it pushes down going down beneath it */}
+        {/* the drone, flown down the road by the scroll: it hovers over its shadow and the glow of its thruster, on waves
+            rippling out over the road under it, with the air it pushes down going down beneath it */}
         <div ref={orb} className={styles.orb} aria-hidden="true">
+          <span className={styles.pad} />
           <span className={styles.wave} />
           <span className={styles.wave} />
           <span className={styles.wave} />
@@ -550,7 +709,10 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
           <span className={styles.float}>
             <span className={styles.lift} />
             <span className={styles.lift} />
-            <span className={styles.ball} />
+            <span className={styles.lift} />
+            <span ref={drone} className={styles.drone}>
+              <Drone />
+            </span>
           </span>
         </div>
 

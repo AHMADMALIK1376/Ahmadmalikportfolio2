@@ -346,62 +346,86 @@
   will-change: transform;
 }
 
-/* waves rippling out over the road under the ball, one after another */
+/* the glow of its thruster on the road under it */
+.pad {
+  position: absolute;
+  left: -2.2rem;
+  top: -0.8rem;
+  width: 4.4rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(222 147 114 / 0.55), rgb(222 147 114 / 0));
+  animation: pad 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes pad {
+  from {
+    opacity: 0.55;
+    scale: 0.85;
+  }
+  to {
+    opacity: 1;
+    scale: 1.1;
+  }
+}
+
+/* waves rippling out over the road under the drone, one after another */
 .wave {
   position: absolute;
-  left: -1.9rem;
-  top: -0.7rem;
-  width: 3.8rem;
-  height: 1.4rem;
-  border: 2.5px solid #80966b;
+  left: -3rem;
+  top: -1.05rem;
+  width: 6rem;
+  height: 2.1rem;
+  border: 3px solid #d0714c;
   border-radius: 50%;
   opacity: 0;
   animation: ground-wave 2.1s ease-out infinite;
 }
 
-.wave:nth-child(2) {
-  border-color: #d0714c;
+.wave:nth-child(3) {
+  border-color: #80966b;
   animation-delay: 0.7s;
 }
 
-.wave:nth-child(3) {
+.wave:nth-child(4) {
+  border-color: #7c817a;
   animation-delay: 1.4s;
 }
 
 @keyframes ground-wave {
   0% {
     opacity: 1;
-    scale: 0.2;
+    scale: 0.18;
   }
-  60% {
-    opacity: 0.7;
+  55% {
+    opacity: 0.8;
   }
   100% {
     opacity: 0;
-    scale: 1.6;
+    scale: 1.55;
   }
 }
 
 /* its shadow on the road, smaller as it rises */
 .shadow {
   position: absolute;
-  left: -0.95rem;
-  top: -0.3rem;
-  width: 1.9rem;
-  height: 0.6rem;
+  left: -1.5rem;
+  top: -0.45rem;
+  width: 3rem;
+  height: 0.9rem;
   border-radius: 50%;
-  background: rgb(45 47 43 / 0.24);
+  background: rgb(45 47 43 / 0.26);
   animation: shadow 2.6s ease-in-out infinite alternate;
 }
 
 @keyframes shadow {
   to {
     opacity: 0.55;
-    scale: 0.7;
+    scale: 0.72;
   }
 }
 
-/* the ball, bobbing up and down on the air under it */
+/* the drone, bobbing up and down on the air under it */
 .float {
   position: absolute;
   left: 0;
@@ -411,49 +435,91 @@
 
 @keyframes float {
   to {
-    translate: 0 -9px;
+    translate: 0 -10px;
   }
 }
 
-.ball {
+/* the drone itself, leaning into the bends as the script turns it */
+.drone {
+  --look: 0;
   position: absolute;
-  left: -1.05rem;
-  top: -3.7rem;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 50%;
-  border: 1.5px solid rgb(45 47 43 / 0.6);
-  background: radial-gradient(circle at 34% 30%, #fdf3ee 0 7%, #eaa98b 19%, #d0714c 52%, #a3441c 100%);
-  box-shadow: 3px 3px 0 1px rgb(45 47 43 / 0.22);
+  left: -3rem;
+  top: -7.3rem;
+  width: 6rem;
+  aspect-ratio: 120 / 128;
+  transform-origin: 50% 45%;
+  transition: rotate 0.45s ease-out;
+  filter: drop-shadow(3px 3px 0 rgb(45 47 43 / 0.2));
 }
 
-/* the air it pushes down, in waves going down from under it */
+.drone svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* its eye, glancing the way it is going */
+.eye {
+  transform: translateX(calc(var(--look) * 1px));
+  transition: transform 0.45s ease-out;
+}
+
+/* its lights, glowing brighter and dimmer */
+.glow {
+  animation: glow 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.status {
+  animation: status 1.2s steps(1, end) infinite;
+}
+
+@keyframes status {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* the air it pushes down, in waves going down from its thruster */
 .lift {
   position: absolute;
-  left: -0.85rem;
-  top: -1.55rem;
-  width: 1.7rem;
-  height: 0.7rem;
-  border-bottom: 2.5px solid #d0714c;
+  left: -1.4rem;
+  top: -2.75rem;
+  width: 2.8rem;
+  height: 1rem;
+  border-bottom: 3px solid #de9372;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
   opacity: 0;
-  animation: lift 1.3s ease-out infinite;
+  animation: lift 1.35s ease-out infinite;
 }
 
-.lift + .lift {
-  animation-delay: 0.65s;
+.lift:nth-child(2) {
+  animation-delay: 0.45s;
+}
+
+.lift:nth-child(3) {
+  animation-delay: 0.9s;
 }
 
 @keyframes lift {
   0% {
-    opacity: 0.9;
+    opacity: 1;
     translate: 0 0;
-    scale: 0.55;
+    scale: 0.5;
   }
   100% {
     opacity: 0;
-    translate: 0 16px;
-    scale: 1.3;
+    translate: 0 26px;
+    scale: 1.35;
   }
 }
 
@@ -546,17 +612,21 @@
   .name {
     display: none;
   }
-  .ball {
-    left: -0.85rem;
-    top: -3.1rem;
-    width: 1.7rem;
-    height: 1.7rem;
+  .drone {
+    left: -1.9rem;
+    top: -4.7rem;
+    width: 3.8rem;
+  }
+  .lift {
+    left: -1rem;
+    top: -1.9rem;
+    width: 2rem;
   }
   .wave {
-    left: -1.5rem;
-    top: -0.55rem;
-    width: 3rem;
-    height: 1.1rem;
+    left: -2.1rem;
+    top: -0.75rem;
+    width: 4.2rem;
+    height: 1.5rem;
   }
   .pin {
     left: 1.35rem;
@@ -596,9 +666,12 @@
   .boat,
   .pin[data-reached]::after,
   .wave,
+  .pad,
   .shadow,
   .float,
-  .lift {
+  .lift,
+  .glow,
+  .status {
     animation: none;
   }
   .card,
