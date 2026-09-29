@@ -129,8 +129,9 @@ Experience is a long hand-drawn map laid across the whole width of the page
 top of the map to the bottom in long, smooth curves (a Catmull–Rom curve through the stops,
 which stand at either side of the middle in turn), and the workshop and hackathons as flags
 beside it. As the page scrolls, a little robot drone flies down the road level with the middle of
-the screen — a grey shell in panels, split open on a core lit orange, an eye with a segmented ring
-round an orange iris, curved legs folded under it — leaning into the bends and bobbing over its
+the screen — a floating grey orb split round its middle by a seam glowing orange, with an eye in a
+segmented ring round an orange iris, an antenna, and a glowing hover pod on either side — leaning
+into the bends and bobbing over its
 shadow on waves that ripple out over the road under it, with its thruster pushing the air down; the
 road behind it is inked in. While the map fills the middle of the screen, a hard flick of the
 wheel or trackpad only scrolls it at a walking pace (about 720px a second, half a screen at most

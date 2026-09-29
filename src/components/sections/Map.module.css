@@ -444,9 +444,9 @@
   --look: 0;
   position: absolute;
   left: -3rem;
-  top: -7.3rem;
+  top: -7.2rem;
   width: 6rem;
-  aspect-ratio: 120 / 128;
+  aspect-ratio: 120 / 110;
   transform-origin: 50% 45%;
   transition: rotate 0.45s ease-out;
   filter: drop-shadow(3px 3px 0 rgb(45 47 43 / 0.2));
@@ -493,7 +493,7 @@
 .lift {
   position: absolute;
   left: -1.4rem;
-  top: -2.75rem;
+  top: -2.3rem;
   width: 2.8rem;
   height: 1rem;
   border-bottom: 3px solid #de9372;
@@ -614,12 +614,12 @@
   }
   .drone {
     left: -1.9rem;
-    top: -4.7rem;
+    top: -4.8rem;
     width: 3.8rem;
   }
   .lift {
     left: -1rem;
-    top: -1.9rem;
+    top: -1.7rem;
     width: 2rem;
   }
   .wave {
