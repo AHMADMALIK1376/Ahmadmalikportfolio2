@@ -38,7 +38,7 @@ import styles from "./Factory.module.css";
  */
 
 // ── the view, and moving within it ──────────────────────────────────────
-const VB = { x: 16, y: -300, w: 970, h: 960 };
+const VB = { x: 20, y: -135, w: 1160, h: 797 };
 const VIEW = `${VB.x} ${VB.y} ${VB.w} ${VB.h}`;
 /** A shift on screen, in view box units, as a CSS translate of a layer the size of the view. */
 const shift = (dx: number, dy: number) => `${((dx / VB.w) * 100).toFixed(3)}% ${((dy / VB.h) * 100).toFixed(3)}%`;
@@ -136,20 +136,21 @@ const slotAt = ([a, b]: [number, number], facing: Facing) =>
 
 // ── the live server ─────────────────────────────────────────────────────
 /**
- * The live server the truck takes the apps to, at the top right of the picture: three racks on a raised floor, and a
+ * The live server the truck takes the apps to, to the right of the factory's top: three racks on a raised floor, and a
  * lane in front of them for a robot on wheels, with an arm, that deploys the boxes into them. The truck comes along a
- * road in front of it all and turns up into the dock to the right of the racks, its tail to the robot's lane.
+ * road that runs above the factory and in front of the server, and turns up into the dock to the right of the racks,
+ * its tail to the robot's lane.
  */
-const RACK = { x0: -262, y0: -716, y1: -680, w: 40, h: 170, n: 3 };
-const DEPLOY_LEVELS = [14, 50, 86];
+const RACK = { x0: -24, y0: -692, y1: -654, w: 48, h: 160, n: 3 };
+const DEPLOY_LEVELS = [14, 47, 80];
 const DEPLOY_SLOTS = RACK.n * DEPLOY_LEVELS.length;
 /** The slots the robot deploys into: across the racks, three high. */
 const deploySlot = (k: number) => ({ x: RACK.x0 + RACK.w / 2 + RACK.w * (k % RACK.n), z: DEPLOY_LEVELS[Math.floor(k / RACK.n)] });
 /** Where the truck stands at the server, facing along −y, its bed towards the robot's lane; and the road in front. */
-const DOCK = { x: -90, y: -716 };
-const ROAD_Y = -596;
+const DOCK = { x: 168, y: -692 };
+const ROAD_Y = -572;
 /** The robot's lane, in front of the racks and behind the truck's tail, and where it waits on it. */
-const BOT = { x: -150, y: -638, deck: 20, shoulder: 34, speed: 240 };
+const BOT = { x: 76, y: -614, deck: 20, shoulder: 34, speed: 240 };
 
 // ── colours ─────────────────────────────────────────────────────────────
 const BELT_TONE: Tone = { top: "#5e625c", left: "#4a4d48", right: "#3b3d39" };
@@ -267,7 +268,7 @@ const SHELVER_REST = v3(148, 114, 94);
 /** The arm on the robot with wheels. */
 const ROVER_ARM: Rig = { upper: 44, fore: 40, widths: [10, 9], turret: { base: ROVER.deck, w: 14, tone: TONES.dark }, tone: TONES.paper, joints: [6.5, 5.5, 4.5], hub: "#d0714c" };
 /** The arm on the robot at the live server. */
-const BOT_ARM: Rig = { upper: 56, fore: 52, widths: [12, 10], turret: { base: BOT.deck, w: 16, tone: TONES.dark }, tone: { top: "#e2e9da", left: "#cbd7bd", right: "#b1c29f" }, joints: [7, 6, 5], hub: "#d0714c" };
+const BOT_ARM: Rig = { upper: 60, fore: 56, widths: [12, 10], turret: { base: BOT.deck, w: 16, tone: TONES.dark }, tone: { top: "#e2e9da", left: "#cbd7bd", right: "#b1c29f" }, joints: [7, 6, 5], hub: "#d0714c" };
 /** How the robot on wheels carries a box as it drives: its wrist over its deck. */
 const CARRY = { wx: -6, wy: 0, wz: 44 };
 
@@ -709,7 +710,7 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
   const dark: Tone = { top: "#5e625c", left: "#4a4d48", right: "#3b3d39" };
   const floor: Tone = { top: "#e6e8e3", left: "#d3d6d0", right: "#b9bdb6" };
   const colours = ["#9caf88", "#de9372", "#fafaf7"];
-  const pad = { x0: x0 - 16, x1: x1 + 10, y0: y0 - 13, y1: BOT.y + 18 };
+  const pad = { x0: x0 - 16, x1: x1 + 10, y0: y0 - 13, y1: BOT.y + 16 };
   const names = ["API", "DB", "AI"];
   const status = ["200 OK", "p99 42ms", "CPU 31%"];
   /** A light on the front of a rack, blinking in its own time. */
@@ -740,6 +741,7 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
       {/* the raised floor, tiled, with the robot's lane on it; and the dock marked out to the right */}
       <g filter="url(#desk-card)">
         <Block x0={pad.x0} x1={pad.x1} y0={pad.y0} y1={pad.y1} z={-6} h={6} tone={floor} r={10} />
+        <Block x0={pad.x1 - 4} x1={DOCK.x + 38} y0={BOT.y - 14} y1={pad.y1} z={-6} h={6} tone={floor} r={8} />
       </g>
       <g stroke="#b9bdb6" strokeWidth={0.8}>
         {Array.from({ length: 8 }, (_, k) => pad.x0 + 18 + k * 18).map((x) => (
@@ -749,9 +751,9 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
           <path key={`y${y}`} d={line(at(pad.x0 + 3, y, 0), at(pad.x1 - 3, y, 0))} />
         ))}
       </g>
-      <path d={line(at(pad.x0 + 8, BOT.y, 0), at(pad.x1 - 6, BOT.y, 0))} fill="none" stroke="#de9372" strokeWidth={1.4} strokeDasharray="6 5" strokeLinecap="round" />
-      <path d={rounded(topFace(DOCK.x - 34, DOCK.x + 34, DOCK.y - 52, DOCK.y + 66, 0), 6)} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="5 5" />
-      <text transform={onTop(at(DOCK.x + 22, DOCK.y + 56, 0))} fontSize={6.5} fontWeight={700} letterSpacing={1.2} fill="#9a9f98" className={deskStyles.fade} style={between(0.66, 0.05)}>
+      <path d={line(at(pad.x0 + 8, BOT.y, 0), at(DOCK.x + 32, BOT.y, 0))} fill="none" stroke="#de9372" strokeWidth={1.4} strokeDasharray="6 5" strokeLinecap="round" />
+      <path d={rounded(topFace(DOCK.x - 30, DOCK.x + 30, DOCK.y - 48, DOCK.y + 60, 0), 6)} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="5 5" />
+      <text transform={onTop(at(DOCK.x + 18, DOCK.y + 50, 0))} fontSize={6.5} fontWeight={700} letterSpacing={1.2} fill="#9a9f98" className={deskStyles.fade} style={between(0.66, 0.05)}>
         DOCK
       </text>
 
@@ -783,14 +785,14 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
               {status[r]}
             </text>
             {/* a row of drive bays */}
-            {[0, 1, 2, 3].map((k) => (
+            {[0, 1, 2, 3, 4].map((k) => (
               <g key={k}>
-                <path d={rounded(frontFace(rx + 5 + k * 8, rx + 11 + k * 8, h - 58, h - 45, y1), 1)} fill="#3b3d39" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} />
-                {led(rx + 8 + k * 8, h - 48, r * 5 + k)}
+                <path d={rounded(frontFace(rx + 5 + k * 7.4, rx + 10.5 + k * 7.4, h - 64, h - 51, y1), 1)} fill="#3b3d39" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} />
+                {led(rx + 7.8 + k * 7.4, h - 54, r * 5 + k)}
               </g>
             ))}
             {/* the units between the slots, each with its row of lights */}
-            {[4, 37, 73].map((z) => (
+            {[4, 37, 70].map((z) => (
               <g key={z}>
                 <path d={rounded(frontFace(rx + 4, rx + w - 4, z, z + 8, y1), 1)} fill="#3b3d39" />
                 {[8, 12, 16, 20, 24].map((x, j) => led(rx + x, z + 4, r + z + j))}
@@ -817,8 +819,8 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
       })}
 
       {/* on the side, a monitor with the uptime */}
-      <path d={rounded(sideFace(x1, y0 + 4, y1 - 4, 52, 112), 3)} fill="#2d2f2b" stroke="rgba(45,47,43,0.6)" strokeWidth={1} />
-      <g transform={onSide(at(x1, y1 - 7, 106))}>
+      <path d={rounded(sideFace(x1, y0 + 4, y1 - 4, 60, 124), 3)} fill="#2d2f2b" stroke="rgba(45,47,43,0.6)" strokeWidth={1} />
+      <g transform={onSide(at(x1, y1 - 7, 118))}>
         <text x={0} y={5} fontSize={4.6} fontWeight={700} fill="#9caf88">
           UPTIME
         </text>

@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useRef, useState, type CSSProperties, type FormEvent, type SyntheticEvent } from "react";
 import { PERSON } from "@/lib/content";
-import Doodle from "@/components/sketch/Doodle";
 import Plotter, { type Aim } from "@/components/plotter/Plotter";
 import { FORM, type Box, type Input, type Letter } from "@/components/plotter/hand";
 import plotter from "@/components/plotter/Plotter.module.css";
@@ -78,7 +77,7 @@ export default function ContactForm() {
   }
 
   return (
-    <div className="relative mx-auto max-w-[56rem]">
+    <div className="relative min-w-0">
       <Plotter
         letter={letter}
         sent={sent}
@@ -116,16 +115,8 @@ export default function ContactForm() {
         }
       />
 
-      {/* margin notes */}
-      <div aria-hidden="true" className="pointer-events-none absolute left-[0%] top-[8%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 lg:block">
-        click the paper
-        <br />
-        and type
-        <Doodle kind="arrow-curl" className="ml-12 mt-1 w-16 rotate-[20deg] text-sienna-500" delay={0.4} />
-      </div>
-
       {/* how the sending went */}
-      <div className="mx-auto mt-2 min-h-[2.75rem] max-w-xl text-center">
+      <div className="mx-auto mt-1 min-h-[2.5rem] max-w-xl text-center">
         <AnimatePresence mode="wait" initial={false}>
           {state.kind === "sending" && (
             <motion.p key="sending" role="status" className="text-sm font-bold text-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
