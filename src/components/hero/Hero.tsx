@@ -66,12 +66,12 @@ export default function Hero() {
           <Factory />
 
           {/* margin notes, written once the factory is built */}
-          {/* to the right of the hopper, clear of the smoke over the machines, and pointing back at it */}
-          <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-[81%] top-[1%] hidden rotate-3 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
+          {/* to the left of the machines, clear of their smoke and of the live server, pointing at the line */}
+          <div aria-hidden="true" className="hero-rise pointer-events-none absolute left-[11%] top-[40%] hidden -rotate-3 text-sm font-bold leading-tight text-sienna-600 xl:block" style={rise(34)}>
             ideas in,
             <br />
             apps out
-            <Doodle kind="arrow-curl" now delay={4.4} className="-ml-10 mt-1 w-14 -scale-x-100 rotate-[25deg] text-sienna-500" />
+            <Doodle kind="arrow-curl" now delay={4.4} className="-mt-6 ml-24 w-16 -rotate-[20deg] text-sienna-500" />
           </div>
           <div aria-hidden="true" className="hero-rise pointer-events-none absolute -bottom-[1%] right-[2%] hidden rotate-[-3deg] text-right text-sm font-bold leading-tight text-sage-700 lg:block" style={rise(36)}>
             <Doodle kind="loop" now delay={4.8} className="mb-1 ml-auto mr-10 w-24 rotate-[190deg] text-sage-500" />
