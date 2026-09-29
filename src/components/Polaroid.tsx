@@ -8,9 +8,10 @@ import photo from "@/assets/ahmad.png";
 
 /**
  * The photo, taped into the sketchbook like a polaroid. It floats gently and
- * leans toward the pointer.
+ * leans toward the pointer; or, `still`, it stays put (so things drawn to
+ * points on it stay on them) and only leans.
  */
-export default function Polaroid() {
+export default function Polaroid({ still = false }: { still?: boolean }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [7, -7]), { stiffness: 150, damping: 15 });
@@ -33,7 +34,7 @@ export default function Polaroid() {
       <Doodle kind="star" className="absolute -bottom-5 -left-5 z-10 size-9 text-sage-500 sm:size-10" delay={0.8} />
       <Doodle kind="spiral" className="absolute -right-9 bottom-20 hidden size-11 text-concrete-500 sm:block" delay={1.1} strokeWidth={2.5} />
 
-      <div className="float rotate-[2.5deg]">
+      <div className={still ? "rotate-[1.5deg]" : "float rotate-[2.5deg]"}>
         <motion.div
           onPointerMove={lean}
           onPointerLeave={settle}

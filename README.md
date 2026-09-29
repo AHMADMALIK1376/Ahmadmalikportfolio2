@@ -56,6 +56,17 @@ All of it lives in `src/app/globals.css` and `src/components/sketch/`.
 The three inks (`ink-sage`, `ink-sienna`, `ink-concrete`) are utilities that set a
 component's fill, accent, text and highlighter colours at once.
 
+## About: the spec sheet
+
+About is a spec sheet (`src/components/sections/AboutSheet.tsx`, styled in `About.module.css`): the
+photo in the middle, and four callouts either side of it with leader lines drawn out to what each is
+about — the laptop (ships production web apps), the circuits on the wall (builds AI that is simple
+to use), the head (designs APIs and data architecture), and the person (now at Anma Tech) — each with
+its paragraph. The lines are measured wherever the callouts and the photo fall, and drawn in when the
+section comes into view, a ring pinging at each point. Under it, a rating plate riveted on like the
+ones on the factory's machines: building since, years, projects, tools, hackathons, education and
+where he is based. It fits one screen on a laptop; on a phone the callouts follow the photo.
+
 ## The factory
 
 The hero's right side is an isometric factory (`src/components/factory/`), built with the
