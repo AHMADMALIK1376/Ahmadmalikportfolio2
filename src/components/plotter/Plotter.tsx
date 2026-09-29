@@ -1,25 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import deskStyles from "@/components/desk/Desk.module.css";
 import { at, between, Block, COS, Detail, drawn, frontFace, line, onFront, onTop, Part, poly, rounded, sideFace, topFace, TONES, type Point, type Tone } from "@/components/desk/iso";
-import { layout, MARGIN, RULES, type Field, type Letter, type Mark } from "./hand";
+import { FORM, layout, type Box, type Field, type Input, type Letter, type Mark, type Spot } from "./hand";
 import styles from "./Plotter.module.css";
 
 /**
  * The contact section's pen plotter: a machine in the site's own hand — soft
- * blocks in paper and pastel with a wobbling edge and a hard shadow — with a
- * sheet of ruled notebook paper in it, which writes out the visitor's letter
- * as they type it into the form.
+ * blocks in paper and pastel with a wobbling edge and a hard shadow — with the
+ * contact form printed on the sheet in it. The sheet is the form: its boxes
+ * have real fields laid over them, invisible, so the visitor clicks a box on
+ * the paper and types, and the pen writes each character into the box as it
+ * is typed, like the keys of a typewriter.
  *
  * It builds itself when it comes into view (the base draws in, the gantry is
  * lowered onto its rails, the carriage and pen drop in, a sheet comes out of
- * the feed) and writes "Dear Ahmad," at the top. Then every character typed is
- * written in its turn: the gantry runs up and down the sheet, the carriage runs
- * across it, and the pen goes down, draws a stroke, lifts, and moves to the
- * next, hurrying when it falls behind. What is deleted fades off the page, and
- * a word that no longer fits its line is written again on the next. When the
- * letter is sent, the sheet is fed out of the front and a fresh one comes in.
+ * the feed). Then every character typed is written straight away: the gantry
+ * runs up and down the sheet, the carriage runs across it, and the pen goes
+ * down, draws a stroke, lifts, and moves to the next, hurrying if it falls
+ * behind; between keys it waits over the place the next character will go,
+ * like a cursor. What is deleted fades off the page, and a word that no
+ * longer fits its line is written again on the next. The name is signed again
+ * after "yours,". When the letter is sent, the sheet is fed out of the front
+ * and a fresh one comes in.
  *
  * It is drawn in layers, one SVG over another in the same view box: the
  * machine, the sheet, the gantry, the pen, the carriage and the display. The
@@ -66,14 +70,18 @@ const SPARE_PENS = ["#9c3f1d", "#4c5e3e"];
 const INTRO = 3000;
 
 // ── the writing, in real time ───────────────────────────────────────────
-const DRAW_SPEED = 260; // sheet units a second, pen down
-const TRAVEL_SPEED = 800; // pen up
-const PEN_MOVE = 55; // ms to lift or lower the pen
+const DRAW_SPEED = 640; // sheet units a second, pen down
+const TRAVEL_SPEED = 1700; // pen up
+const PEN_MOVE = 30; // ms to lift or lower the pen
 const FEED_OUT = 750;
 const FEED_IN = 850;
 const FEED_OUT_BY = 230;
 const FEED_IN_FROM = -250;
-const FIELDS: Field[] = ["greeting", "message", "sign", "email"];
+const FIELDS: Field[] = ["name", "email", "message", "sign"];
+/** The sheet's top left corner, on the view: the form laid over it starts here. */
+const SHEET_AT = at(PX, PY, SHEET_TOP);
+/** Where the placeholder in each box says what to write. */
+const HINTS: Record<Input, string> = { name: "Your name", email: "you@example.com", message: "Tell me about the project, the role, or the idea..." };
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** Everything in front of the feed slot, on the sheet's plane: the sheet is hidden behind it as it comes out. */
@@ -95,8 +103,21 @@ type Step =
   | { kind: "feedIn" };
 
 type Engine = { sync: () => void; send: () => void };
+/** The box being typed into, and where in it the cursor is. */
+export type Aim = { field: Input; index: number } | null;
 
-export default function Plotter({ letter, sent, onPoke, className }: { letter: Letter; sent: number; onPoke?: () => void; className?: string }) {
+/** A box printed on the form, and the soft shadow inside its top and left edges, as the site's fields have. */
+function PrintedBox({ box, r = 7 }: { box: Box; r?: number }) {
+  const { u0, u1, v0, v1 } = box;
+  return (
+    <>
+      <rect x={u0} y={v0} width={u1 - u0} height={v1 - v0} rx={r} fill="#f7f7f3" stroke={INK} strokeOpacity={0.5} strokeWidth={0.9} />
+      <path d={`M${u0 + 1.6} ${v1 - r}V${v0 + r}Q${u0 + 1.6} ${v0 + 1.6} ${u0 + r} ${v0 + 1.6}H${u1 - r}`} fill="none" stroke={INK} strokeOpacity={0.18} strokeWidth={2.2} strokeLinecap="round" />
+    </>
+  );
+}
+
+export default function Plotter({ letter, sent, aim, form, onPoke, className }: { letter: Letter; sent: number; aim: Aim; form?: ReactNode; onPoke?: () => void; className?: string }) {
   const stage = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [built, setBuilt] = useState(false);
@@ -109,7 +130,22 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
   const bar = useRef<SVGRectElement>(null);
   const busy = useRef<SVGCircleElement>(null);
   const latest = useRef(letter);
+  const aimed = useRef(aim);
   const engine = useRef<Engine | null>(null);
+  const hints = useRef<Partial<Record<Input, SVGTextElement | null>>>({});
+  const paper = useRef<HTMLDivElement>(null);
+  /** How big the view is drawn: page pixels to a view box unit. The form over the sheet is scaled by it. */
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const size = () => setScale(el.clientWidth / VB.w);
+    size();
+    const watch = new ResizeObserver(size);
+    watch.observe(el);
+    return () => watch.disconnect();
+  }, []);
 
   // it builds itself the first time it comes into view
   useEffect(() => {
@@ -162,9 +198,9 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
     };
 
     // what is on the sheet, part by part, and what is still to be written, in order
-    const written: Record<Field, Written[]> = { greeting: [], message: [], sign: [], email: [] };
+    const written: Record<Field, Written[]> = { name: [], email: [], message: [], sign: [] };
     let queue: Written[] = [];
-    let greeted = false;
+    let spots: Record<Input, Spot[]> = { name: [], email: [], message: [] };
     let frozen = false;
 
     const show = (mark: Written, stroke: number, done: number) => {
@@ -213,10 +249,13 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
     /** Brings the sheet into line with the letter: whatever changed is rubbed out, and written again. */
     const sync = () => {
       if (frozen) return;
-      const want = layout(latest.current, greeted);
+      const want = layout(latest.current);
+      spots = want.spots;
+      // the printed hint in a box goes once something is written in it
+      (Object.keys(HINTS) as Input[]).forEach((field) => hints.current[field]?.style.setProperty("opacity", latest.current[field] ? "0" : "1"));
       for (const field of FIELDS) {
         const have = written[field];
-        const next = want[field];
+        const next = want.marks[field];
         let same = 0;
         while (same < have.length && same < next.length && have[same].key === next[same].key) same++;
         if (same === have.length && same === next.length) continue;
@@ -247,7 +286,15 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       const mark = queue[0];
       if (!mark) {
         if (pos.lift < LIFT) return { kind: "pen", down: false };
-        // a pause in the typing: the gantry runs back off the page, so the whole letter can be read
+        // between keys, the pen waits over where the next character will go, like a cursor
+        const target = aimed.current;
+        const spot = target && spots[target.field][Math.min(target.index, spots[target.field].length - 1)];
+        if (spot) {
+          hovering = false;
+          const to: Point = [spot[0], spot[1] - 4];
+          return Math.hypot(to[0] - pos.u, to[1] - pos.v) > 0.8 ? { kind: "travel", to } : null;
+        }
+        // nothing being typed into: after a pause the gantry runs back off the page, so the whole letter can be read
         if (!hovering && idle > 900) {
           hovering = true;
           return { kind: "travel", to: [pos.u, PARK[1]] };
@@ -296,6 +343,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       } else if (step.kind === "feedOut") {
         const e = f * f;
         feed(FEED_OUT_BY * e, 1 - e);
+        paper.current?.style.setProperty("visibility", "hidden");
       } else if (step.kind === "feedIn") {
         feed(FEED_IN_FROM * (1 - smooth(f)), 1);
       }
@@ -321,6 +369,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
         progress();
       } else if (step.kind === "feedIn") {
         frozen = false;
+        paper.current?.style.removeProperty("visibility");
         say("SENT ✓");
         window.setTimeout(() => say(queue.length ? "WRITING" : "READY"), 2200);
         sync();
@@ -348,8 +397,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
     put();
     busy.current?.setAttribute("data-on", "");
 
-    // "Dear Ahmad," first, then whatever has been typed already
-    greeted = true;
+    // whatever has been typed already
     sync();
 
     if (reduced) {
@@ -416,6 +464,9 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
     latest.current = letter;
     engine.current?.sync();
   }, [letter]);
+  useEffect(() => {
+    aimed.current = aim;
+  }, [aim]);
 
   const layer = styles.layer;
   const start = shift(-COS * PARK[1], PARK[1] / 2);
@@ -423,9 +474,9 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
   const startPen = shift(COS * (PARK[0] - PARK[1]), (PARK[0] + PARK[1]) / 2 - LIFT);
 
   return (
-    <div ref={stage} className={`${styles.stage} ${built ? styles.live : ""} ${className ?? ""}`} onClick={onPoke} aria-hidden="true">
+    <div ref={stage} className={`${styles.stage} ${built ? styles.live : ""} ${className ?? ""}`} onClick={onPoke}>
       {/* ── the machine: base, feed, bed, rails, the spare pens in their holder ── */}
-      <svg viewBox={VIEW} className={styles.base} focusable="false">
+      <svg viewBox={VIEW} className={styles.base} aria-hidden="true" focusable="false">
         <g style={drawn(0.04, 0.14)} filter="url(#desk-card)">
           <Block x0={HOUSING.x0} x1={HOUSING.x1} y0={HOUSING.y0} y1={HOUSING.y1} z={0} h={HOUSING.h} tone={TONES.paper} r={14} />
           {/* the slot the sheets come out of */}
@@ -486,18 +537,55 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
 
       {/* ── the sheet: a page of the notebook, and what is written on it; hidden behind the slot as it comes out ── */}
       <div className={styles.slot} style={{ clipPath: SLOT_CLIP }}>
-        <svg ref={sheet} viewBox={VIEW} className={`${layer} ${styles.moving}`} focusable="false">
+        <svg ref={sheet} viewBox={VIEW} className={`${layer} ${styles.moving}`} aria-hidden="true" focusable="false">
           <g className={deskStyles.fade} style={between(0.62, 0.08)}>
             <path d={rounded(topFace(PX, PX + 300, PY, PY + 200, SHEET_Z), 3)} fill="#2d2f2b" fillOpacity={0.18} transform="translate(3 3)" />
             <Block x0={PX} x1={PX + 300} y0={PY} y1={PY + 200} z={SHEET_Z} h={1.5} tone={SHEET} r={3} width={1.1} />
             <g transform={onTop(at(PX, PY, SHEET_TOP))}>
-              {/* the notebook's rules and its red margin */}
-              <g stroke="#9a9f98" strokeOpacity={0.55} strokeWidth={0.8}>
-                {RULES.map((v) => (
-                  <path key={v} d={`M6 ${v + 1.6}H294`} />
-                ))}
+              {/* the form, printed: its labels, its boxes with what to write in them, "yours," and the send button */}
+              <g fontWeight={700} fill={INK}>
+                <text x={FORM.name.u0 + 1} y={FORM.name.v0 - 5} fontSize={5.4} letterSpacing={1.4}>
+                  NAME
+                </text>
+                <text x={FORM.email.u0 + 1} y={FORM.email.v0 - 5} fontSize={5.4} letterSpacing={1.4}>
+                  EMAIL
+                </text>
+                <text x={FORM.message.u0 + 1} y={FORM.message.v0 - 5} fontSize={5.4} letterSpacing={1.4}>
+                  MESSAGE
+                </text>
+                <text x={FORM.message.u1} y={FORM.message.v0 - 5} fontSize={4.6} fontWeight={400} textAnchor="end" fill="#5e625c">
+                  10+ characters
+                </text>
               </g>
-              <path d={`M${MARGIN} 2V198`} stroke="#de9372" strokeWidth={0.9} />
+              <g filter="url(#desk-ink)">
+                <PrintedBox box={FORM.name} />
+                <PrintedBox box={FORM.email} />
+                <PrintedBox box={FORM.message} r={9} />
+              </g>
+              {(Object.keys(HINTS) as Input[]).map((field) => (
+                <text
+                  key={field}
+                  ref={(el) => {
+                    hints.current[field] = el;
+                  }}
+                  x={FORM[field].u0 + 7}
+                  y={FORM[field].v0 + 14}
+                  fontSize={5.6}
+                  fill="#9a9f98"
+                  style={{ transition: "opacity 0.2s ease" }}
+                >
+                  {HINTS[field]}
+                </text>
+              ))}
+              <text x={FORM.yours.u} y={FORM.yours.v} fontSize={6.4} fontWeight={700} fill="#5e625c">
+                — yours,
+              </text>
+              <g filter="url(#desk-chip)">
+                <rect x={FORM.send.u0} y={FORM.send.v0} width={FORM.send.u1 - FORM.send.u0} height={FORM.send.v1 - FORM.send.v0} rx={9} fill="#cbd7bd" stroke={INK} strokeOpacity={0.55} strokeWidth={1} />
+              </g>
+              <text x={(FORM.send.u0 + FORM.send.u1) / 2} y={FORM.send.v0 + 13.2} fontSize={6.4} fontWeight={700} letterSpacing={1.2} textAnchor="middle" fill={INK}>
+                SEND IT →
+              </text>
               {/* the writing, added a stroke at a time as it is written */}
               <g ref={ink} fill="none" stroke={INK} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round" />
             </g>
@@ -506,7 +594,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       </div>
 
       {/* ── the gantry: a leg on each rail, and the beam across ── */}
-      <svg ref={gantry} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: start }} focusable="false">
+      <svg ref={gantry} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: start }} aria-hidden="true" focusable="false">
         <Part arrival={{ lift: 44, from: 0.3, span: 0.14 }} style={drawn(0.28, 0.38)}>
           <g filter="url(#desk-card)">
             <Block x0={-194} x1={-174} y0={GANTRY.y0} y1={GANTRY.y1} z={GANTRY.z} h={GANTRY.top - GANTRY.z} tone={TONES.paper} r={6} />
@@ -523,7 +611,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       </svg>
 
       {/* ── the pen, hanging from the carriage ── */}
-      <svg ref={pen} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startPen }} focusable="false">
+      <svg ref={pen} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startPen }} aria-hidden="true" focusable="false">
         <Part arrival={{ lift: 40, from: 0.56, span: 0.07, fall: true }} style={drawn(0.54, 0.58, 0.05)}>
           <g filter="url(#desk-chip)">
             <Block x0={PX - PEN.half} x1={PX + PEN.half} y0={PY - PEN.half} y1={PY + PEN.half} z={SHEET_TOP + PEN.tip} h={PEN.body} tone={DARK} r={2} width={1} />
@@ -549,7 +637,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       </svg>
 
       {/* ── the carriage, running along the front of the beam ── */}
-      <svg ref={carriage} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startAt }} focusable="false">
+      <svg ref={carriage} viewBox={VIEW} className={`${layer} ${styles.moving}`} style={{ translate: startAt }} aria-hidden="true" focusable="false">
         <Part arrival={{ lift: 50, from: 0.46, span: 0.08, fall: true }} style={drawn(0.44, 0.5, 0.06)}>
           <g filter="url(#desk-card)">
             <Block x0={PX - CARRIAGE.half} x1={PX + CARRIAGE.half} y0={PY - CARRIAGE.depth} y1={PY + CARRIAGE.depth} z={CARRIAGE.z} h={CARRIAGE.h} tone={SIENNA} r={6} />
@@ -561,7 +649,7 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
       </svg>
 
       {/* ── the display: what it is doing, and how much of the letter is written ── */}
-      <svg viewBox={VIEW} className={layer} focusable="false">
+      <svg viewBox={VIEW} className={layer} aria-hidden="true" focusable="false">
         <g className={deskStyles.fade} style={between(0.8, 0.06)}>
           <text ref={readout} transform={onFront(at(-172, BASE.y1, 14))} y={2} fontSize={6} fontWeight={700} letterSpacing={0.6} fill="#cbd7bd">
             READY
@@ -572,6 +660,15 @@ export default function Plotter({ letter, sent, onPoke, className }: { letter: L
           </g>
         </g>
       </svg>
+
+      {/* ── the form itself, laid over the sheet at the sheet's own slant: real fields over the printed boxes ── */}
+      {form && (
+        <div ref={paper} className={styles.paper} style={{ width: VB.w, height: VB.h, "--k": scale } as CSSProperties}>
+          <div className={styles.sheetForm} style={{ left: SHEET_AT[0] - VB.x, top: SHEET_AT[1] - VB.y, transform: `matrix(${COS}, 0.5, ${-COS}, 0.5, 0, 0)` }}>
+            {form}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

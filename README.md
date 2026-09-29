@@ -145,13 +145,17 @@ straight down the left with the cards beside it.
 
 ## Contact: the pen plotter
 
-The contact form sits beside a pen plotter (`src/components/plotter/`) with a sheet of ruled
-notebook paper in it. Everything typed into the form is written on the sheet as it is typed,
-in the plotter's own single-stroke hand (`hand.ts`: capitals, lowercase, figures and marks):
-the gantry runs up and down the sheet, the carriage across it, the pen goes down for each
-stroke and lifts between them, hurrying when it falls behind. Deleted words fade away, and a
-word that no longer fits its line is written again on the next. Sending the letter feeds the
-page out of the front and a clean one comes in.
+The contact section is a pen plotter (`src/components/plotter/`) with the contact form printed on
+its sheet: a box for the name and one for the email side by side, a big one for the message, "—
+yours," and a send button. The sheet is the form: real fields are laid over its boxes at the
+sheet's own slant, invisible, so a visitor clicks a box on the paper and types, and the pen writes
+each character into the box the moment it is typed, in the plotter's own single-stroke hand
+(`hand.ts`: capitals, lowercase, figures and marks) — the gantry runs up and down the sheet, the
+carriage across it, the pen goes down for each stroke and lifts between them — and between keys it
+waits over the place the next character will go, like a cursor. Deleted characters fade away, a
+word that no longer fits its line is written again on the next, and the name is signed again after
+"yours,". Sending posts to `/api/contact`; once it has gone, the sheet is fed out of the front and
+a fresh one comes in.
 
 ## Content
 

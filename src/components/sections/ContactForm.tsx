@@ -1,25 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type FormEvent, type SyntheticEvent } from "react";
 import { PERSON } from "@/lib/content";
-import SketchButton from "@/components/sketch/SketchButton";
 import Doodle from "@/components/sketch/Doodle";
-import { ArrowRight } from "@/components/sketch/Icons";
-import Plotter from "@/components/plotter/Plotter";
-import type { Letter } from "@/components/plotter/hand";
+import Plotter, { type Aim } from "@/components/plotter/Plotter";
+import { FORM, type Box, type Input, type Letter } from "@/components/plotter/hand";
+import plotter from "@/components/plotter/Plotter.module.css";
 
 /**
- * The message form and the pen plotter beside it. Everything typed into the
- * form is written out on the plotter's notebook page as it is typed. Sending
- * posts to /api/contact, which emails Ahmad; when it is sent, the page is fed
- * out of the plotter and a fresh one comes in.
+ * The contact form, as the pen plotter. The form is printed on the plotter's
+ * sheet, and the sheet is the form: its boxes have real fields laid over them,
+ * so the visitor clicks a box on the paper and types, and the pen writes every
+ * character into the box the moment it is typed, and waits where the next one
+ * will go. Sending posts to /api/contact, which emails Ahmad; when it is sent,
+ * the sheet is fed out of the plotter and a fresh one comes in.
  */
 
 type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; name: string } | { kind: "error"; message: string };
 
 const PROBLEMS: Record<string, string> = {
-  invalid: "Something in the form doesn't look right — check the email address, and write at least a sentence.",
+  invalid: "Something on the form doesn't look right — check the email address, and write at least a sentence.",
   busy: "That's a lot of messages in a short time. Please try again in a little while.",
   unavailable: `The form isn't connected yet. Please email me directly at ${PERSON.email}.`,
   failed: `The message couldn't be sent just now. Please email me directly at ${PERSON.email}.`,
@@ -27,31 +28,31 @@ const PROBLEMS: Record<string, string> = {
 
 const BLANK: Letter = { name: "", email: "", message: "" };
 
-function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 flex items-baseline justify-between gap-3 text-[0.7rem] font-bold uppercase tracking-[0.18em] sm:text-xs">
-        {label}
-        {hint && <span className="truncate text-[0.68rem] font-normal normal-case tracking-normal text-muted">{hint}</span>}
-      </span>
-      <span className="sketch-well block">{children}</span>
-    </label>
-  );
-}
+/** Where a box printed on the sheet is, as the style of the field laid over it. */
+const over = ({ u0, u1, v0, v1 }: Box): CSSProperties => ({ left: u0, top: v0, width: u1 - u0, height: v1 - v0 });
 
-const input =
-  "block w-full rounded-[1.1rem] bg-transparent px-3.5 py-2 text-sm font-bold text-ink placeholder:font-normal placeholder:text-concrete-500 focus:outline-none sm:px-4 sm:py-2.5";
-
-export default function ContactForm({ aside }: { aside: ReactNode }) {
+export default function ContactForm() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [letter, setLetter] = useState<Letter>(BLANK);
   const [sent, setSent] = useState(0);
-  const messageBox = useRef<HTMLTextAreaElement>(null);
+  const [aim, setAim] = useState<Aim>(null);
+  const nameBox = useRef<HTMLInputElement>(null);
 
-  const change = (field: keyof Letter) => (event: { target: { value: string } }) => setLetter((now) => ({ ...now, [field]: event.target.value }));
+  /** The pen follows the cursor: the box being typed into, and where in it. */
+  const follow = (event: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const el = event.currentTarget;
+    setAim({ field: el.name as Input, index: el.selectionStart ?? el.value.length });
+  };
+  const change = (event: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const el = event.currentTarget;
+    setLetter((now) => ({ ...now, [el.name]: el.value }));
+    follow(event);
+  };
+  const field = { onChange: change, onFocus: follow, onSelect: follow, onKeyUp: follow, onClick: follow, onBlur: () => setAim(null) };
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (state.kind === "sending") return;
     const form = event.currentTarget;
     const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
     setState({ kind: "sending" });
@@ -62,9 +63,10 @@ export default function ContactForm({ aside }: { aside: ReactNode }) {
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        // the plotter feeds the written page out, and a clean one comes in
+        // the plotter feeds the written sheet out, and a clean one comes in
         setSent((n) => n + 1);
         setLetter(BLANK);
+        setAim(null);
         setState({ kind: "sent", name: data.name.split(" ")[0] || "friend" });
         return;
       }
@@ -76,93 +78,71 @@ export default function ContactForm({ aside }: { aside: ReactNode }) {
   }
 
   return (
-    <div className="grid grid-cols-1 items-center gap-8 sm:gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10">
-      {/* the plotter, which writes the letter out as it is typed */}
-      <div className="relative min-w-0 lg:order-2">
-        <Plotter letter={letter} sent={sent} onPoke={() => messageBox.current?.focus()} className="mx-auto max-w-[34rem] lg:max-w-none" />
-        <div aria-hidden="true" className="pointer-events-none absolute left-[1%] top-[6%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 xl:block">
-          it writes your letter
-          <br />
-          as you type it
-          <Doodle kind="arrow-curl" className="ml-12 mt-1 w-16 rotate-[20deg] text-sienna-500" delay={0.4} />
-        </div>
+    <div className="relative mx-auto max-w-[56rem]">
+      <Plotter
+        letter={letter}
+        sent={sent}
+        aim={aim}
+        onPoke={() => {
+          if (!aim) nameBox.current?.focus();
+        }}
+        form={
+          <form onSubmit={send} aria-label="Write to Ahmad" className="absolute inset-0">
+            <label className="sr-only" htmlFor="contact-name">
+              Name
+            </label>
+            <input ref={nameBox} id="contact-name" name="name" value={letter.name} {...field} required maxLength={100} autoComplete="name" placeholder="Your name" className={plotter.field} style={over(FORM.name)} />
+            <label className="sr-only" htmlFor="contact-email">
+              Email
+            </label>
+            <input id="contact-email" name="email" type="email" value={letter.email} {...field} required maxLength={200} autoComplete="email" placeholder="you@example.com" className={plotter.field} style={over(FORM.email)} />
+            <label className="sr-only" htmlFor="contact-message">
+              Message, at least 10 characters
+            </label>
+            <textarea id="contact-message" name="message" value={letter.message} {...field} required minLength={10} maxLength={5000} placeholder="Tell me about the project, the role, or the idea…" className={plotter.field} style={over(FORM.message)} />
+
+            {/* a field no person can see; a bot that fills it in is quietly ignored */}
+            <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
+              <label>
+                Leave this empty
+                <input name="hp_trap_x7" tabIndex={-1} autoComplete="off" />
+              </label>
+            </div>
+
+            <button type="submit" disabled={state.kind === "sending"} className={plotter.send} style={over(FORM.send)}>
+              {state.kind === "sending" ? "Sending" : "Send it"}
+            </button>
+          </form>
+        }
+      />
+
+      {/* margin notes */}
+      <div aria-hidden="true" className="pointer-events-none absolute left-[0%] top-[8%] hidden -rotate-6 text-sm font-bold leading-tight text-sienna-600 lg:block">
+        click the paper
+        <br />
+        and type
+        <Doodle kind="arrow-curl" className="ml-12 mt-1 w-16 rotate-[20deg] text-sienna-500" delay={0.4} />
       </div>
 
-      <div className="min-w-0 space-y-5 lg:order-1">
-        <div className="sketch-box relative p-5 sm:p-6">
-          <span className="sketch-tape -top-3 left-8 -rotate-6" />
-          <AnimatePresence mode="wait" initial={false}>
-            {state.kind === "sent" ? (
-              <motion.div key="sent" className="flex min-h-[17.5rem] flex-col items-center justify-center text-center" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <p role="status" className="ink-wobble text-2xl font-bold">
-                  Sent! Thanks, {state.name}.
-                </p>
-                <p className="mt-3 max-w-xs text-sm text-muted">Your letter is on its way to my inbox. I&apos;ll write back soon.</p>
-                <div className="mt-6">
-                  <SketchButton size="sm" calm onClick={() => setState({ kind: "idle" })}>
-                    Write another
-                  </SketchButton>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.form key="form" onSubmit={send} className="space-y-3.5 sm:space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -16 }}>
-                <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-4">
-                  <Field label="Name">
-                    <input name="name" value={letter.name} onChange={change("name")} required maxLength={100} autoComplete="name" placeholder="Your name" className={input} />
-                  </Field>
-                  <Field label="Email">
-                    <input name="email" type="email" value={letter.email} onChange={change("email")} required maxLength={200} autoComplete="email" placeholder="you@example.com" className={input} />
-                  </Field>
-                </div>
-                <Field label="Message" hint="10+ characters">
-                  <textarea
-                    ref={messageBox}
-                    name="message"
-                    value={letter.message}
-                    onChange={change("message")}
-                    required
-                    minLength={10}
-                    maxLength={5000}
-                    rows={4}
-                    placeholder="Tell me about the project, the role, or the idea…"
-                    className={`${input} resize-none leading-6`}
-                  />
-                </Field>
-
-                {/* a field no person can see; a bot that fills it in is quietly ignored */}
-                <div aria-hidden="true" className="absolute -left-[9999px] size-px overflow-hidden">
-                  <label>
-                    Leave this empty
-                    <input name="hp_trap_x7" tabIndex={-1} autoComplete="off" />
-                  </label>
-                </div>
-
-                <AnimatePresence>
-                  {state.kind === "error" && (
-                    <motion.p
-                      role="alert"
-                      className="rounded-2xl bg-sienna-100 px-4 py-3 text-sm font-bold text-sienna-700"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                    >
-                      {state.message}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-                  <p className="ink-wobble text-sm font-bold text-muted">— yours,</p>
-                  <SketchButton type="submit" size="sm" tone="sage" disabled={state.kind === "sending"} icon={<ArrowRight className="sketch-btn__icon" />}>
-                    {state.kind === "sending" ? "Sending…" : "Send it"}
-                  </SketchButton>
-                </div>
-              </motion.form>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {aside}
+      {/* how the sending went */}
+      <div className="mx-auto mt-2 min-h-[2.75rem] max-w-xl text-center">
+        <AnimatePresence mode="wait" initial={false}>
+          {state.kind === "sending" && (
+            <motion.p key="sending" role="status" className="text-sm font-bold text-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              Sending…
+            </motion.p>
+          )}
+          {state.kind === "sent" && (
+            <motion.p key="sent" role="status" className="ink-wobble text-lg font-bold" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              Sent! Thanks, {state.name} — your letter is on its way to my inbox.
+            </motion.p>
+          )}
+          {state.kind === "error" && (
+            <motion.p key="error" role="alert" className="rounded-2xl bg-sienna-100 px-4 py-3 text-sm font-bold text-sienna-700" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {state.message}
+            </motion.p>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

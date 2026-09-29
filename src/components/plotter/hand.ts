@@ -6,7 +6,9 @@
  * four wide and six tall, lowercase three wide with its x-height from 3 to 6,
  * descenders down to 8. Anything it has no strokes for (an emoji, say) is left
  * as a gap. The sheet is 300 by 200 in its own units: u across from the left,
- * v down from the top, ruled like the notebook page the contact form is on.
+ * v down from the top, with the contact form printed on it (FORM): a box for
+ * the name and one for the email side by side, a big one for the message,
+ * "— yours," and a send button. What is typed is written into its box.
  */
 
 type Stroke = [number, number][];
@@ -137,93 +139,146 @@ function strokes(ch: string, u: number, v: number, k: number): string[] {
   return glyph.s.map((stroke) => `M${stroke.map(([x, y]) => `${(u + x * k).toFixed(2)} ${(v + y * k).toFixed(2)}`).join("L")}`);
 }
 
-// ── the letter on the sheet ─────────────────────────────────────────────
+// ── the form on the sheet, and the letter written into it ───────────────
 
 export type Letter = { name: string; email: string; message: string };
-export type Field = "greeting" | "message" | "sign" | "email";
+/** The parts of the form that are typed into. */
+export type Input = keyof Letter;
+/** Everything the pen writes: what is typed, and the name signed again after "yours,". */
+export type Field = Input | "sign";
 /** One character, placed: its key says what and where, so a character that moves is written again. */
 export type Mark = { key: string; strokes: string[] };
+/** Where a character starts on the sheet: across, and the baseline it sits on. */
+export type Spot = [number, number];
+/** A box on the form, in sheet units. */
+export type Box = { u0: number; u1: number; v0: number; v1: number };
 
-/** The rules on the sheet: the baseline of each line of writing. */
-export const RULES = [30, 52, 74, 96, 118, 140, 162, 184];
-/** The red margin, and where the writing starts and must end. */
-export const MARGIN = 28;
-const LEFT = 34;
-const RIGHT = 292;
-/** The size of the writing: the grid unit, in sheet units. */
-const K = 1.8;
-const GREETING = "Dear Ahmad,";
-/** Which lines each part of the letter is written on. */
-const MESSAGE_LINES = RULES.slice(1, 6);
-const SIGN_LINE = RULES[6];
-const EMAIL_LINE = RULES[7];
+/** The form printed on the sheet: its boxes, and where its labels and the rest of it are. */
+export const FORM = {
+  name: { u0: 14, u1: 143, v0: 22, v1: 44 },
+  email: { u0: 157, u1: 286, v0: 22, v1: 44 },
+  message: { u0: 14, u1: 286, v0: 62, v1: 160 },
+  send: { u0: 204, u1: 286, v0: 168, v1: 190 },
+  /** "— yours," at the foot, and where the name is signed after it */
+  yours: { u: 16, v: 184 },
+  sign: { u: 62, v: 185 },
+} as const;
 
-/** Breaks text into lines no wider than the page, word by word, breaking a word only if it is too long for a line of its own. */
-function wrap(text: string, width: number): string[] {
-  const lines: string[] = [];
-  for (const paragraph of text.split("\n")) {
-    let line = "";
-    for (const word of paragraph.split(" ")) {
-      const next = line ? `${line} ${word}` : word;
-      if (measure(next, K) <= width) {
-        line = next;
-        continue;
-      }
-      if (line) lines.push(line);
-      line = "";
-      let rest = word;
-      while (measure(rest, K) > width) {
-        let n = rest.length;
-        while (n > 1 && measure(rest.slice(0, n), K) > width) n--;
-        lines.push(rest.slice(0, n));
-        rest = rest.slice(n);
-      }
-      line = rest;
-    }
-    lines.push(line);
-  }
-  return lines;
-}
+/** The size of the writing: the grid unit, in sheet units; and how small it may get to fit a long name or email. */
+const K = 1.45;
+const SMALLEST = 0.85;
+/** The lines in the message box: their baselines. */
+const MESSAGE_LINES = [79, 97, 115, 133, 151];
+/** How far in from a box's sides the writing keeps. */
+const INSET = { left: 7, right: 6 };
 
-/** The marks for one line of writing, its baseline at `line`, numbered on from `from`. */
-function write(field: Field, text: string, line: number, from = 0): Mark[] {
+/** One run of writing from `left` along `baseline`: its marks, and where each character starts (and the next would). */
+function write(field: Field, text: string, from: number, left: number, baseline: number, k: number) {
   const marks: Mark[] = [];
-  let u = LEFT;
-  const top = line - 6 * K;
+  const spots: Spot[] = [];
+  let u = left;
+  const top = baseline - 6 * k;
   [...text].forEach((ch, i) => {
-    if (ch !== " ") marks.push({ key: `${field}:${from + i}:${ch}:${u.toFixed(1)}:${line}`, strokes: strokes(ch, u, top, K) });
-    u += advance(ch) * K;
+    spots.push([u, baseline]);
+    if (ch !== " ") {
+      const drawn = strokes(ch, u, top, k);
+      if (drawn.length) marks.push({ key: `${field}:${from + i}:${ch}:${u.toFixed(1)}:${baseline}:${k.toFixed(2)}`, strokes: drawn });
+    }
+    u += advance(ch) * k;
   });
-  return marks.filter((m) => m.strokes.length);
+  spots.push([u, baseline]);
+  return { marks, spots };
 }
 
-/** Everything written on the sheet for this letter, part by part, in the order the pen writes it. */
-export function layout(letter: Letter, greeted: boolean): Record<Field, Mark[]> {
-  const width = RIGHT - LEFT;
-  let lines = wrap(letter.message, width);
-  // a message too long for the page: as much as fits, and an ellipsis
-  if (lines.length > MESSAGE_LINES.length) {
-    lines = lines.slice(0, MESSAGE_LINES.length);
-    let last = lines[lines.length - 1];
-    while (last && measure(`${last}...`, K) > width) last = last.slice(0, -1);
-    lines[lines.length - 1] = `${last}...`;
+/** Text with dots on the end, cut down until it fits `width` at `k`. */
+function trail(text: string, width: number, k: number) {
+  let out = text;
+  while (out && measure(`${out}...`, k) > width) out = out.slice(0, -1);
+  return `${out}...`;
+}
+
+/** Text as it is if it fits `width` at `k`, or cut short with dots on the end. */
+const cut = (text: string, width: number, k: number) => (measure(text, k) <= width ? text : trail(text, width, k));
+
+/** A one-line box: the writing shrinks a little to fit, and is cut short if it still does not. */
+function oneLine(field: Field, text: string, box: Box) {
+  const left = box.u0 + INSET.left;
+  const width = box.u1 - INSET.right - left;
+  const wide = measure(text, 1);
+  const k = wide * K > width ? Math.max(SMALLEST, width / wide) : K;
+  const shown = cut(text, width, k);
+  const { marks, spots } = write(field, shown, 0, left, box.v0 + 15.5, k);
+  // a caret past what fits waits at the end of it
+  return { marks, spots: Array.from({ length: text.length + 1 }, (_, i) => spots[Math.min(i, spots.length - 1)]) };
+}
+
+/** Where each line of a message starts and ends in it: word by word, a word broken only if it is too long for a line. */
+function lines(text: string, width: number) {
+  const spans: { start: number; end: number }[] = [];
+  let base = 0;
+  for (const paragraph of text.split("\n")) {
+    let start = base;
+    let end = base;
+    let at = base;
+    for (const word of paragraph.split(" ")) {
+      const wordEnd = at + word.length;
+      if (measure(text.slice(start, wordEnd), K) <= width) {
+        end = wordEnd;
+      } else {
+        if (end > start) spans.push({ start, end });
+        let from = at;
+        while (measure(text.slice(from, wordEnd), K) > width) {
+          let to = wordEnd;
+          while (to > from + 1 && measure(text.slice(from, to), K) > width) to--;
+          spans.push({ start: from, end: to });
+          from = to;
+        }
+        start = from;
+        end = wordEnd;
+      }
+      at = wordEnd + 1;
+    }
+    spans.push({ start, end });
+    base += paragraph.length + 1;
   }
-  let count = 0;
-  const message = lines.flatMap((text, i) => {
-    const marks = write("message", text, MESSAGE_LINES[i], count);
-    count += text.length + 1;
-    return marks;
+  return spans;
+}
+
+/** The message, in its box: as many lines as fit, the last cut short with dots if there is more. */
+function message(text: string) {
+  const box = FORM.message;
+  const left = box.u0 + INSET.left;
+  const width = box.u1 - INSET.right - left;
+  const all = lines(text, width);
+  const spans = all.slice(0, MESSAGE_LINES.length);
+  const marks: Mark[] = [];
+  const spots: Spot[] = Array.from({ length: text.length + 1 }, () => [left, MESSAGE_LINES[0]] as Spot);
+  let last: Spot = [left, MESSAGE_LINES[0]];
+  spans.forEach((span, n) => {
+    let line = text.slice(span.start, span.end);
+    if (n === spans.length - 1 && all.length > spans.length) line = trail(line, width, K);
+    const run = write("message", line, span.start, left, MESSAGE_LINES[n], K);
+    marks.push(...run.marks);
+    run.spots.forEach((spot, i) => {
+      if (span.start + i <= text.length) spots[span.start + i] = spot;
+    });
+    last = run.spots[run.spots.length - 1];
   });
-  const fit = (text: string) => {
-    let out = text;
-    while (out && measure(out, K) > width) out = out.slice(0, -1);
-    return out;
-  };
-  const name = letter.name.trim();
+  // characters past what fits: the caret waits at the end of the writing
+  const shownTo = spans.length ? spans[spans.length - 1].end : 0;
+  for (let i = shownTo + 1; i <= text.length; i++) spots[i] = last;
+  return { marks, spots };
+}
+
+/** Everything written on the form for this letter, part by part, and where each character of what is typed stands. */
+export function layout(letter: Letter): { marks: Record<Field, Mark[]>; spots: Record<Input, Spot[]> } {
+  const name = oneLine("name", letter.name, FORM.name);
+  const email = oneLine("email", letter.email, FORM.email);
+  const body = message(letter.message);
+  const signed = letter.name.trim();
+  const sign = signed ? write("sign", cut(signed, FORM.send.u0 - 10 - FORM.sign.u, 1.5), 0, FORM.sign.u, FORM.sign.v, 1.5).marks : [];
   return {
-    greeting: greeted ? write("greeting", GREETING, RULES[0]) : [],
-    message,
-    sign: name ? write("sign", fit(`yours, ${name}`), SIGN_LINE) : [],
-    email: write("email", fit(letter.email.trim()), EMAIL_LINE),
+    marks: { name: name.marks, email: email.marks, message: body.marks, sign },
+    spots: { name: name.spots, email: email.spots, message: body.spots },
   };
 }
