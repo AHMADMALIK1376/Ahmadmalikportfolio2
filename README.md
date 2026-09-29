@@ -121,15 +121,22 @@ first portfolio's nine project animations, redrawn in this one's style
 (`src/components/rigs/projects/`, sharing the parts-pipes-packets engine in `flow.tsx`).
 Every pop-up fits on one screen, on a laptop and on a phone, with nothing to scroll.
 
-## Experience: the road trip
+## Experience: the journey
 
 Experience is a long hand-drawn map laid across the whole width of the page
-(`src/components/sections/CareerMap.tsx`, with the pictures of each place in `MapScenes.tsx` and
-the styling in `Map.module.css`): every role on one road that runs from the top of the map to the
-bottom, and the workshop and hackathons as flags beside it. As the page scrolls, a van drives down
-the road level with the middle of the screen, inking it in behind it, and each stop's card pops up
-on the map beside its pin as the van arrives. The road is drawn through wherever the stops fall on
-the page, so it fits any width; on a phone it runs down the left with the cards beside it.
+(`src/components/sections/CareerMap.tsx`, with the 3D places, mountains and trees in
+`MapScenes.tsx` and the styling in `Map.module.css`): every role on one road that flows from the
+top of the map to the bottom in long, smooth curves (a Catmull–Rom curve through the stops,
+which stand at either side of the middle in turn), and the workshop and hackathons as flags
+beside it. As the page scrolls, a ball flies down the road level with the middle of the screen,
+bobbing over its shadow on waves that ripple out over the road under it, and the road behind it is
+inked in. Each stop's card pops up on the outside of its bend as the ball arrives, and across the
+road stands the place itself in 3D — a home office, the university, a Git tree, an easel, a
+stepped office, a hackathon tent, a camp, a tower — under 3D mountains, with forests between the
+rows. The ball and the inked road move by their transforms only (the inked road is a window
+sliding down the sheet over a road sliding back up), so scrolling stays smooth. The road is drawn
+through wherever the stops fall on the page, so it fits any width; below a laptop's width it runs
+straight down the left with the cards beside it.
 
 ## Contact: the pen plotter
 

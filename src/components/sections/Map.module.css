@@ -2,9 +2,10 @@
  * The experience map: a long sheet of land laid across the whole width of the
  * page, drawn as one SVG the size of the sheet, with the stops set in the
  * page's usual column over it. Each stop is a row: a pin standing on the road
- * at --x across the column, and its card on the far side of the pin, which
- * pops up once the van has reached it. The van and the inked road behind it
- * are moved by the script as the page scrolls.
+ * at --x across the column, and its card on the outside of the road's bend
+ * there, which pops up once the ball has reached it. The ball and the inked
+ * road behind it are moved by the script as the page scrolls, by their
+ * transforms only, so the page is never redrawn as it goes.
  */
 
 .sheet {
@@ -21,17 +22,24 @@
   pointer-events: none;
 }
 
-/* the road behind the van, inked in over the pencil */
+/* the road behind the ball, inked in over the pencil: seen through a window that slides down the sheet, while the
+   road inside it slides back up by as much and so stays put */
 .inked {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.inked svg {
   position: absolute;
   left: 0;
   top: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.inkedIn {
+  will-change: transform;
+}
+
+.inked svg {
+  display: block;
 }
 
 .column {
@@ -100,12 +108,12 @@
 
 /* ── a stop: its pin on the road, and its card on the far side ─────────── */
 
-/* under each card, room for the road to switch back across the page to the next stop */
+/* under each card, room for the road to curve across to the next stop */
 .row {
   position: relative;
   display: flex;
   align-items: flex-start;
-  padding: 2.4rem 0 13rem;
+  padding: 2.4rem 0 5rem;
 }
 
 .row:last-child {
@@ -225,7 +233,6 @@
 .card {
   position: relative;
   z-index: 4;
-  width: min(22rem, 42%);
   padding: 1.05rem 1.15rem 1.1rem;
   opacity: 0;
   scale: 0.35;
@@ -237,11 +244,13 @@
 }
 
 .row[data-side="right"] .card {
+  width: min(22rem, calc(100% - var(--x) - 3.6rem));
   margin-left: calc(var(--x) + 3rem);
   transform-origin: 0 1.6rem;
 }
 
 .row[data-side="left"] .card {
+  width: min(22rem, calc(var(--x) - 3.6rem));
   margin-left: auto;
   margin-right: calc(100% - var(--x) + 3rem);
   transform-origin: 100% 1.6rem;
@@ -323,10 +332,10 @@
   letter-spacing: 0.02em;
 }
 
-/* ── the truck, and where the road goes next ───────────────────────────── */
+/* ── the ball, and where the road goes next ────────────────────────────── */
 
-/* a point on the road, moved by the script; the truck stands on it, facing the way it is going */
-.truck {
+/* a point on the road, moved by the script: the ball hovers over it */
+.orb {
   position: absolute;
   left: 0;
   top: 0;
@@ -337,21 +346,115 @@
   will-change: transform;
 }
 
-/* the truck's own drawing, its wheels on the point (which is 48.9% across and 64.1% down it) */
-.truckBody {
+/* waves rippling out over the road under the ball, one after another */
+.wave {
+  position: absolute;
+  left: -1.9rem;
+  top: -0.7rem;
+  width: 3.8rem;
+  height: 1.4rem;
+  border: 2.5px solid #80966b;
+  border-radius: 50%;
+  opacity: 0;
+  animation: ground-wave 2.1s ease-out infinite;
+}
+
+.wave:nth-child(2) {
+  border-color: #d0714c;
+  animation-delay: 0.7s;
+}
+
+.wave:nth-child(3) {
+  animation-delay: 1.4s;
+}
+
+@keyframes ground-wave {
+  0% {
+    opacity: 1;
+    scale: 0.2;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.6;
+  }
+}
+
+/* its shadow on the road, smaller as it rises */
+.shadow {
+  position: absolute;
+  left: -0.95rem;
+  top: -0.3rem;
+  width: 1.9rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: rgb(45 47 43 / 0.24);
+  animation: shadow 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes shadow {
+  to {
+    opacity: 0.55;
+    scale: 0.7;
+  }
+}
+
+/* the ball, bobbing up and down on the air under it */
+.float {
   position: absolute;
   left: 0;
   top: 0;
-  width: 4.9rem;
-  aspect-ratio: 94 / 78;
-  translate: -48.9% -64.1%;
+  animation: float 2.6s ease-in-out infinite alternate;
 }
 
-.truckBody svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+@keyframes float {
+  to {
+    translate: 0 -9px;
+  }
+}
+
+.ball {
+  position: absolute;
+  left: -1.05rem;
+  top: -3.7rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  border: 1.5px solid rgb(45 47 43 / 0.6);
+  background: radial-gradient(circle at 34% 30%, #fdf3ee 0 7%, #eaa98b 19%, #d0714c 52%, #a3441c 100%);
+  box-shadow: 3px 3px 0 1px rgb(45 47 43 / 0.22);
+}
+
+/* the air it pushes down, in waves going down from under it */
+.lift {
+  position: absolute;
+  left: -0.85rem;
+  top: -1.55rem;
+  width: 1.7rem;
+  height: 0.7rem;
+  border-bottom: 2.5px solid #d0714c;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  opacity: 0;
+  animation: lift 1.3s ease-out infinite;
+}
+
+.lift + .lift {
+  animation-delay: 0.65s;
+}
+
+@keyframes lift {
+  0% {
+    opacity: 0.9;
+    translate: 0 0;
+    scale: 0.55;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 16px;
+    scale: 1.3;
+  }
 }
 
 .end {
@@ -425,9 +528,9 @@
   }
 }
 
-/* ── on a phone: the road down the left, and the cards beside it ───────── */
+/* ── below a laptop's width: the road straight down the left, and the cards beside it ── */
 
-@media (width < 48rem) {
+@media (width < 64rem) {
   .sheet {
     --pin: 1.8rem;
   }
@@ -443,8 +546,17 @@
   .name {
     display: none;
   }
-  .truckBody {
-    width: 3.6rem;
+  .ball {
+    left: -0.85rem;
+    top: -3.1rem;
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+  .wave {
+    left: -1.5rem;
+    top: -0.55rem;
+    width: 3rem;
+    height: 1.1rem;
   }
   .pin {
     left: 1.35rem;
@@ -482,7 +594,11 @@
   .cloth,
   .waves path,
   .boat,
-  .pin[data-reached]::after {
+  .pin[data-reached]::after,
+  .wave,
+  .shadow,
+  .float,
+  .lift {
     animation: none;
   }
   .card,

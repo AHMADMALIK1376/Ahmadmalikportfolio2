@@ -3,26 +3,26 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CERTIFICATIONS, EDUCATION, EXPERIENCE, type Ink, type Role } from "@/lib/content";
 import { ArrowUpRight } from "@/components/sketch/Icons";
-import { at, Block, Detail, frontFace, rounded, sideFace, TONES, type Tone } from "@/components/desk/iso";
 import { Mountains, Scene, SCENE, Tree } from "./MapScenes";
 import styles from "./Map.module.css";
 
 /**
- * Experience, as a road trip down a map: a long hand-drawn map laid across
- * the whole width of the page — hills, forests, a river, the sea — with every
- * role, in order, as a stop on one road that zig-zags down it: down one side
- * of the page, back across on a switchback, down the other side, and so on.
- * The workshop and hackathons are flags beside the road.
+ * Experience, as a journey down a map: a long hand-drawn map laid across the
+ * whole width of the page — mountains, forests, a river, the sea — with every
+ * role, in order, as a stop on one road that flows down it in long, smooth
+ * curves, swinging gently from one side of the middle to the other. The
+ * workshop and hackathons are flags beside the road.
  *
- * As the page scrolls down, a little 3D truck drives down the road with it,
- * and each stop's card pops up on the map beside the stop as the truck pulls
- * up there (and folds away again if it is driven back up). The road behind it
- * is inked in; the road ahead is still in pencil. Across from each card stands
- * a little picture of the place, under its own hills.
+ * As the page scrolls down, a ball flies down the road with it, hovering on
+ * waves that ripple out over the road under it, and each stop's card pops up
+ * on the map beside the stop as the ball reaches it (and folds away again if
+ * it goes back up). The road behind it is inked in; the road ahead is still in
+ * pencil. Each card opens on the outside of its bend, and across the road from
+ * it stands the place in 3D, with mountains behind it.
  *
- * The road is drawn through wherever the stops and their cards fall on the
- * page, so the map fits any width; on a phone it runs down the left with the
- * cards beside it.
+ * The road is drawn through wherever the stops fall on the page, so the map
+ * fits any width; below a laptop's width it runs straight down the left with
+ * the cards beside it.
  */
 
 type Stop = {
@@ -90,13 +90,16 @@ const ROAD_COUNT = STOPS.filter((s) => s.road).length;
 /** each stop's number on the road, or 0 for the landmarks */
 const NUMBER = STOPS.reduce<number[]>((acc, stop) => [...acc, stop.road ? acc.filter(Boolean).length + 1 : 0], []);
 /**
- * Across the page, where each stop's pin stands on a wide screen, in percent: the road runs down one side, switches
- * back across, and runs down the other. Each card sits inward of its pin, and the picture of the place across from it.
+ * Across the page, where each stop's pin stands on a wide screen, in percent: the road swings gently from one side of
+ * the middle to the other, each stop at the outside of a bend. Each card opens on the outside of its bend, away from
+ * the road, and the picture of the place stands across the road from it.
  */
-const ACROSS = [16, 84, 16, 84, 16, 84, 16, 84];
-const sideOf = (i: number) => (i % 2 ? "left" : "right");
+const ACROSS = [36, 64, 36, 64, 36, 64, 36, 64];
+const sideOf = (i: number) => (i % 2 ? "right" : "left");
+/** How wide a page must be for the road to swing; narrower, it runs straight down the left. */
+const WIDE = "(min-width: 64rem)";
 
-/** How far down the screen the truck keeps: about level with the middle of what is being read. */
+/** How far down the screen the ball keeps: about level with the middle of what is being read. */
 const EYE = 0.55;
 
 type Point = { x: number; y: number };
@@ -114,8 +117,8 @@ type Geo = {
   future: string;
   river: string;
   bridge: Point | null;
-  /** the road, sampled every few pixels down its length, for the truck */
-  track: { x: number; y: number; dx: number }[];
+  /** the road, sampled every few pixels down its length, for the ball */
+  track: { x: number; y: number }[];
 };
 
 // ── geometry ────────────────────────────────────────────────────────────
@@ -188,6 +191,8 @@ function Forest({ x, y, n, seed, spread = 60 }: { x: number; y: number; n: numbe
 /** The map sheet: its land (with torn top and bottom edges), grid, river, road, hills, forests and sea, and a picture of each place. */
 function Land({ geo, ids }: { geo: Geo; ids: string }) {
   const { w, h, wide, column } = geo;
+  // the band the road swings across
+  const road = { left: Math.min(...geo.pins.map((p) => p.x)), right: Math.max(...geo.pins.map((p) => p.x)) };
   // the torn edges of the sheet, top and bottom
   const tear = (y: number) => Array.from({ length: Math.ceil(w / 60) + 1 }, (_, i): Point => ({ x: i * 60, y: y + (scatter(i + y) - 0.5) * 10 }));
   const line = (points: Point[]) => points.map((p, i) => `${i ? "L" : "M"}${f1(p.x)} ${f1(p.y)}`).join("");
@@ -242,7 +247,7 @@ function Land({ geo, ids }: { geo: Geo; ids: string }) {
           {margins.map((m, i) =>
             m.kind === 3 ? (
               <g key={i} transform={`translate(${f1(m.x - 50)} ${f1(m.y + 20)}) scale(0.45)`}>
-                <Mountains />
+                <Mountains variant={i + 3} />
               </g>
             ) : m.kind === 2 ? (
               <path key={i} d={`M${f1(m.x - 14)} ${f1(m.y)}q7-8 14 0q7-8 14 0`} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeLinecap="round" />
@@ -281,34 +286,35 @@ function Land({ geo, ids }: { geo: Geo; ids: string }) {
         {wide &&
           STOPS.map((stop, i) => {
             const card = geo.cards[i];
-            const pin = geo.pins[i];
-            // across from the card: the picture of the place, nearer the road, and hills beyond it towards the edge of the
-            // page, where there is room for both
-            const right = sideOf(i) === "right";
-            const [from, to] = right ? [card.right + 40, column.right - 8] : [column.left + 8, card.left - 40];
+            // across the road from the card: the place in 3D, with mountains behind it
+            const cardLeft = sideOf(i) === "left";
+            const [from, to] = cardLeft ? [road.right + 56, column.right - 8] : [column.left + 8, road.left - 56];
             const room = to - from;
-            const hills = room > 480;
-            const sceneRoom = hills ? room - 250 : room;
-            const scale = Math.min(1.1, sceneRoom / (SCENE.w + 20));
-            const sceneLeft = right ? from : to - sceneRoom;
-            // beside the road, on its outside: a forest
-            const outside = right ? (column.left + pin.x - 40) / 2 : (pin.x + 40 + column.right) / 2;
+            const scale = Math.min(1.25, room / (SCENE.w + 10));
+            const sceneX = from + (room - SCENE.w * scale) / 2;
+            const sceneY = card.bottom - SCENE.h * scale;
+            const hills = Math.min(0.8, scale * 0.64);
+            // below the card, on its side of the road, before the next place stands there: a forest
+            const next = geo.cards[i + 2];
+            const woods = next ? next.top - card.bottom : 0;
+            const [wx0, wx1] = cardLeft ? [column.left + 20, road.left - 70] : [road.right + 70, column.right - 20];
             return (
               <g key={stop.id}>
-                {hills && (
-                  <g transform={`translate(${f1(right ? to - 236 : from + 4)} ${f1(card.bottom - 14)})`}>
-                    <Mountains />
-                  </g>
-                )}
                 {scale >= 0.55 && (
-                  <g transform={`translate(${f1(sceneLeft + (sceneRoom - SCENE.w * scale) / 2)} ${f1(card.bottom - SCENE.h * scale)}) scale(${scale.toFixed(3)})`}>
-                    <Scene id={stop.id} />
+                  <>
+                    <g transform={`translate(${f1(sceneX + SCENE.w * scale * (cardLeft ? 0.7 : 0.3) - 118 * hills)} ${f1(sceneY + 66 * scale)}) scale(${hills.toFixed(3)})`}>
+                      <Mountains variant={i} />
+                    </g>
+                    <g transform={`translate(${f1(sceneX)} ${f1(sceneY)}) scale(${scale.toFixed(3)})`}>
+                      <Scene id={stop.id} />
+                    </g>
+                  </>
+                )}
+                {woods > 200 && wx1 - wx0 > 80 && (
+                  <g filter="url(#desk-chip)">
+                    <Forest x={(wx0 + wx1) / 2} y={card.bottom + Math.min(110, woods * 0.35)} n={5} seed={i * 31 + 5} spread={Math.min(150, wx1 - wx0)} />
                   </g>
                 )}
-                <g filter="url(#desk-chip)">
-                  <Forest x={outside} y={pin.y + 90} n={4} seed={i * 31 + 5} spread={Math.min(90, Math.abs(pin.x - column.left) * 0.7)} />
-                  <Forest x={outside} y={card.bottom - 40} n={3} seed={i * 17 + 2} spread={Math.min(80, Math.abs(pin.x - column.left) * 0.6)} />
-                </g>
               </g>
             );
           })}
@@ -351,42 +357,6 @@ function Land({ geo, ids }: { geo: Geo; ids: string }) {
   );
 }
 
-// ── the truck that drives the road ──────────────────────────────────────
-
-const CAB: Tone = { top: "#de9372", left: "#d0714c", right: "#bc4e26" };
-const KRAFT: Tone = { top: "#ecbea9", left: "#e2b5a1", right: "#de9372" };
-/** The truck's own view box, around the point on the ground under its middle, (360, 402). */
-const TRUCK_VIEW = { x: 314, y: 352, w: 94, h: 78 };
-
-/** A little 3D truck, in the site's own hand, facing down and to the right; turned round, it faces down and to the left. */
-function MiniTruck() {
-  return (
-    <svg viewBox={`${TRUCK_VIEW.x} ${TRUCK_VIEW.y} ${TRUCK_VIEW.w} ${TRUCK_VIEW.h}`} aria-hidden="true" focusable="false">
-      <ellipse cx={360} cy={404} rx={40} ry={11} fill={INK} fillOpacity={0.14} />
-      <g filter="url(#desk-chip)">
-        <Block x0={-30} x1={14} y0={-14} y1={-11.5} z={9} h={8} tone={TONES.paper} r={1.5} width={1} />
-        <Block x0={-30} x1={-27.5} y0={-14} y1={14} z={9} h={8} tone={TONES.paper} r={1.5} width={1} />
-        <Block x0={-30} x1={14} y0={-14} y1={14} z={3} h={6} tone={TONES.concrete} r={3} width={1.1} />
-        <Block x0={-22} x1={-6} y0={-9} y1={9} z={9} h={12} tone={KRAFT} r={2} width={1} />
-        <Block x0={-30} x1={14} y0={11.5} y1={14} z={9} h={8} tone={TONES.paper} r={1.5} width={1} />
-        <Block x0={14} x1={36} y0={-13} y1={13} z={3} h={27} tone={CAB} r={5} width={1.2} />
-      </g>
-      <Detail d={rounded(sideFace(36, -9, 9, 17, 27), 2)} fill="#cbd7bd" width={1} />
-      <Detail d={rounded(frontFace(18, 32, 17, 27, 13), 2)} fill="#cbd7bd" width={1} />
-      <Detail d={rounded(sideFace(36, 6, 10, 7, 11), 1)} fill="#fafaf7" width={0.8} />
-      {[-20, 26].map((x) => {
-        const [cx, cy] = at(x, 14, 4);
-        return (
-          <g key={x}>
-            <ellipse cx={cx} cy={cy} rx={4.6} ry={5.4} fill="#3b3d39" stroke="rgba(45,47,43,0.7)" strokeWidth={1} />
-            <ellipse cx={cx} cy={cy} rx={1.8} ry={2.1} fill="#b8bcb5" />
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
 export default function CareerMap({ heading }: { heading: ReactNode }) {
   const sheet = useRef<HTMLDivElement>(null);
   const column = useRef<HTMLDivElement>(null);
@@ -394,8 +364,9 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
   const rows = useRef<(HTMLLIElement | null)[]>([]);
   const cards = useRef<(HTMLElement | null)[]>([]);
   const end = useRef<HTMLAnchorElement>(null);
-  const truck = useRef<HTMLDivElement>(null);
+  const orb = useRef<HTMLDivElement>(null);
   const inked = useRef<HTMLDivElement>(null);
+  const inkedIn = useRef<HTMLDivElement>(null);
   const [geo, setGeo] = useState<Geo | null>(null);
   const [reached, setReached] = useState(-1);
   const ids = useId();
@@ -408,7 +379,7 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
       const box = el.getBoundingClientRect();
       const w = box.width;
       const h = el.offsetHeight;
-      const wide = window.matchMedia("(min-width: 48rem)").matches;
+      const wide = window.matchMedia(WIDE).matches;
       const col = column.current?.getBoundingClientRect();
       const within = (r?: DOMRect): Box => (r ? { left: r.left - box.left, right: r.right - box.left, top: r.top - box.top, bottom: r.bottom - box.top } : { left: 0, right: 0, top: 0, bottom: 0 });
       const bands = rows.current.map((row) => within(row?.getBoundingClientRect()));
@@ -424,29 +395,20 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
       const left = col ? col.left - box.left : 0;
       const right = col ? col.right - box.left : w;
 
-      // the road: down to each stop, on past its card, then (on a wide screen) back across the page to the next
-      const points: Point[] = [{ x: tips[0].x, y: Math.max(40, tips[0].y - 150) }];
-      tips.forEach((tip, i) => {
-        if (wide && i > 0) points.push({ x: tip.x, y: tip.y - 70 });
-        points.push(tip);
-        if (wide && i < LAST) points.push({ x: tip.x, y: Math.max(tip.y + 40, boxes[i].bottom + 28) });
-      });
-      const { d, segments } = downward(points);
-      const samples = sample(segments, 5);
-      const track = samples.map((p, i) => {
-        const b = samples[Math.min(samples.length - 1, i + 1)];
-        const a = samples[Math.max(0, i - 1)];
-        return { x: p.x, y: p.y, dx: b.x - a.x };
-      });
+      // the road: one smooth curve through the stops, from the start above the first (on the far side of the middle
+      // from it, so the road comes in on a bend too). With the stops at either side of the middle in turn, each is at
+      // the outside of a bend and the road runs straight down through it, so it only ever runs downward.
+      const start = wide ? { x: tips[1].x, y: Math.max(40, tips[0].y - 230) } : { x: tips[0].x, y: Math.max(40, tips[0].y - 150) };
+      const { d, segments } = through([start, ...tips]);
+      const track = sample(segments, 4);
       // where the road goes next: pencilled on down to the sign at the foot of the map
       const last = tips[LAST];
       const sign = end.current?.getBoundingClientRect();
       const target = sign ? { x: sign.left + 18 - box.left, y: sign.top + sign.height / 2 - box.top } : { x: last.x, y: h - 40 };
-      // (on past the last card, then across to the sign, so it never runs under the card)
-      const future = downward(wide ? [last, { x: last.x, y: Math.min(target.y - 60, boxes[LAST].bottom + 30) }, target] : [last, target]).d;
+      const future = downward([last, target]).d;
 
       // a river right across the land, between the fourth stop's card and the fifth stop, crossing the road on a bridge
-      const y = (Math.max(tips[3].y + 40, boxes[3].bottom + 28) + tips[4].y - 70) / 2;
+      const y = (Math.max(tips[3].y + 40, boxes[3].bottom + 20) + tips[4].y - 50) / 2;
       const river = through([
         { x: -30, y: y - 34 },
         { x: w * 0.24, y: y + 16 },
@@ -474,7 +436,8 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
-  // the truck: it drives down the road as the page scrolls, keeping about level with the middle of the screen
+  // the ball: it flies down the road as the page scrolls, keeping about level with the middle of the screen, easing
+  // after the scroll so it glides rather than jumps
   useEffect(() => {
     const el = sheet.current;
     if (!geo || !el) return;
@@ -483,7 +446,6 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
     const first = track[0].y;
     const lastY = tips[LAST].y;
     let y = -1;
-    let facing = 1;
     let shown = -2;
     let inkedTo = -1;
     let frame = 0;
@@ -501,26 +463,23 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
       const a = track[lo];
       const b = track[hi];
       const k = b.y === a.y ? 0 : Math.min(1, Math.max(0, (target - a.y) / (b.y - a.y)));
-      return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, dx: a.dx + (b.dx - a.dx) * k };
-    };
-    /** Which way the road will next turn below `target`: the truck faces that way down its straight runs. */
-    const ahead = (target: number) => {
-      for (const t of track) if (t.y > target && Math.abs(t.dx) > 0.5) return Math.sign(t.dx);
-      return facing;
+      return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
     };
 
     const tick = (now: number) => {
       const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016;
       last = now;
       const target = Math.min(lastY, Math.max(first, window.innerHeight * EYE - el.getBoundingClientRect().top));
-      y = y < 0 || reduced ? target : y + (target - y) * (1 - Math.exp(-dt * 7));
+      y = y < 0 || reduced ? target : y + (target - y) * (1 - Math.exp(-dt * 6));
       const p = level(y);
-      facing = Math.abs(p.dx) > 0.5 ? Math.sign(p.dx) : ahead(y);
-      if (truck.current) truck.current.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${facing}, 1)`;
-      // the road behind the truck is inked in
-      if (inked.current && Math.abs(y - inkedTo) > 0.8) {
+      if (orb.current) orb.current.style.transform = `translate3d(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px, 0)`;
+      // the road behind the ball is inked in: a window over it slides down, and the road inside slides back up by as
+      // much, so nothing is redrawn
+      if (inked.current && inkedIn.current && Math.abs(y - inkedTo) > 0.3) {
         inkedTo = y;
-        inked.current.style.clipPath = `inset(0 0 ${Math.max(0, h - y - 2).toFixed(0)}px 0)`;
+        const shift = Math.max(0, h - y - 2);
+        inked.current.style.transform = `translate3d(0, ${(-shift).toFixed(1)}px, 0)`;
+        inkedIn.current.style.transform = `translate3d(0, ${shift.toFixed(1)}px, 0)`;
       }
       // the last stop it has reached
       let at_ = -1;
@@ -552,7 +511,7 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
     };
   }, [geo]);
 
-  /** Scrolls the page until the truck reaches stop `i`. */
+  /** Scrolls the page until the ball reaches stop `i`. */
   const jump = (i: number) => {
     const el = sheet.current;
     const tip = geo?.pins[i];
@@ -570,20 +529,29 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
       <div ref={sheet} className={styles.sheet}>
         {land}
 
-        {/* the road behind the truck, inked in */}
+        {/* the road behind the ball, inked in */}
         {geo && (
-          <div ref={inked} className={styles.inked} style={{ clipPath: "inset(0 0 100% 0)" }} aria-hidden="true">
-            <svg width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`} focusable="false">
-              <path d={geo.road} fill="none" stroke="#bc4e26" strokeWidth={2.8} strokeDasharray="9 8" strokeLinecap="round" />
-            </svg>
+          <div ref={inked} className={styles.inked} style={{ height: geo.h, transform: `translate3d(0, ${-geo.h}px, 0)` }} aria-hidden="true">
+            <div ref={inkedIn} className={styles.inkedIn} style={{ transform: `translate3d(0, ${geo.h}px, 0)` }}>
+              <svg width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`} focusable="false">
+                <path d={geo.road} fill="none" stroke="#bc4e26" strokeWidth={2.8} strokeDasharray="9 8" strokeLinecap="round" />
+              </svg>
+            </div>
           </div>
         )}
 
-        {/* the truck, driven down the road by the scroll */}
-        <div ref={truck} className={styles.truck} aria-hidden="true">
-          <div className={styles.truckBody}>
-            <MiniTruck />
-          </div>
+        {/* the ball, flown down the road by the scroll: it hovers over its shadow, on waves rippling out over the road
+            under it, with the air it pushes down going down beneath it */}
+        <div ref={orb} className={styles.orb} aria-hidden="true">
+          <span className={styles.wave} />
+          <span className={styles.wave} />
+          <span className={styles.wave} />
+          <span className={styles.shadow} />
+          <span className={styles.float}>
+            <span className={styles.lift} />
+            <span className={styles.lift} />
+            <span className={styles.ball} />
+          </span>
         </div>
 
         <div ref={column} className={`gutter ${styles.column}`}>
