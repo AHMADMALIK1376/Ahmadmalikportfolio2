@@ -793,12 +793,20 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
                   data-shown={i <= reached ? "" : undefined}
                 >
                   <span className={styles.tail} aria-hidden="true" />
-                  <p className="flex flex-wrap items-center gap-2 pr-16">
-                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.2em] text-sienna-600 sm:text-[0.62rem]">{stop.road ? `stop ${NUMBER[i]} of ${ROAD_COUNT}` : "along the way"}</span>
-                    <span className="sketch-chip !text-[0.6rem]">{stop.kind}</span>
-                  </p>
-                  <h3 className="mt-2 pr-14 text-[0.95rem] leading-snug sm:text-base">{stop.title}</h3>
-                  <p className="mt-0.5 text-[0.8rem] font-bold text-(--ink-text) sm:text-sm">
+                  <span className={`sketch-tape ${styles.tape}`} aria-hidden="true" />
+                  {/* the ticket's head: the stop's number on a medal, what kind of stop, and what it was */}
+                  <header className={styles.ticket}>
+                    <span className={styles.medal} aria-hidden="true">
+                      {stop.road ? NUMBER[i] : <MiniFlag />}
+                    </span>
+                    <div className="min-w-0 pr-14">
+                      <p className={styles.kicker}>
+                        {stop.road ? `stop ${NUMBER[i]} of ${ROAD_COUNT}` : "along the way"} · {stop.kind}
+                      </p>
+                      <h3 className={styles.title}>{stop.title}</h3>
+                    </div>
+                  </header>
+                  <p className="text-[0.8rem] font-bold text-(--ink-text) sm:text-sm">
                     {stop.url ? (
                       <a href={stop.url} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-1 rounded hover:underline hover:decoration-wavy hover:underline-offset-4">
                         {stop.org}
@@ -808,9 +816,14 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
                       stop.org
                     )}
                   </p>
-                  <p className="mt-0.5 text-[0.66rem] font-bold text-muted sm:text-[0.7rem]">
-                    {stop.period && <span>{stop.period} · </span>}
-                    {stop.detail}
+                  <p className={styles.chips}>
+                    {stop.period && (
+                      <span className={styles.when}>
+                        <Calendar />
+                        {stop.period}
+                      </span>
+                    )}
+                    <span className={styles.what}>{stop.detail}</span>
                   </p>
                   <ul className="sketch-list mt-2.5 space-y-1.5 text-[0.72rem] leading-relaxed text-ink/90 sm:text-[0.76rem]">
                     {stop.points.map((point) => (
@@ -853,6 +866,26 @@ function Pin({ n, now }: { n: number; now: boolean }) {
       <text x={14} y={16.7} textAnchor="middle" fontSize={9} fontWeight={700} fill="#2d2f2b">
         {n}
       </text>
+    </svg>
+  );
+}
+
+/** A small flag, for the medal on a landmark's card. */
+function MiniFlag() {
+  return (
+    <svg viewBox="0 0 16 18" className="size-4" aria-hidden="true">
+      <path d="M3 17V1.5" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
+      <path d="M4 2c3-1.5 5 1.5 10 0v7c-5 1.5-7-1.5-10 0Z" fill="#9caf88" stroke="currentColor" strokeWidth={1.2} strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** A little calendar, for the dates on a card. */
+function Calendar() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+      <rect x={2} y={3} width={12} height={11} rx={2} />
+      <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" />
     </svg>
   );
 }

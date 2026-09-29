@@ -262,6 +262,115 @@
   translate: 0 0;
 }
 
+/* the card as a ticket: a head tinted in the card's own ink, cut off from the rest by a perforation with a notch
+   either side, holding the stop's medal, what kind of stop it was, and its title */
+.ticket {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: -1.05rem -1.15rem 0.8rem;
+  padding: 1rem 1.15rem 0.85rem;
+  border-radius: 1.65rem 1.65rem 0 0;
+  background: var(--ink-fill);
+  border-bottom: 2px dashed rgb(45 47 43 / 0.28);
+}
+
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  bottom: -0.6rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #e3e9da;
+  box-shadow: inset 0 0 0 1.5px rgb(45 47 43 / 0.4);
+}
+
+.ticket::before {
+  left: -0.62rem;
+  clip-path: inset(0 0 0 50%);
+}
+
+.ticket::after {
+  right: -0.62rem;
+  clip-path: inset(0 50% 0 0);
+}
+
+/* the stop's number, on a medal */
+.medal {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink-accent);
+  background: var(--color-paper-2);
+  color: var(--ink-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-ink) 2px 2px 0 0.5px;
+  filter: url(#sketchChip);
+}
+
+.kicker {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-text);
+}
+
+.title {
+  margin-top: 0.2rem;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+/* when, and what kind of work, as chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.when,
+.what {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 1rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.when {
+  border: 1.5px solid rgb(45 47 43 / 0.35);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+
+.what {
+  background: var(--ink-soft);
+  color: var(--ink-text);
+}
+
+/* the tape it is stuck to the map with */
+.tape {
+  top: -0.85rem;
+  left: 50%;
+  z-index: 2;
+  width: 5rem;
+  height: 1.5rem;
+  translate: -50% 0;
+  rotate: -3deg;
+}
+
 /* its point, towards the pin */
 .tail {
   position: absolute;
