@@ -69,7 +69,7 @@ export default function Nav() {
         animate={{ y: hidden ? "-110%" : "0%" }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
       >
-        <div className={`transition-colors duration-300 ${scrolled ? "bg-paper/85 backdrop-blur-md" : "bg-transparent"}`}>
+        <div className={`bg-paper/90 backdrop-blur-md transition-shadow duration-300 ${scrolled ? "" : "shadow-[0_1px_0_rgb(45_47_43/0.1)]"}`}>
           <nav aria-label="Main" className="gutter flex h-(--nav-h) items-center justify-between gap-4">
             <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
               <span className="text-sienna-500 transition-transform duration-500 group-hover:rotate-[200deg]">

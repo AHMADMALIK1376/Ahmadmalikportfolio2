@@ -127,6 +127,26 @@
   }
 }
 
+/* tyre tracks, left behind a truck where it drives over the page, fading */
+.tread {
+  fill: none;
+  stroke: #2d2f2b;
+  stroke-opacity: 0.34;
+  stroke-width: 5.5;
+  stroke-dasharray: 2.2 1.8;
+  animation: tread 7s ease-in forwards;
+}
+
+@keyframes tread {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* the trucks, driven in and off by their translate */
 .truck {
   will-change: translate, opacity;

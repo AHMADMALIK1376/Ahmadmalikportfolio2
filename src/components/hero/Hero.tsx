@@ -61,8 +61,8 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* the factory: ideas in, apps out. Its own stacking, under the words, so its trucks drive off behind them */}
-        <div className="relative isolate mx-auto w-full max-w-[26rem] sm:max-w-[36rem] lg:ml-auto lg:[--bleed:clamp(0px,calc((100vw_-_76rem)/2_-_0.5rem),20rem)] lg:-mr-(--bleed) lg:w-[min(calc(100%_+_var(--bleed)),calc((100svh_-_12.5rem)*1.455))] lg:max-w-none">
+        {/* the factory: ideas in, apps out. Its trucks drive over the words, leaving tyre tracks, and on under the bar */}
+        <div className="relative mx-auto w-full max-w-[26rem] sm:max-w-[36rem] lg:ml-auto lg:[--bleed:clamp(0px,calc((100vw_-_76rem)/2_-_0.5rem),20rem)] lg:-mr-(--bleed) lg:w-[min(calc(100%_+_var(--bleed)),calc((100svh_-_12.5rem)*1.455))] lg:max-w-none">
           <Factory />
 
           {/* margin notes, written once the factory is built */}

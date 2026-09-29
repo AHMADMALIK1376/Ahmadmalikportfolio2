@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { at, bend, between, Block, COS, CY, Detail, drawn, frontFace, line, onFront, onSide, onTop, Part, poly, rounded, sideFace, topFace, TONES, Wire, type Point, type Tone } from "@/components/desk/iso";
+import { at, bend, between, Block, COS, CX, CY, Detail, drawn, frontFace, line, onFront, onSide, onTop, Part, poly, rounded, sideFace, topFace, TONES, Wire, type Point, type Tone } from "@/components/desk/iso";
 import deskStyles from "@/components/desk/Desk.module.css";
 import styles from "./Factory.module.css";
 
@@ -136,19 +136,21 @@ const slotAt = ([a, b]: [number, number], facing: Facing) =>
 
 // ── the live server ─────────────────────────────────────────────────────
 /**
- * The live server the truck takes the apps to, to the right of the factory's top: three racks on a raised floor, and a
- * lane in front of them for a robot on wheels, with an arm, that deploys the boxes into them. The truck comes along a
- * road that runs above the factory and in front of the server, and turns up into the dock to the right of the racks,
- * its tail to the robot's lane.
+ * The live server the trucks take the apps to, to the right of the factory's top: three racks on a raised floor, and a
+ * lane in front of them for a robot on wheels, with an arm, that deploys the boxes into them. A truck comes out from
+ * under the bar along the top of the page on to a road that runs above the factory, and turns up off it into the dock
+ * on the left of the racks; the robot drives along its lane to the truck's tail and unloads it into the racks.
  */
 const RACK = { x0: -24, y0: -692, y1: -654, w: 48, h: 160, n: 3 };
 const DEPLOY_LEVELS = [14, 47, 80];
 const DEPLOY_SLOTS = RACK.n * DEPLOY_LEVELS.length;
 /** The slots the robot deploys into: across the racks, three high. */
 const deploySlot = (k: number) => ({ x: RACK.x0 + RACK.w / 2 + RACK.w * (k % RACK.n), z: DEPLOY_LEVELS[Math.floor(k / RACK.n)] });
-/** Where the truck stands at the server, facing along −y, its bed towards the robot's lane; and the road in front. */
-const DOCK = { x: 168, y: -692 };
-const ROAD_Y = -572;
+/** Where a truck stands at the server, facing along −y, its tail to the robot's lane. */
+const DOCK = { x: -134, y: -720 };
+/** How far in front of the dock the road it comes along may run; and the road it leaves by, in front of everything. */
+const APPROACH = { near: DOCK.y + 70, far: -560 };
+const EXIT_Y = -556;
 /** The robot's lane, in front of the racks and behind the truck's tail, and where it waits on it. */
 const BOT = { x: 76, y: -614, deck: 20, shoulder: 34, speed: 240 };
 
@@ -167,8 +169,8 @@ const GRIPPER: Tone = { top: "#7c817a", left: "#5e625c", right: "#4a4d48" };
 const WOOD: Tone = { top: "#e2b5a1", left: "#d0a58f", right: "#c0947f" };
 const NOTES = ["#e2e9da", "#f5dfd5", "#fafaf7"];
 const IDEAS = ["FOLIUM", "GRAPHFORGE", "NEURACACHE", "HIREME", "FOCUSFLOW", "BUGISTAN", "BID ENGINE", "ROUTINE"];
-/** The truck, which goes round and round: from the factory to the server and back. */
-const TRUCKS: Tone[] = [SIENNA];
+/** The trucks, which take turns, one after another: each its own colour. */
+const TRUCKS: Tone[] = [SIENNA, SAGE_DEEP, { top: "#9a9f98", left: "#7c817a", right: "#5e625c" }];
 
 // ── the timing ──────────────────────────────────────────────────────────
 const INTRO = 3200;
@@ -702,7 +704,8 @@ function Wheel({ x, y }: { x: number; y: number }) {
  * at the top, a screen saying how it is doing, a row of drive bays, and three slots the robot deploys into, dark until
  * a box goes in and a server blade lights up there. On the roof, a tray of cables, a cooling unit with its fan turning,
  * a second fan, an antenna sending, and a sign across the front that says it is live and counts the deploys; on the
- * side, a monitor with the uptime; cables running off across the floor; and the dock marked out on the right.
+ * side, a monitor with the uptime; and cables running off across the floor. (The dock, on its left, is marked out on
+ * the ground under the trucks: see DockMarking.)
  */
 function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (el: SVGGElement | null) => void; counter: (el: SVGTextElement | null) => void; badge: (el: SVGGElement | null) => void; signal: (el: SVGGElement | null) => void }) {
   const { x0, y0, y1, w, h, n } = RACK;
@@ -738,10 +741,10 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
   );
   return (
     <>
-      {/* the raised floor, tiled, with the robot's lane on it; and the dock marked out to the right */}
+      {/* the raised floor, tiled, with the robot's lane on it running on to the dock on the left */}
       <g filter="url(#desk-card)">
+        <Block x0={DOCK.x - 44} x1={pad.x0 + 4} y0={BOT.y - 14} y1={pad.y1} z={-6} h={6} tone={floor} r={8} />
         <Block x0={pad.x0} x1={pad.x1} y0={pad.y0} y1={pad.y1} z={-6} h={6} tone={floor} r={10} />
-        <Block x0={pad.x1 - 4} x1={DOCK.x + 38} y0={BOT.y - 14} y1={pad.y1} z={-6} h={6} tone={floor} r={8} />
       </g>
       <g stroke="#b9bdb6" strokeWidth={0.8}>
         {Array.from({ length: 8 }, (_, k) => pad.x0 + 18 + k * 18).map((x) => (
@@ -751,11 +754,7 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
           <path key={`y${y}`} d={line(at(pad.x0 + 3, y, 0), at(pad.x1 - 3, y, 0))} />
         ))}
       </g>
-      <path d={line(at(pad.x0 + 8, BOT.y, 0), at(DOCK.x + 32, BOT.y, 0))} fill="none" stroke="#de9372" strokeWidth={1.4} strokeDasharray="6 5" strokeLinecap="round" />
-      <path d={rounded(topFace(DOCK.x - 30, DOCK.x + 30, DOCK.y - 48, DOCK.y + 60, 0), 6)} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="5 5" />
-      <text transform={onTop(at(DOCK.x + 18, DOCK.y + 50, 0))} fontSize={6.5} fontWeight={700} letterSpacing={1.2} fill="#9a9f98" className={deskStyles.fade} style={between(0.66, 0.05)}>
-        DOCK
-      </text>
+      <path d={line(at(DOCK.x - 38, BOT.y, 0), at(pad.x1 - 6, BOT.y, 0))} fill="none" stroke="#de9372" strokeWidth={1.4} strokeDasharray="6 5" strokeLinecap="round" />
 
       {/* the three racks */}
       <g filter="url(#desk-card)">
@@ -883,7 +882,19 @@ function ServerRoom({ blade, counter, badge, signal }: { blade: (k: number) => (
   );
 }
 
-/** The robot on wheels at the server: its body, drawn where it waits on its lane, moved along it by its translate. */
+/** The dock on the left of the server, marked out on the ground, under the trucks that stand in it. */
+function DockMarking() {
+  return (
+    <>
+      <path d={rounded(topFace(DOCK.x - 32, DOCK.x + 32, DOCK.y - 50, DOCK.y + 62, 0), 6)} fill="none" stroke="#9a9f98" strokeWidth={1.4} strokeDasharray="5 5" />
+      <text transform={onTop(at(DOCK.x + 20, DOCK.y + 52, 0))} fontSize={6.5} fontWeight={700} letterSpacing={1.2} fill="#9a9f98">
+        DOCK
+      </text>
+    </>
+  );
+}
+
+/** The robot on wheels at the server: its body, drawn where it waits on its lane, and moved along it with its arm. */
 function ServerBot() {
   const { x, y } = BOT;
   return (
@@ -919,9 +930,13 @@ type Run = { from: { x: number; y: number }; dx: number; dy: number; length: num
  * along it (+x) out from under the bar, and up (−y) into the dock. From the server: back (+y) on to the road, and along
  * it (+x) off the right of the page.
  */
-type Route = { runs: Run[]; total: number };
-/** The truck, and where it is on its round: coming in to the bay, being loaded, on its way to the server, being unloaded there, or driving off. */
-type Lorry = { state: "arriving" | "loading" | "leaving" | "docked" | "exiting"; t: number; loaded: number; route: Route; go: number; facing: Facing };
+type Route = { runs: Run[]; total: number; wait: number };
+/**
+ * A truck, and where it is on its round: off the page waiting for the bay, coming in to it, being loaded, on its way to
+ * the server (waiting out of sight under the bar while another truck is at the dock), being unloaded there, or backing
+ * out and driving off; and how far along its way it last left tyre tracks.
+ */
+type Lorry = { state: "away" | "arriving" | "loading" | "leaving" | "docked" | "exiting"; t: number; loaded: number; route: Route; go: number; facing: Facing; mark: number };
 /**
  * A robot, easing from where it was to each of its moves in turn. A move can wait until it may go (for a place no
  * other robot is working in, or a truck to load), be settled only as it starts, and do something on arriving.
@@ -950,7 +965,8 @@ export default function Factory({ className }: { className?: string }) {
   const roverLayer = useRef<SVGSVGElement>(null);
   const roverArmLayer = useRef<SVGSVGElement>(null);
   const botLayer = useRef<SVGSVGElement>(null);
-  const botArmLayer = useRef<SVGSVGElement>(null);
+  const botBody = useRef<SVGGElement>(null);
+  const tracks = useRef<SVGGElement>(null);
   const blades = useRef<(SVGGElement | null)[]>([]);
   const counter = useRef<SVGTextElement>(null);
   const badge = useRef<SVGGElement>(null);
@@ -983,7 +999,7 @@ export default function Factory({ className }: { className?: string }) {
     if (!built) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const state: Item[] = Array.from({ length: POOL }, () => ({ on: false, y: 0, dz: 0, stage: 0, state: "belt", t: 0, zone: -1, rank: -1, scanned: false, worked: 0 }));
-    const lorries: Lorry[] = TRUCKS.map(() => ({ state: "loading", t: 0, loaded: 0, route: { runs: [], total: 0 }, go: 0, facing: "x" }));
+    const lorries: Lorry[] = TRUCKS.map((_, n) => ({ state: n === 0 ? "loading" : "away", t: 0, loaded: 0, route: { runs: [], total: 0, wait: 0 }, go: 0, facing: "x", mark: 0 }));
     const staging: Slot[] = Array.from({ length: STAGE.xs.length * STAGE.layers }, () => "empty");
     const store: Slot[] = Array.from({ length: STORE.xs.length * STORE.layers }, () => "empty");
     let spawned = 0;
@@ -1031,13 +1047,15 @@ export default function Factory({ className }: { className?: string }) {
       if (!svg) return;
       svg.style.translate = move(dx, dy);
       svg.style.opacity = String(opacity);
+      // on its way it is over everything below the bar, the words of the hero too; at the bay it is under the robot
+      // loading it, and at the dock under the racks and the robot unloading it
+      svg.style.zIndex = ["away", "arriving", "loading", "docked"].includes(lorries[n].state) ? "30" : "34";
       // whatever of it is higher than the bottom of the bar along the top of the page has gone under the bar, out of sight
       const under = view.nav - (view.top + ((dx + dy) / 2) * view.scale);
       svg.style.clipPath = under > 0 ? `polygon(-9000px ${under.toFixed(1)}px, 9000px ${under.toFixed(1)}px, 9000px 9000px, -9000px 9000px)` : "";
     };
-    /** Where the truck stands at the dock, and where it turns off the road for it, from the bay. */
+    /** Where a truck stands at the dock, from the bay. */
     const home = { x: DOCK.x - BAY.x, y: DOCK.y - BAY.y };
-    const turn = { x: DOCK.x - BAY.x, y: ROAD_Y - BAY.y };
     const showStacks = () => {
       staged.current.forEach((g, k) => show(g, staging[k] === "full" || staging[k] === "out"));
       stored.current.forEach((g, k) => show(g, store[k] === "full" || store[k] === "out"));
@@ -1057,7 +1075,7 @@ export default function Factory({ className }: { className?: string }) {
       stacker: rigDrawing(stackerLayers.current, STACKER),
       shelver: rigDrawing(shelverLayers.current, SHELVER),
       rover: rigDrawing([roverArmLayer.current], ROVER_ARM),
-      bot: rigDrawing([botArmLayer.current], BOT_ARM),
+      bot: rigDrawing([botLayer.current], BOT_ARM),
     };
     const robot = <T,>(at: T): Robot<T> => ({ at, from: at, moves: [], t: 0, going: false });
     const stacker = robot<V3>(STACKER_REST);
@@ -1070,15 +1088,12 @@ export default function Factory({ className }: { className?: string }) {
     const botShoulder = (x: number) => v3(x, BOT.y, BOT.shoulder);
     /** A move of the server robot's wrist to a point in the scene, with the robot standing at x. */
     const botReach = (x: number, p: V3): RoverAt => ({ x, wx: p.x - x, wy: p.y - BOT.y, wz: p.z - BOT.shoulder });
+    /** The robot at the server: its body is moved along its lane, and its arm drawn from the same place, in one go. */
     const drawBot = () => {
       const { x, wx, wy, wz } = bot.at;
-      if (botLayer.current) botLayer.current.style.translate = move(x - BOT.x, 0);
+      botBody.current?.setAttribute("transform", moveBy(x - BOT.x, 0));
       const s = botShoulder(x);
       arms.bot.draw(s, plus(s, v3(wx, wy, wz)));
-      // in front of the truck while it stands at the dock (the robot is between it and the viewer), behind it otherwise
-      const front = lorries.some((l) => l.state === "docked");
-      if (botLayer.current) botLayer.current.style.zIndex = front ? "32" : "27";
-      if (botArmLayer.current) botArmLayer.current.style.zIndex = front ? "33" : "28";
     };
     /** A box goes into slot k of the racks: a blade lights up there, the count goes up, and the antenna sends. */
     const deploy = (k: number) => {
@@ -1172,7 +1187,7 @@ export default function Factory({ className }: { className?: string }) {
     blades.current.forEach((g, k) => show(g, k < SEED.live));
     lorries.forEach((l, n) => {
       face(n, "x");
-      moveTruck(n, 0, 0, 1);
+      moveTruck(n, l.state === "away" ? 220 : 0, 0, l.state === "away" ? 0 : 1);
       showCargo(n, l.loaded);
     });
     showStacks();
@@ -1190,7 +1205,19 @@ export default function Factory({ className }: { className?: string }) {
 
     /** A run of a truck's way. */
     const run_ = (from: { x: number; y: number }, dx: number, dy: number, length: number, facing: Facing): Run => ({ from, dx, dy, length: Math.max(0, length), facing });
-    /** The truck's way from the bay to the dock at the server, as the page stands now. */
+    /** Where the link to Experience is across the bar along the top of the page, if it is there to see. */
+    const experienceAt = () => {
+      for (const link of document.querySelectorAll<HTMLAnchorElement>('header a[href="#experience"]')) {
+        const box = link.getBoundingClientRect();
+        if (box.width > 0) return box.left + box.width / 2;
+      }
+      return null;
+    };
+    /**
+     * A truck's way from the bay to the dock at the server, as the page stands now: along −x over the words of the hero,
+     * along −y up over them and under the bar along the top of the page; then, out of sight, along under the bar to the
+     * link to Experience, and out from under the bar there along the road (+x) to the dock; and up (−y) into it.
+     */
     const toServer = (): Route => {
       measure();
       const s = view.scale;
@@ -1200,24 +1227,44 @@ export default function Factory({ className }: { className?: string }) {
       const wide = window.innerWidth >= 1024 && view.nav > 0;
       // out of sight: under the bar along the top of the page, or above the top of the page when the bar has gone
       const hide = (wide ? view.nav : 0) - 70 * s;
-      // along −x behind the words, or on a narrow page off its left edge; then along −y up under the bar
+      // along −x over the words, or on a narrow page off its left edge; then along −y up under the bar
       const l1 = wide ? Math.max(160, (bayX - Math.max(24, window.innerWidth * 0.14)) / (COS * s)) : (bayX + 140 * s) / (COS * s);
       const l2 = wide ? (2 * (bayY - (s * l1) / 2 - hide)) / s : 0;
-      // then, out of sight, on to the road in front of the server at the point that is just out of sight: along it to
-      // the turn for the dock, and up into it
-      const x3 = 2 * ((hide - view.top) / s + VB.y - CY) - ROAD_Y;
-      const l3 = DOCK.x - x3;
-      const l4 = ROAD_Y - DOCK.y;
-      const runs = [run_({ x: 0, y: 0 }, -1, 0, l1, "x"), run_({ x: -l1, y: 0 }, 0, -1, l2, "y"), run_({ x: x3 - BAY.x, y: ROAD_Y - BAY.y }, 1, 0, l3, "X"), run_(turn, 0, -1, l4, "y")];
-      return { runs, total: runs.reduce((sum, r) => sum + r.length, 0) };
+      // the road it comes out along: the one that passes under the link to Experience, as near to it as the dock allows
+      const sum = 2 * ((hide - view.top) / s + VB.y - CY); // x + y of the ground seen at the height it is hidden at
+      const link = wide ? experienceAt() : null;
+      const wanted = link === null ? APPROACH.far : (sum - ((link - view.left) / s + VB.x - CX) / COS) / 2;
+      const road = Math.min(APPROACH.far, Math.max(APPROACH.near, wanted));
+      const start = sum - road;
+      const runs = [
+        run_({ x: 0, y: 0 }, -1, 0, l1, "x"),
+        run_({ x: -l1, y: 0 }, 0, -1, l2, "y"),
+        run_({ x: start - BAY.x, y: road - BAY.y }, 1, 0, DOCK.x - start, "X"),
+        run_({ x: DOCK.x - BAY.x, y: road - BAY.y }, 0, -1, road - DOCK.y, "y"),
+      ];
+      return { runs, total: runs.reduce((sum_, r) => sum_ + r.length, 0), wait: l1 + l2 + 12 };
     };
-    /** Its way from the dock: back on to the road, and along it off the right of the page. */
+    /** Its way from the dock: backing out (+y) on to the road in front of everything, and along it (+x) off the right of the page. */
     const fromServer = (): Route => {
       measure();
       const s = view.scale;
-      const roadX = view.left + (at(DOCK.x, ROAD_Y, 0)[0] - VB.x) * s;
-      const runs = [run_(home, 0, 1, ROAD_Y - DOCK.y, "y"), run_(turn, 1, 0, (window.innerWidth - roadX + 200 * s) / (COS * s), "X")];
-      return { runs, total: runs.reduce((sum, r) => sum + r.length, 0) };
+      const roadX = view.left + (at(DOCK.x, EXIT_Y, 0)[0] - VB.x) * s;
+      const runs = [run_(home, 0, 1, EXIT_Y - DOCK.y, "y"), run_({ x: DOCK.x - BAY.x, y: EXIT_Y - BAY.y }, 1, 0, (window.innerWidth - roadX + 200 * s) / (COS * s), "X")];
+      return { runs, total: runs.reduce((sum, r) => sum + r.length, 0), wait: 0 };
+    };
+    /** Tyre tracks, left behind a truck's back wheels where it drives over the page: they fade in a few seconds. */
+    const tread = (spot: { x: number; y: number; facing: Facing }) => {
+      const group = tracks.current;
+      if (!group) return;
+      const [cx, cy] = [BAY.x + spot.x, BAY.y + spot.y];
+      const ends = spot.facing === "x" ? [-22, 22].map((o) => [at(cx + 40, cy + o, 0), at(cx + 54, cy + o, 0)]) : [-22, 22].map((o) => [at(cx + o, cy + 40, 0), at(cx + o, cy + 54, 0)]);
+      for (const [a, b] of ends) {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`);
+        path.setAttribute("class", styles.tread);
+        group.appendChild(path);
+        window.setTimeout(() => path.remove(), 7000);
+      }
     };
     /** Where a truck is, and which way it faces, `p` along its way. */
     const along = (route: Route, p: number): { x: number; y: number; facing: Facing } => {
@@ -1461,9 +1508,9 @@ export default function Factory({ className }: { className?: string }) {
           ms: 0,
           start: (m) => {
             m.ms = Math.max(240, (Math.abs(x - bot.at.x) / BOT.speed) * 1000);
-            if (Math.abs(x - bot.at.x) > 1) botLayer.current?.setAttribute("data-driving", x < bot.at.x ? "back" : "on");
+            if (Math.abs(x - bot.at.x) > 1) botBody.current?.setAttribute("data-driving", x < bot.at.x ? "back" : "on");
           },
-          then: () => botLayer.current?.removeAttribute("data-driving"),
+          then: () => botBody.current?.removeAttribute("data-driving"),
         });
         if (n >= 0) {
           const lorry = lorries[n];
@@ -1503,17 +1550,27 @@ export default function Factory({ className }: { className?: string }) {
             { to: botReach(slot.x, front), ms: 150 },
             { to: { x: slot.x, ...CARRY }, ms: 220 },
           ];
-        } else if (Math.abs(bot.at.x - BOT.x) > 1 && !lorries.some((l) => l.state === "docked")) {
+        } else if (Math.abs(bot.at.x - BOT.x) > 1) {
+          // unloaded: back along its lane, out of the truck's way
           bot.moves = [driveBot(BOT.x)];
         }
       }
       run(bot, dt, drawBot);
 
-      // the truck: to the server when it is full, unloaded there, off the page, and back to the bay for more
+      // the trucks, one after another: each to the server when it is full, unloaded there, off the page, and round to the
+      // bay again; the next one comes in to the bay as soon as the last has left it
+      const bayFree = !lorries.some((l) => l.state === "loading" || l.state === "arriving" || (l.state === "leaving" && l.go < 170));
+      const botHome = !bot.moves.length && Math.abs(bot.at.x - BOT.x) < 1;
+      let called = false;
       lorries.forEach((lorry, n) => {
         lorry.t += dt;
         if (lorry.state === "loading" && lorry.loaded >= SLOTS.length && !roverHolds) {
-          Object.assign(lorry, { state: "leaving", route: toServer(), go: -DRIVE * 0.3 });
+          Object.assign(lorry, { state: "leaving", route: toServer(), go: -DRIVE * 0.3, mark: 0 });
+        } else if (lorry.state === "away") {
+          if (bayFree && !called) {
+            called = true;
+            Object.assign(lorry, { state: "arriving", t: 0, loaded: 0, facing: "x" });
+          }
         } else if (lorry.state === "arriving") {
           const k = Math.min(1, lorry.t / ARRIVE);
           const e = 1 - (1 - k) * (1 - k);
@@ -1523,19 +1580,34 @@ export default function Factory({ className }: { className?: string }) {
           if (k >= 1) Object.assign(lorry, { state: "loading", t: 0 });
         } else if (lorry.state === "leaving" || lorry.state === "exiting") {
           const r = lorry.route;
-          lorry.go = Math.min(lorry.go + (DRIVE * dt) / 1000, r.total + 40);
-          const spot = along(r, eased(Math.max(0, lorry.go), r.total));
+          // out of sight under the bar, it waits while another truck is at the dock or on its way there
+          const blocked =
+            lorry.state === "leaving" &&
+            lorry.go <= r.wait &&
+            lorries.some((o) => o !== lorry && (o.state === "docked" || (o.state === "exiting" && o.go < 200) || (o.state === "leaving" && o.go > o.route.wait)));
+          lorry.go = Math.min(lorry.go + (DRIVE * dt) / 1000, blocked ? Math.max(lorry.go, r.wait) : r.total + 40);
+          const p = eased(Math.max(0, lorry.go), r.total);
+          const spot = along(r, p);
           if (spot.facing !== lorry.facing) {
             lorry.facing = spot.facing;
             face(n, spot.facing);
           }
           moveTruck(n, spot.x, spot.y, 1);
+          // tyre tracks over the page, every so far along its way, until it is under the bar
+          if (lorry.state === "leaving") {
+            const over = r.runs[0].length + r.runs[1].length;
+            if (lorry.mark < 30) lorry.mark = 30;
+            while (lorry.mark + 14 <= Math.min(p, over)) {
+              lorry.mark += 14;
+              tread(along(r, lorry.mark));
+            }
+          }
           if (lorry.go >= r.total + 40) {
             if (lorry.state === "leaving") {
               Object.assign(lorry, { state: "docked", t: 0 });
             } else {
-              // off the page: the same truck comes back round to the bay, empty, for the next load
-              Object.assign(lorry, { state: "arriving", t: 0, loaded: 0, facing: "x" });
+              // off the page: round to the bay again, as soon as it is free
+              Object.assign(lorry, { state: "away", t: 0, loaded: 0, facing: "x" });
               face(n, "x");
               showCargo(n, 0);
               moveTruck(n, 220, 0, 0);
@@ -1543,8 +1615,8 @@ export default function Factory({ className }: { className?: string }) {
           }
         } else if (lorry.state === "docked") {
           moveTruck(n, home.x, home.y, 1);
-          if (lorry.loaded === 0 && !botHolds) {
-            // empty: it backs out on to the road and drives off the right of the page
+          if (lorry.loaded === 0 && !botHolds && botHome) {
+            // empty, and the robot out of its way: it backs out on to the road and drives off the right of the page
             Object.assign(lorry, { state: "exiting", route: fromServer(), go: -DRIVE * 0.25 });
           }
         }
@@ -1554,7 +1626,7 @@ export default function Factory({ className }: { className?: string }) {
     let frame = 0;
     let last = 0;
     const loop = (now: number) => {
-      const dt = last ? Math.min(60, now - last) : 16;
+      const dt = last ? Math.min(100, now - last) : 16;
       last = now;
       step(dt);
       frame = requestAnimationFrame(loop);
@@ -1589,24 +1661,9 @@ export default function Factory({ className }: { className?: string }) {
   return (
     <div className={`${styles.root} ${className ?? ""}`} onClick={() => drop.current()}>
       <div ref={stage} className={`${styles.stage} ${built ? styles.live : ""}`} aria-hidden="true">
-        {/* ── the live server, at the top right, beyond the far end of the line ── */}
-        <Layer z={LAYER.server}>
-          <Part arrival={{ lift: 50, from: 0.62, span: 0.12 }} style={drawn(0.6, 0.7)}>
-            <ServerRoom
-              blade={(k) => (el) => {
-                blades.current[k] = el;
-              }}
-              counter={(el) => {
-                counter.current = el;
-              }}
-              badge={(el) => {
-                badge.current = el;
-              }}
-              signal={(el) => {
-                signal.current = el;
-              }}
-            />
-          </Part>
+        {/* ── the dock at the live server, marked out on the ground ── */}
+        <Layer z={LAYER.server} className={deskStyles.fade} style={between(0.66, 0.06)}>
+          <DockMarking />
         </Layer>
 
         {/* ── the floor, the belt, and everything that stands behind the line ── */}
@@ -1984,7 +2041,32 @@ export default function Factory({ className }: { className?: string }) {
         </Layer>
       </div>
 
-      {/* ── the trucks: outside the factory's own stacking, so they can drive off behind the words of the hero ── */}
+      {/* ── the live server, at the top right: over the trucks that stand at its dock, behind it ── */}
+      <svg viewBox={VIEW} className={styles.layer} style={{ zIndex: 31 }} aria-hidden="true" focusable="false">
+        <Part arrival={{ lift: 50, from: 0.62, span: 0.12 }} style={drawn(0.6, 0.7)}>
+          <ServerRoom
+            blade={(k) => (el) => {
+              blades.current[k] = el;
+            }}
+            counter={(el) => {
+              counter.current = el;
+            }}
+            badge={(el) => {
+              badge.current = el;
+            }}
+            signal={(el) => {
+              signal.current = el;
+            }}
+          />
+        </Part>
+      </svg>
+
+      {/* tyre tracks, where the trucks drive over the page */}
+      <svg viewBox={VIEW} className={styles.layer} style={{ zIndex: 33 }} aria-hidden="true" focusable="false">
+        <g ref={tracks} />
+      </svg>
+
+      {/* ── the trucks: outside the factory's own stacking, so they can drive over the words of the hero and under the bar ── */}
       {TRUCKS.map((tone, n) => (
         <svg
           key={n}
@@ -1993,7 +2075,7 @@ export default function Factory({ className }: { className?: string }) {
           }}
           viewBox={VIEW}
           className={`${styles.layer} ${styles.truck}`}
-          style={{ zIndex: 30 }}
+          style={{ zIndex: 30, opacity: n === 0 ? undefined : 0 }}
           aria-hidden="true"
           focusable="false"
         >
@@ -2019,14 +2101,14 @@ export default function Factory({ className }: { className?: string }) {
         </svg>
       ))}
 
-      {/* the robot on wheels at the live server, and its arm: behind the truck as it goes by, in front of it at the dock */}
-      <svg ref={botLayer} viewBox={VIEW} className={`${styles.layer} ${styles.moving} ${styles.rover}`} style={{ zIndex: 27 }} aria-hidden="true" focusable="false">
+      {/* the robot on wheels at the live server, with its arm on it: in one layer, over the racks and the truck at the dock */}
+      <svg ref={botLayer} viewBox={VIEW} className={styles.layer} style={{ zIndex: 32 }} aria-hidden="true" focusable="false">
         <Part arrival={{ lift: 40, from: 0.66, span: 0.1 }} style={drawn(0.64, 0.72)}>
-          <ServerBot />
+          <g ref={botBody} className={styles.rover}>
+            <ServerBot />
+          </g>
+          <RigShape rig={BOT_ARM} s={v3(BOT.x, BOT.y, BOT.shoulder)} w={plus(v3(BOT.x, BOT.y, BOT.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
         </Part>
-      </svg>
-      <svg ref={botArmLayer} viewBox={VIEW} className={`${styles.layer} ${deskStyles.fade}`} style={{ zIndex: 28, ...between(0.7, 0.06) }} aria-hidden="true" focusable="false">
-        <RigShape rig={BOT_ARM} s={v3(BOT.x, BOT.y, BOT.shoulder)} w={plus(v3(BOT.x, BOT.y, BOT.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
       </svg>
 
       {/* the robot's arm: under the trucks, or over them while it reaches into one */}
