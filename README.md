@@ -75,13 +75,17 @@ each laptop and ticks it off. Two jointed robot arms stand at the end of the bel
 lifts each box off the belt and stacks it at the right side of the belt, two high, and the second
 takes the boxes off the stack and carries them into the warehouse. A robot on wheels, with an arm
 of its own, drives them one at a time from the warehouse to the truck and packs it, six to a
-truck, in two rows of three. Full, the truck drives off behind the words of the hero, up under
-the bar along the top of the page (whatever of it is above the bar's bottom edge is clipped away),
-out from under it near its middle, and down to the live server at the top right, while the next
-truck, in another colour, pulls in at the bay. At the server — two racks on a raised floor, with
-blinking lights, a status screen, a LIVE sign counting deploys, a cooling fan, an antenna and an
-uptime monitor — a robot arm lifts each box out of the truck and slots it into a rack, where a
-server blade lights up; the empty truck drives off the right of the page. A control desk charts
+truck, in two rows of three. Full, the truck drives off behind the words of the hero and up under
+the bar along the top of the page (whatever of it is above the bar's bottom edge is clipped away);
+out of sight, it comes on to the road in front of the live server at the top right, comes out from
+under the bar along it, and turns up into the dock to the right of the server, its tail to the
+robot's lane. The live server is three racks on a raised floor — each with its name and vents, a
+status screen, a row of drive bays and three deploy slots, lights blinking — with a cooling unit, a
+fan and an antenna on the roof, a LIVE sign counting the deploys, and an uptime monitor on the
+side. A robot on wheels with its own arm (BOT-2) drives along its lane to the truck's tail, lifts
+each box out, drives it to the next slot and deploys it there, where a server blade lights up. The
+empty truck backs out on to the road and drives off the right of the page, and the same truck comes
+back round to the bay for the next load. A control desk charts
 the output; a pallet and a lamp stand about. Clicking the factory drops in an idea. The robot arms are drawn in 3D from their pose each frame (`beam` and `rigParts` in
 `Factory.tsx`): every link is a block whose visible faces are shaded by the way they face, the
 turret turns to face where the arm reaches, and the parts are painted furthest first.
