@@ -362,20 +362,30 @@ function Land({ geo, ids }: { geo: Geo; ids: string }) {
 // ── the drone that flies the road ─────────────────────────────────────────
 
 /**
- * A robot drone, a floating ball: a pale shell lit from the top left, split round its middle by a dark seam glowing
- * orange; vents and a little antenna with a blinking light on its top; a big eye with a segmented ring round an orange
- * iris; a hover pod on either side, glowing underneath; and under it all, a thruster pushing the air down. Its eye looks
- * the way it is flying (--look).
+ * A robot drone, a floating ball, drawn in the same hand as the map's buildings: every part with a wobbling ink edge and
+ * a hard shadow (the map's card and chip filters). A pale shell lit from the top left, split round its middle by a dark
+ * seam of glowing orange lights; vents and a little antenna with a blinking light on its top; a big eye with a segmented
+ * ring round an orange iris; a hover pod on either side, glowing underneath; a thruster under it pushing the air down;
+ * and a warm glow all round it. Its eye looks the way it is flying (--look). The glowing parts are drawn over the inked
+ * ones, outside the filters, so the light is soft and casts no shadow.
  */
 function Drone() {
   const ink = { stroke: "#2d2f2b", strokeOpacity: 0.62, strokeWidth: 1.4, strokeLinejoin: "round" } as const;
-  const pod = (x: number, flip: boolean) => (
+  const seam = "M21 57Q60 78 99 57";
+  /** A hover pod on the left; mirrored, on the right. */
+  const pod = (flip: boolean, lit: boolean) => (
     <g transform={flip ? "translate(120 0) scale(-1 1)" : undefined}>
-      <path d={`M${x + 12} 54L${x + 4} 56`} stroke="#5e625c" strokeWidth={3} strokeLinecap="round" />
-      <ellipse cx={x} cy={58} rx={8.5} ry={12} fill="url(#drone-pod)" {...ink} />
-      <path d={`M${x - 5} 50c2-3 5-4 8-3`} fill="none" stroke="#fafaf7" strokeOpacity={0.8} strokeWidth={1.4} strokeLinecap="round" />
-      <path d={`M${x - 8} 60h16`} stroke="#2d2f2b" strokeOpacity={0.3} strokeWidth={1} />
-      <ellipse className={styles.glow} cx={x} cy={69} rx={6} ry={2.4} fill="#de9372" filter="url(#drone-glow)" />
+      {lit ? (
+        <ellipse className={styles.glow} cx={15} cy={70} rx={8} ry={3.2} fill="#f0a582" filter="url(#drone-glow)" />
+      ) : (
+        <>
+          <path d="M27 54L19 56" stroke="#5e625c" strokeWidth={3} strokeLinecap="round" />
+          <ellipse cx={15} cy={58} rx={8.5} ry={12} fill="url(#drone-pod)" {...ink} />
+          <path d="M10 50c2-3 5-4 8-3" fill="none" stroke="#fafaf7" strokeOpacity={0.85} strokeWidth={1.4} strokeLinecap="round" />
+          <path d="M7 60h16" stroke="#2d2f2b" strokeOpacity={0.35} strokeWidth={1} />
+          <path d="M9 67h12" stroke="#4a4d48" strokeWidth={2.4} strokeLinecap="round" />
+        </>
+      )}
     </g>
   );
   return (
@@ -395,67 +405,79 @@ function Drone() {
           <stop offset="0" stopColor="#4a4d48" />
           <stop offset="1" stopColor="#1f2120" />
         </radialGradient>
+        <radialGradient id="drone-aura">
+          <stop offset="0.55" stopColor="#de9372" stopOpacity={0.5} />
+          <stop offset="1" stopColor="#de9372" stopOpacity={0} />
+        </radialGradient>
         <clipPath id="drone-ball">
           <circle cx={60} cy={52} r={36} />
         </clipPath>
-        <filter id="drone-glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="1.8" result="blur" />
+        <filter id="drone-glow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="2.6" result="blur" />
           <feMerge>
+            <feMergeNode in="blur" />
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
 
-      {/* its hover pods, one either side */}
-      {pod(15, false)}
-      {pod(15, true)}
+      {/* a warm glow all round it */}
+      <circle className={styles.aura} cx={60} cy={54} r={54} fill="url(#drone-aura)" />
 
-      {/* the thruster underneath, and its glow */}
-      <path d="M49 84h22l-3 7H52Z" fill="#5e625c" {...ink} strokeWidth={1.1} />
-      <ellipse className={styles.glow} cx={60} cy={92} rx={10} ry={3.6} fill="#de9372" filter="url(#drone-glow)" />
-
-      {/* the shell */}
-      <circle cx={60} cy={52} r={36} fill="url(#drone-shell)" {...ink} />
-      <g clipPath="url(#drone-ball)">
-        {/* its lower half a shade darker */}
-        <path d="M20 58Q60 80 100 58V100H20Z" fill="#2d2f2b" fillOpacity={0.08} />
-        {/* the seam round its middle, dark, with its lights glowing orange */}
-        <path d="M20 57Q60 78 100 57" fill="none" stroke="#2d2f2b" strokeWidth={8.5} />
-        <path d="M20 57Q60 78 100 57" fill="none" stroke="#4a4d48" strokeWidth={5.5} />
-        <path className={styles.glow} d="M20 57Q60 78 100 57" fill="none" stroke="#de9372" strokeWidth={2.2} strokeDasharray="5 4" strokeLinecap="round" filter="url(#drone-glow)" />
-        {/* a panel line over its top, and its shine */}
-        <path d="M27 38C38 24 56 18 74 20" fill="none" stroke="#2d2f2b" strokeOpacity={0.22} strokeWidth={1.1} />
-        <path d="M38 26C44 21 51 19 58 19" fill="none" stroke="#ffffff" strokeWidth={3} strokeLinecap="round" />
-        {/* a darker rim along its shadowed side */}
-        <path d="M94 40A36 36 0 0 1 72 86" fill="none" stroke="#2d2f2b" strokeOpacity={0.14} strokeWidth={5} />
+      {/* its hover pods, one either side, and their glow */}
+      <g filter="url(#desk-chip)">
+        {pod(false, false)}
+        {pod(true, false)}
+        <path d="M49 84h22l-3 7H52Z" fill="#5e625c" {...ink} strokeWidth={1.1} />
       </g>
-      {/* vents on its top */}
-      {[
-        [43, 29, 9],
-        [41, 33.5, 11],
-        [43, 38, 9],
-      ].map(([x, y, w]) => (
-        <path key={y} d={`M${x} ${y}h${w}`} stroke="#4a4d48" strokeWidth={1.9} strokeLinecap="round" />
-      ))}
-      {/* its antenna, with a light on it blinking sage */}
-      <path d="M72 18.5L77 8" stroke="#5e625c" strokeWidth={2} strokeLinecap="round" />
-      <circle className={styles.status} cx={77.8} cy={6.6} r={3} fill="#9caf88" stroke="#2d2f2b" strokeOpacity={0.55} strokeWidth={0.9} />
+      {pod(false, true)}
+      {pod(true, true)}
+      <ellipse className={styles.glow} cx={60} cy={93} rx={12} ry={4.4} fill="#f0a582" filter="url(#drone-glow)" />
 
-      {/* its eye: a housing, a ring of segments, a lens with fins, and an orange iris */}
+      {/* the shell, in ink */}
+      <g filter="url(#desk-card)">
+        <circle cx={60} cy={52} r={36} fill="url(#drone-shell)" {...ink} />
+        <g clipPath="url(#drone-ball)">
+          <path d="M20 58Q60 80 100 58V100H20Z" fill="#2d2f2b" fillOpacity={0.09} />
+          <path d={seam} fill="none" stroke="#2d2f2b" strokeWidth={9} />
+          <path d={seam} fill="none" stroke="#4a4d48" strokeWidth={6} />
+          <path d="M27 38C38 24 56 18 74 20" fill="none" stroke="#2d2f2b" strokeOpacity={0.3} strokeWidth={1.1} />
+          <path d="M96 42A36 36 0 0 1 74 86" fill="none" stroke="#2d2f2b" strokeOpacity={0.16} strokeWidth={5} />
+        </g>
+        {[
+          [43, 29, 9],
+          [41, 33.5, 11],
+          [43, 38, 9],
+        ].map(([x, y, w]) => (
+          <path key={y} d={`M${x} ${y}h${w}`} stroke="#4a4d48" strokeWidth={1.9} strokeLinecap="round" />
+        ))}
+        <path d="M72 18.5L77 8" stroke="#5e625c" strokeWidth={2} strokeLinecap="round" />
+      </g>
+      <g clipPath="url(#drone-ball)">
+        <path d="M38 26C44 21 51 19 58 19" fill="none" stroke="#ffffff" strokeWidth={3} strokeLinecap="round" />
+        {/* the seam's lights */}
+        <path className={styles.glow} d={seam} fill="none" stroke="#f0a582" strokeWidth={2.6} strokeDasharray="5 4" strokeLinecap="round" filter="url(#drone-glow)" />
+      </g>
+      <circle className={styles.status} cx={77.8} cy={6.6} r={3.2} fill="#9caf88" stroke="#2d2f2b" strokeOpacity={0.55} strokeWidth={0.9} filter="url(#drone-glow)" />
+
+      {/* its eye: a housing, a ring of segments and a lens with fins, in ink; then its iris, glowing */}
       <g className={styles.eye}>
-        <circle cx={67} cy={45} r={16} fill="#4a4d48" {...ink} />
-        <circle cx={67} cy={45} r={12.4} fill="none" stroke="#d3d6d0" strokeWidth={2.8} strokeDasharray="4.6 2.9" />
-        <circle cx={67} cy={45} r={8.6} fill="url(#drone-lens)" />
-        {Array.from({ length: 12 }, (_, k) => {
-          const a = (k / 12) * Math.PI * 2;
-          return <path key={k} d={`M${(67 + Math.cos(a) * 4.8).toFixed(1)} ${(45 + Math.sin(a) * 4.8).toFixed(1)}L${(67 + Math.cos(a) * 7.6).toFixed(1)} ${(45 + Math.sin(a) * 7.6).toFixed(1)}`} stroke="#5e625c" strokeWidth={1.1} />;
-        })}
-        <circle className={styles.glow} cx={67} cy={45} r={4.2} fill="#de9372" filter="url(#drone-glow)" />
+        <g filter="url(#desk-chip)">
+          <circle cx={67} cy={45} r={16} fill="#4a4d48" {...ink} />
+          <circle cx={67} cy={45} r={12.4} fill="none" stroke="#d3d6d0" strokeWidth={2.8} strokeDasharray="4.6 2.9" />
+          <circle cx={67} cy={45} r={8.6} fill="url(#drone-lens)" />
+          {Array.from({ length: 12 }, (_, k) => {
+            const a = (k / 12) * Math.PI * 2;
+            return <path key={k} d={`M${(67 + Math.cos(a) * 4.8).toFixed(1)} ${(45 + Math.sin(a) * 4.8).toFixed(1)}L${(67 + Math.cos(a) * 7.6).toFixed(1)} ${(45 + Math.sin(a) * 7.6).toFixed(1)}`} stroke="#5e625c" strokeWidth={1.1} />;
+          })}
+        </g>
+        <circle className={styles.glow} cx={67} cy={45} r={6.5} fill="#de9372" fillOpacity={0.45} filter="url(#drone-glow)" />
+        <circle className={styles.glow} cx={67} cy={45} r={4.2} fill="#f0a582" filter="url(#drone-glow)" />
         <circle cx={67} cy={45} r={1.7} fill="#3b3d39" />
         <ellipse cx={63} cy={40.5} rx={2.3} ry={1.4} fill="#fafaf7" fillOpacity={0.9} transform="rotate(-30 63 40.5)" />
       </g>
-      <path className={styles.glow} d="M54.5 53.5A16 16 0 0 0 60 59" fill="none" stroke="#d0714c" strokeWidth={1.8} strokeLinecap="round" filter="url(#drone-glow)" />
+      <path className={styles.glow} d="M54.5 53.5A16 16 0 0 0 60 59" fill="none" stroke="#f0a582" strokeWidth={2} strokeLinecap="round" filter="url(#drone-glow)" />
     </svg>
   );
 }

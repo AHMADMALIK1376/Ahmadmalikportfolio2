@@ -349,12 +349,12 @@
 /* the glow of its thruster on the road under it */
 .pad {
   position: absolute;
-  left: -2.2rem;
-  top: -0.8rem;
-  width: 4.4rem;
-  height: 1.6rem;
+  left: -2.8rem;
+  top: -1rem;
+  width: 5.6rem;
+  height: 2rem;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(222 147 114 / 0.55), rgb(222 147 114 / 0));
+  background: radial-gradient(closest-side, rgb(222 147 114 / 0.75), rgb(222 147 114 / 0));
   animation: pad 1.6s ease-in-out infinite alternate;
 }
 
@@ -372,11 +372,11 @@
 /* waves rippling out over the road under the drone, one after another */
 .wave {
   position: absolute;
-  left: -3rem;
-  top: -1.05rem;
-  width: 6rem;
-  height: 2.1rem;
-  border: 3px solid #d0714c;
+  left: -3.5rem;
+  top: -1.25rem;
+  width: 7rem;
+  height: 2.5rem;
+  border: 3.5px solid #d0714c;
   border-radius: 50%;
   opacity: 0;
   animation: ground-wave 2.1s ease-out infinite;
@@ -409,10 +409,10 @@
 /* its shadow on the road, smaller as it rises */
 .shadow {
   position: absolute;
-  left: -1.5rem;
-  top: -0.45rem;
-  width: 3rem;
-  height: 0.9rem;
+  left: -1.8rem;
+  top: -0.55rem;
+  width: 3.6rem;
+  height: 1.1rem;
   border-radius: 50%;
   background: rgb(45 47 43 / 0.26);
   animation: shadow 2.6s ease-in-out infinite alternate;
@@ -443,13 +443,12 @@
 .drone {
   --look: 0;
   position: absolute;
-  left: -3rem;
-  top: -7.2rem;
-  width: 6rem;
+  left: -3.75rem;
+  top: -8.6rem;
+  width: 7.5rem;
   aspect-ratio: 120 / 110;
   transform-origin: 50% 45%;
   transition: rotate 0.45s ease-out;
-  filter: drop-shadow(3px 3px 0 rgb(45 47 43 / 0.2));
 }
 
 .drone svg {
@@ -463,6 +462,24 @@
 .eye {
   transform: translateX(calc(var(--look) * 1px));
   transition: transform 0.45s ease-out;
+}
+
+/* the glow all round it, breathing */
+.aura {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: aura 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes aura {
+  from {
+    opacity: 0.55;
+    scale: 0.94;
+  }
+  to {
+    opacity: 1;
+    scale: 1.04;
+  }
 }
 
 /* its lights, glowing brighter and dimmer */
@@ -492,9 +509,9 @@
 /* the air it pushes down, in waves going down from its thruster */
 .lift {
   position: absolute;
-  left: -1.4rem;
-  top: -2.3rem;
-  width: 2.8rem;
+  left: -1.7rem;
+  top: -2.7rem;
+  width: 3.4rem;
   height: 1rem;
   border-bottom: 3px solid #de9372;
   border-radius: 0 0 50% 50% / 0 0 100% 100%;
@@ -613,13 +630,13 @@
     display: none;
   }
   .drone {
-    left: -1.9rem;
-    top: -4.8rem;
-    width: 3.8rem;
+    left: -2.3rem;
+    top: -5.4rem;
+    width: 4.6rem;
   }
   .lift {
     left: -1rem;
-    top: -1.7rem;
+    top: -1.8rem;
     width: 2rem;
   }
   .wave {
@@ -671,6 +688,7 @@
   .float,
   .lift,
   .glow,
+  .aura,
   .status {
     animation: none;
   }
