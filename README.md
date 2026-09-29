@@ -127,6 +127,21 @@ first portfolio's nine project animations, redrawn in this one's style
 (`src/components/rigs/projects/`, sharing the parts-pipes-packets engine in `flow.tsx`).
 Every pop-up fits on one screen, on a laptop and on a phone, with nothing to scroll.
 
+## Skills: the periodic table
+
+The toolbox is a periodic table (`src/components/sections/SkillsTable.tsx`, styled in
+`Skills.module.css`): every tool an element with its number, a two-letter symbol and its name,
+laid out the way the elements are — the languages down the left like the alkali metals, the web and
+the cloud in the block on the right, the databases and the testing tools along the bottom row — and
+the AI and LLM tools in a dark row of their own under the table, as the lanthanides are. Each is
+coloured by its kind, and its dots count the projects it was used in. In the gap at the top of the
+table stand the heading, a key to the kinds (pointed at, a kind lights its elements up; pressed, it
+keeps them lit), and one element drawn large with an atom going round it: whichever is pointed at,
+with the projects that used it (read from their stacks), or each in turn when nothing is. The
+elements are stamped on one after another when the table comes into view, and the whole section,
+with the strip of tape sliding by under it, fits one screen on a laptop. Below a laptop's width the
+elements simply run in rows, kind by kind.
+
 ## Experience: the journey
 
 Experience is a long hand-drawn map laid across the whole width of the page
