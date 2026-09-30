@@ -1,0 +1,403 @@
+/*
+ * The contact form as a postcard, and the mailbox it is posted in. The card
+ * has an airmail edge (stripes of sienna and sage) round a paper face; the
+ * face is split down the middle, the message on the left on ruled lines, the
+ * stamp and the address on the right. Under the card, the other ways of
+ * getting in touch, as stamps with perforated edges.
+ */
+
+.desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "card box"
+    "error error"
+    "stamps stamps";
+  align-items: end;
+  gap: 0.9rem 1.2rem;
+}
+
+.cardSlot {
+  grid-area: card;
+  position: relative;
+  min-width: 0;
+}
+
+/* ── the card ────────────────────────────────────────────────────────── */
+
+.card {
+  position: relative;
+  isolation: isolate;
+  padding: 0.55rem;
+  transform-origin: center;
+}
+
+/* its airmail edge, wobbling like the site's cards, and its hard shadow */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 1rem;
+  background: repeating-linear-gradient(-45deg, var(--color-sienna-400) 0 12px, var(--color-paper-2) 12px 18px, var(--color-sage-400) 18px 30px, var(--color-paper-2) 30px 36px);
+  border: 1.5px solid rgb(45 47 43 / 0.55);
+  box-shadow: var(--shadow-ink) 5px 5px 0 1px;
+  filter: url(#sketchFrame);
+}
+
+.face {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  border-radius: 0.6rem;
+  background: #f8f6ef;
+  box-shadow: inset 0 0 0 1px rgb(45 47 43 / 0.2);
+}
+
+/* the message, on the left */
+.message {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.2rem 0.9rem;
+  border-right: 1.5px dashed rgb(45 47 43 / 0.3);
+}
+
+.greeting {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* the message box: ruled, with nothing round it, so it is written straight on the card */
+.lines {
+  flex: 1;
+  width: 100%;
+  min-height: 8.1rem;
+  margin-top: 0.3rem;
+  padding: 0 0.2rem;
+  border: 0;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent calc(1.62rem - 1px), rgb(124 129 122 / 0.35) calc(1.62rem - 1px), rgb(124 129 122 / 0.35) 1.62rem);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.62rem;
+  resize: none;
+  outline: none;
+}
+
+.lines::placeholder {
+  color: var(--color-concrete-400);
+}
+
+.lines:focus-visible {
+  outline: 1.5px dashed var(--color-sienna-500);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.signoff {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.signature {
+  display: inline-block;
+  margin-left: 0.3rem;
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--color-sienna-600);
+  rotate: -3deg;
+}
+
+/* the address, on the right */
+.address {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem 1.2rem 0.9rem;
+}
+
+.stampCorner {
+  position: relative;
+  align-self: flex-end;
+  height: 4.6rem;
+}
+
+.stamp {
+  display: block;
+  width: 3.9rem;
+  padding: 3px;
+  background: radial-gradient(circle, transparent 2.1px, #fafaf7 2.5px) -3.5px -3.5px / 7px 7px;
+  filter: drop-shadow(1.5px 1.5px 0 rgb(45 47 43 / 0.3));
+  rotate: 4deg;
+}
+
+.stampArt {
+  display: block;
+  width: 100%;
+}
+
+/* the postmark, thumped over the stamp once it has gone */
+.postmark {
+  position: absolute;
+  right: 1.6rem;
+  top: 0.2rem;
+  width: 8.2rem;
+  opacity: 0;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.postmarkArt {
+  display: block;
+  width: 100%;
+}
+
+.field {
+  display: block;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-sienna-600);
+}
+
+.to {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.to strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.to span {
+  color: var(--color-muted);
+}
+
+/* a line of the address, written on */
+.line input {
+  display: block;
+  width: 100%;
+  padding: 0.15rem 0.1rem;
+  border: 0;
+  border-bottom: 1.5px dashed rgb(45 47 43 / 0.4);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  outline: none;
+}
+
+.line input::placeholder {
+  font-weight: 400;
+  color: var(--color-concrete-400);
+}
+
+.line input:focus-visible {
+  border-bottom-color: var(--color-sienna-500);
+  border-bottom-style: solid;
+}
+
+.post {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 0.2rem;
+}
+
+/* once it has gone: a note where it was */
+.sent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+}
+
+.error {
+  grid-area: error;
+  padding: 0.7rem 1rem;
+  border-radius: 1rem;
+  background: var(--color-sienna-100);
+  color: var(--color-sienna-700);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* ── the mailbox ─────────────────────────────────────────────────────── */
+
+.mailbox {
+  grid-area: box;
+  width: clamp(6.5rem, 16vw, 10.5rem);
+  pointer-events: none;
+}
+
+.mailboxArt {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+/* the door drops open on its hinge at the foot, and the flag swings up on its pivot */
+.door {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: rotate 0.28s ease-out;
+}
+
+.door[data-open] {
+  rotate: -95deg;
+}
+
+.flag {
+  transform-box: view-box;
+  transform-origin: 156px 114px;
+  transition: rotate 0.5s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.flag[data-up] {
+  rotate: 90deg;
+}
+
+/* ── the other ways, as stamps ───────────────────────────────────────── */
+
+.stamps {
+  grid-area: stamps;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem 1rem;
+}
+
+.stampButton {
+  display: inline-block;
+  padding: 4px;
+  border: 0;
+  background: radial-gradient(circle, transparent 2.4px, #fafaf7 2.9px) -4px -4px / 8px 8px;
+  color: var(--color-ink);
+  cursor: pointer;
+  filter: drop-shadow(2px 2px 0 rgb(45 47 43 / 0.32));
+  transition:
+    rotate 0.25s var(--ease-sketch),
+    translate 0.25s var(--ease-sketch);
+}
+
+.stampButton:nth-child(odd) {
+  rotate: -2deg;
+}
+
+.stampButton:nth-child(even),
+.stamps > span .stampButton {
+  rotate: 1.5deg;
+}
+
+.stampButton:hover,
+.stampButton:focus-visible {
+  rotate: 0deg;
+  translate: 0 -3px;
+}
+
+.stampButton:focus-visible {
+  outline: 2px dashed var(--color-sienna-500);
+  outline-offset: 3px;
+}
+
+.stampFace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgb(45 47 43 / 0.35);
+  background: var(--face);
+}
+
+.stampText {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.stampText strong {
+  font-size: 0.8rem;
+}
+
+.stampText em {
+  font-size: 0.64rem;
+  font-style: normal;
+  color: var(--color-muted);
+}
+
+.where {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+/* ── on a phone: the halves of the card one over the other, the mailbox beside the stamps ── */
+
+@media (width < 40rem) {
+  .desk {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "card card"
+      "error error"
+      "stamps box";
+  }
+
+  .face {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .message {
+    border-right: 0;
+    border-bottom: 1.5px dashed rgb(45 47 43 / 0.3);
+  }
+
+  .lines {
+    min-height: 6.5rem;
+  }
+
+  .address {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem 0.8rem;
+  }
+
+  .stampCorner {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+
+  .to,
+  .line,
+  .post {
+    grid-column: 1 / -1;
+  }
+
+  .to {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .mailbox {
+    width: 6rem;
+    align-self: end;
+  }
+
+  .where {
+    margin-left: 0;
+  }
+}

@@ -178,20 +178,15 @@ sliding down the sheet over a road sliding back up), so scrolling stays smooth. 
 through wherever the stops fall on the page, so it fits any width; below a laptop's width it runs
 straight down the left with the cards beside it.
 
-## Contact: the pen plotter
+## Contact: the postcard
 
-The contact section is a pen plotter (`src/components/plotter/`), seen straight on from above and a
-little in front so its paper lies flat and level, with the contact form printed on its sheet: a box for the name and one for the email side by side, a big one for the message, "—
-yours," and a send button. The sheet is the form: real fields are laid over its boxes at the
-sheet's own slant, invisible, so a visitor clicks a box on the paper and types, and the pen writes
-each character into the box the moment it is typed, in the plotter's own single-stroke hand
-(`hand.ts`: capitals, lowercase, figures and marks) — the gantry runs up and down the sheet, the
-carriage across it, the pen goes down for each stroke and lifts between them — and between keys it
-waits over the place the next character will go, like a cursor; after a pause it runs back to the
-top of the page so the whole letter can be read. Deleted characters fade away, a
-word that no longer fits its line is written again on the next, and the name is signed again after
-"yours,". Sending posts to `/api/contact`; once it has gone, the sheet is fed out of the front and
-a fresh one comes in.
+The contact form is a postcard (`src/components/sections/ContactForm.tsx`, styled in
+`Postcard.module.css`) with an airmail edge: the message is written on its left half, on ruled
+lines under "Dear Ahmad,", and signed with the name as it is typed; on the right, under the stamp,
+the address, and the name and email it is from. Posting it sends it to `/api/contact`, which emails
+Ahmad; once it has gone a postmark with the day's date is thumped on the stamp, the mailbox's door
+drops open, the card flies in, the door shuts and the flag goes up. Under the card, as postage
+stamps: copy the email address, GitHub and LinkedIn, and where Ahmad is and the time there.
 
 ## Content
 
