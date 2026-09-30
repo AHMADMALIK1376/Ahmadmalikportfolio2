@@ -41,10 +41,11 @@ on the paper.
 ## The logo
 
 Ahmad's mark (`src/components/Logo.tsx`, and `src/app/icon.svg` for the browser tab) is a pen nib
-in 3D whose slit runs on into a circuit trace ending in a node: drawn by hand, built with code. The
-nib is a solid sienna slab with its thickness running back and its face lit from the top left, the
-trace a raised sage wire with its shadow, and the node a glossy sphere. Pointed at, the nib turns a
-little in space, the trace draws itself again and the node lights up.
+whose slit runs on into a circuit wire ending in a node: drawn by hand, built with code. It is drawn
+in the same hand as the factory, the map and the post box — a solid nib standing up in the
+isometric view, flat sienna faces, a wobbling ink edge and the hard shadow of the site's cards, and
+a sage wire running to a small sage block. Pointed at, the nib tips, the wire draws itself again
+and the node lights up.
 
 ## The design system
 

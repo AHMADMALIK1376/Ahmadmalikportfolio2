@@ -317,13 +317,17 @@
     transform-box: fill-box;
     transform-origin: center;
   }
-  /* the logo turns a little in space when it is pointed at */
+  /* the logo tips over a little when it is pointed at, like something picked up off the desk */
   .logo-3d {
-    transition: transform 0.45s var(--ease-sketch);
+    overflow: visible;
+    transition:
+      rotate 0.35s var(--ease-sketch),
+      translate 0.35s var(--ease-sketch);
   }
   .group:hover .logo-3d,
   .group:focus-visible .logo-3d {
-    transform: perspective(140px) rotateY(-24deg) rotateX(10deg) scale(1.06);
+    rotate: -10deg;
+    translate: 0 -2px;
   }
 
   /* room on the left for the lasso that hangs off it */

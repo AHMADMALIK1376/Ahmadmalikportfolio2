@@ -1,69 +1,85 @@
-import { useId } from "react";
+import { at, EDGE, poly, type Point } from "@/components/desk/iso";
 
 /**
- * Ahmad's mark, in 3D: a pen nib whose slit runs on into a circuit trace, ending
- * in a node — drawn by hand, built with code. The nib is a solid sienna slab,
- * its thickness running back to the lower right and its face lit from the top
- * left, with a breather hole cut through it; the trace is a raised sage wire
- * with its own shadow, and the node a small glossy sphere. When it is pointed
- * at (the link round it is a `group`), the nib turns a little in space, the
- * trace draws itself again from the nib and the node lights up.
+ * Ahmad's mark, drawn in the same hand as the factory, the map and the post
+ * box: a pen nib standing up in the isometric view, a solid slab with flat
+ * pastel faces — its face in sienna, its thickness in a deeper sienna — a
+ * wobbling ink edge and the hard offset shadow of the site's cards (the
+ * `desk-card` filter). Its slit runs down to the breather hole and on out of
+ * the nib as a sage circuit wire, ending in a node: a small sage block. Drawn
+ * by hand, built with code.
+ *
+ * When it is pointed at (the link round it is a `group`), the nib tips, the
+ * wire draws itself again from the nib, and the node lights up.
  */
 
-const NIB = "M22 3 34 18c1.5 2 1.4 4-.2 6L24 36h-4L10.2 24c-1.6-2-1.7-4-.2-6Z";
-const TRACE = "M22 19v8l6 5v6";
-/** How far the nib's thickness runs back, in steps. */
-const DEPTH = [3.2, 2.8, 2.4, 2, 1.6, 1.2, 0.8, 0.4];
+/** The nib's outline, across (u) and up (v), clockwise from the tip. */
+const NIB: [number, number][] = [
+  [0, 85],
+  [30, 42],
+  [31, 32],
+  [7.5, 2.5],
+  [-7.5, 2.5],
+  [-31, 32],
+  [-30, 42],
+];
+/** How thick the nib is: its face at y = 0, its back THICK behind it. */
+const THICK = 11;
+const face = (u: number, v: number, y = 0): Point => at(u, y, v);
+
+const FACE = "#de9372";
+const SIDE = "#bc4e26";
+const TOP = "#ecbea9";
+
+/** The sides of the nib the viewer sees: each edge swept back, shaded by the way it faces. */
+const SIDES = NIB.flatMap(([u0, v0], i) => {
+  const [u1, v1] = NIB[(i + 1) % NIB.length];
+  // the edge's outward normal, across and up; it is seen if it faces the viewer, who looks from +x, +y and +z at once
+  const [nu, nv] = [v1 - v0, u0 - u1].map((n) => -n);
+  if (nu + nv <= 0.5) return [];
+  return [{ d: poly(face(u0, v0), face(u1, v1), face(u1, v1, -THICK), face(u0, v0, -THICK)), fill: nv > nu ? TOP : SIDE }];
+});
+
+/** The breather hole: a circle on the face, seen at the view's slant. */
+const HOLE = poly(...Array.from({ length: 16 }, (_, k) => face(Math.cos((k / 16) * Math.PI * 2) * 6.5, 52 + Math.sin((k / 16) * Math.PI * 2) * 6.5)));
+/** The wire, a little in front of the face: down from the hole, out of the nib, and across to the node. */
+const WIRE = [face(0, 45, 1.5), face(0, 25, 1.5), face(15, 12.5, 1.5), face(15, -4, 1.5)]
+  .map(([x, y], k) => `${k ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`)
+  .join("");
+/** The node: a small block at the wire's end. */
+const NODE = { x0: 9, x1: 21, y0: -4, y1: 8, z0: -16, z1: -5 };
+const node = (() => {
+  const { x0, x1, y0, y1, z0, z1 } = NODE;
+  return {
+    top: poly(at(x0, y0, z1), at(x1, y0, z1), at(x1, y1, z1), at(x0, y1, z1)),
+    left: poly(at(x0, y1, z1), at(x1, y1, z1), at(x1, y1, z0), at(x0, y1, z0)),
+    right: poly(at(x1, y0, z1), at(x1, y1, z1), at(x1, y1, z0), at(x1, y0, z0)),
+  };
+})();
 
 export default function Logo({ className }: { className?: string }) {
-  const id = useId().replace(/:/g, "");
+  const edge = { stroke: EDGE, strokeWidth: 2.2, strokeLinejoin: "round" } as const;
   return (
-    <svg viewBox="0 0 44 48" className={`logo-3d ${className ?? ""}`} aria-hidden="true" focusable="false">
-      <defs>
-        <linearGradient id={`${id}-face`} x1="0.15" y1="0" x2="0.85" y2="1">
-          <stop offset="0" stopColor="#f5c0a6" />
-          <stop offset="0.45" stopColor="#e2916d" />
-          <stop offset="1" stopColor="#c9643d" />
-        </linearGradient>
-        <radialGradient id={`${id}-node`} cx="0.35" cy="0.3" r="0.75">
-          <stop offset="0" stopColor="#f0f3ec" />
-          <stop offset="0.45" stopColor="#b1c29f" />
-          <stop offset="1" stopColor="#4c5e3e" />
-        </radialGradient>
-        <radialGradient id={`${id}-hole`} cx="0.6" cy="0.65" r="0.7">
-          <stop offset="0" stopColor="#7b3117" />
-          <stop offset="1" stopColor="#1f2120" />
-        </radialGradient>
-      </defs>
-
-      {/* its hard shadow on the page */}
-      <path d={NIB} transform="translate(5.2 5.2)" fill="#2d2f2b" fillOpacity={0.22} />
-
-      {/* the nib's thickness, running back to the lower right, and its back edge */}
-      <path d={NIB} transform={`translate(${DEPTH[0]} ${DEPTH[0]})`} fill="#7b3117" stroke="#1f2120" strokeOpacity={0.75} strokeWidth={1.3} strokeLinejoin="round" />
-      {DEPTH.slice(1).map((d, k) => (
-        <path key={d} d={NIB} transform={`translate(${d} ${d})`} fill={k < 3 ? "#8f3a1a" : "#a9492a"} />
-      ))}
-
-      {/* its face, lit from the top left, with a gleam down its left edge */}
-      <path d={NIB} fill={`url(#${id}-face)`} stroke="#1f2120" strokeOpacity={0.8} strokeWidth={1.4} strokeLinejoin="round" />
-      <path d="M21.2 5.4 12 17.4c-1 1.4-1 2.8.1 4.2" fill="none" stroke="#fdf3ee" strokeOpacity={0.8} strokeWidth={1.5} strokeLinecap="round" />
-      <path d="M20.4 34.6h3.2" stroke="#fdf3ee" strokeOpacity={0.45} strokeWidth={0.9} strokeLinecap="round" />
-
-      {/* the slit, and the breather hole cut through, its inner wall catching the light */}
-      <path d="M22 3v10" stroke="#1f2120" strokeWidth={1.5} strokeLinecap="round" />
-      <circle cx={22} cy={16} r={3.2} fill={`url(#${id}-hole)`} stroke="#1f2120" strokeWidth={1.2} />
-      <path d="M19.6 17.6a3 3 0 0 0 4.8 0" fill="none" stroke="#de9372" strokeWidth={0.9} strokeLinecap="round" />
-
-      {/* the circuit trace: a raised wire, with its shadow under it and the light along it */}
-      <path d={TRACE} transform="translate(1.3 1.3)" fill="none" stroke="#2d2f2b" strokeOpacity={0.3} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-      <path d={TRACE} pathLength={1} fill="none" stroke="#80966b" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" className="logo-trace" />
-      <path d={TRACE} pathLength={1} transform="translate(-0.45 -0.45)" fill="none" stroke="#e2e9da" strokeWidth={0.8} strokeLinecap="round" strokeLinejoin="round" className="logo-trace" />
-
-      {/* the node: a glossy sphere, and its shadow */}
-      <ellipse cx={29.2} cy={44.6} rx={3.4} ry={1.3} fill="#2d2f2b" fillOpacity={0.25} />
-      <circle cx={28} cy={41} r={3.5} fill={`url(#${id}-node)`} stroke="#1f2120" strokeOpacity={0.7} strokeWidth={1} className="logo-node" />
-      <circle cx={26.9} cy={39.9} r={0.9} fill="#fafaf7" fillOpacity={0.9} />
+    <svg viewBox="322 304 84 134" className={`logo-3d ${className ?? ""}`} aria-hidden="true" focusable="false">
+      <g filter="url(#desk-card)">
+        {/* the nib: its sides, then its face, the slit and the hole */}
+        {SIDES.map((side) => (
+          <path key={side.d} d={side.d} fill={side.fill} {...edge} />
+        ))}
+        <path d={poly(...NIB.map(([u, v]) => face(u, v)))} fill={FACE} {...edge} />
+        <path d={`M${face(0, 84).join(" ")}L${face(0, 58.5).join(" ")}`} fill="none" stroke="#2d2f2b" strokeWidth={2.6} strokeLinecap="round" />
+        <path d={HOLE} fill="#3b3d39" {...edge} />
+        {/* the node */}
+        <path d={node.right} fill="#80966b" {...edge} />
+        <path d={node.left} fill="#9caf88" {...edge} />
+        <path d={node.top} fill="#cbd7bd" {...edge} className="logo-node" />
+      </g>
+      {/* the wire: an inked edge, its sage, and the light along it, wobbling like the rest */}
+      <g filter="url(#desk-ink)" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={WIRE} pathLength={1} stroke={EDGE} strokeWidth={7.2} className="logo-trace" />
+        <path d={WIRE} pathLength={1} stroke="#9caf88" strokeWidth={5} className="logo-trace" />
+        <path d={WIRE} pathLength={1} stroke="#e2e9da" strokeWidth={1.6} transform="translate(-0.8 -1)" className="logo-trace" />
+      </g>
     </svg>
   );
 }
