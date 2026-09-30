@@ -1,23 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion, useAnimate } from "motion/react";
-import { useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { PERSON } from "@/lib/content";
 import SketchButton from "@/components/sketch/SketchButton";
 import LocalTime from "@/components/LocalTime";
 import { ArrowRight, Check, Clock, Copy, GitHub, LinkedIn, Pin } from "@/components/sketch/Icons";
+import PostScene, { type PostApi } from "./PostScene";
 import styles from "./Postcard.module.css";
 
 /**
- * The contact form, as a postcard, and the mailbox it goes in.
+ * The contact form, as a postcard, and the post box it is posted in.
  *
  * The card is the form: the message is written on its left half, on ruled
  * lines, under "Dear Ahmad," and signed with the name as it is typed; on its
- * right half, under the stamp, the address, and the name and email it is
- * from. Posting it sends it to /api/contact, which emails Ahmad; once it has
- * gone a postmark is thumped on the stamp, the mailbox's door drops open, the
- * card flies in, the door shuts and the flag goes up. Under the card, as
- * stamps: the email address to copy, and GitHub and LinkedIn.
+ * right half, the address, and the name and email it is from. Sending it
+ * posts to /api/contact, which emails Ahmad; once it has gone the card is
+ * packed into an envelope — it slides in, the flap shuts, the envelope turns
+ * over, a stamp is stuck on and franked — and the envelope flies to the post
+ * box beside it and in through its slot. Then the post comes for it (see
+ * PostScene). Under it all, the site's own buttons: copy the email address,
+ * GitHub and LinkedIn.
  */
 
 type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; name: string } | { kind: "error"; message: string };
@@ -25,13 +28,13 @@ type State = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; name: stri
 const PROBLEMS: Record<string, string> = {
   invalid: "Something on the card doesn't look right — check the email address, and write at least a sentence.",
   busy: "That's a lot of cards in a short time. Please try again in a little while.",
-  unavailable: `The mailbox isn't connected yet. Please email me directly at ${PERSON.email}.`,
-  failed: `The card couldn't be posted just now. Please email me directly at ${PERSON.email}.`,
+  unavailable: `The post isn't connected yet. Please email me directly at ${PERSON.email}.`,
+  failed: `The card couldn't be sent just now. Please email me directly at ${PERSON.email}.`,
 };
 
 const today = () => new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 
-/** The stamp on the card: a sparkle, the country and the year, on a perforated edge. */
+/** The stamp stuck on the envelope: a sparkle, the country and the price, on a perforated edge. */
 function Stamp() {
   return (
     <svg viewBox="0 0 64 76" className={styles.stampArt} aria-hidden="true">
@@ -48,7 +51,7 @@ function Stamp() {
   );
 }
 
-/** The postmark thumped on the stamp once the card has gone: the town round a ring, the date, and wavy lines. */
+/** The postmark franked over the stamp: the town round a ring, the date, and wavy lines. */
 function Postmark({ date }: { date: string }) {
   return (
     <svg viewBox="0 0 150 80" className={styles.postmarkArt} aria-hidden="true">
@@ -74,109 +77,94 @@ function Postmark({ date }: { date: string }) {
   );
 }
 
-/** The mailbox: on a post, its door at the front, and its flag, which goes up when a card is posted. */
-function Mailbox({ door, flag }: { door: (el: SVGGElement | null) => void; flag: (el: SVGGElement | null) => void }) {
-  const ink = { stroke: "#2d2f2b", strokeOpacity: 0.6, strokeWidth: 1.6, strokeLinejoin: "round" } as const;
-  return (
-    <svg viewBox="0 0 170 230" className={styles.mailboxArt} aria-hidden="true">
-      {/* the ground, and the post */}
-      <ellipse cx={92} cy={219} rx={56} ry={7} fill="#2d2f2b" fillOpacity={0.12} />
-      <path d="M58 219c3-5 6-5 9 0M118 219c2-6 6-6 8 0M128 219c2-4 4-4 6 0" fill="none" stroke="#80966b" strokeWidth={1.8} strokeLinecap="round" />
-      <rect x={82} y={118} width={20} height={101} rx={3} fill="#c0947f" {...ink} />
-      <path d="M88 130v80M95 126v84" stroke="#2d2f2b" strokeOpacity={0.18} strokeWidth={1.2} />
-      {/* the box, its shade, its bands and its name */}
-      <path d="M34 122V74c0-26 22-40 58-40s58 14 58 40v48Z" fill="#d0714c" {...ink} />
-      <path d="M150 74v48h-22V74c0-18-6-30-16-38 24 5 38 18 38 38Z" fill="#bc4e26" />
-      <path d="M34 122V74c0-26 22-40 58-40s58 14 58 40v48Z" fill="none" {...ink} />
-      <path d="M58 40v82M126 40v82" stroke="#9c3f1d" strokeOpacity={0.5} strokeWidth={2.4} />
-      <text x={92} y={96} textAnchor="middle" fontSize={11} fontWeight={700} letterSpacing={2} fill="#fafaf7">
-        AHMAD
-      </text>
-      <text x={92} y={78} textAnchor="middle" fontSize={7} fontWeight={700} letterSpacing={2.4} fill="#f5dfd5">
-        POST
-      </text>
-      {/* the door, at the front, hinged at the foot */}
-      <g ref={door} className={styles.door}>
-        <path d="M22 122V76c0-24 8-38 18-38s18 14 18 38v46Z" fill="#de9372" {...ink} />
-        <path d="M30 80c0-14 4-24 10-24" fill="none" stroke="#fafaf7" strokeOpacity={0.55} strokeWidth={2} strokeLinecap="round" />
-        <rect x={34} y={88} width={12} height={5} rx={2.5} fill="#5e625c" {...ink} strokeWidth={1} />
-      </g>
-      {/* the flag, on the side: lying along it until a card is posted, then swung up */}
-      <g ref={flag} className={styles.flag}>
-        <path d="M156 114H116" fill="none" stroke="#5e625c" strokeWidth={3} strokeLinecap="round" />
-        <path d="M116 114h18v12h-18Z" fill="#9c3f1d" {...ink} strokeWidth={1.3} />
-      </g>
-      <circle cx={156} cy={114} r={3.4} fill="#5e625c" {...ink} strokeWidth={1} />
-    </svg>
-  );
-}
-
-/** A postage stamp that is a button or a link: a perforated edge round its face. */
-function StampLink({ href, onClick, tone, children, label }: { href?: string; onClick?: () => void; tone: string; children: ReactNode; label: string }) {
-  const face = (
-    <span className={styles.stampFace} style={{ "--face": tone } as CSSProperties}>
-      {children}
-    </span>
-  );
-  return href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={styles.stampButton} aria-label={label}>
-      {face}
-    </a>
-  ) : (
-    <button type="button" onClick={onClick} className={styles.stampButton} aria-label={label}>
-      {face}
-    </button>
-  );
-}
-
 export default function ContactForm() {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [copied, setCopied] = useState(false);
   const [scope, animate] = useAnimate();
+  const post = useRef<PostApi | null>(null);
   const card = useRef<HTMLDivElement>(null);
-  const door = useRef<SVGGElement | null>(null);
-  const flag = useRef<SVGGElement | null>(null);
-  const postmark = useRef<HTMLDivElement>(null);
   const form = useRef<HTMLFormElement>(null);
+  const envelope = useRef<HTMLDivElement>(null);
+  const turner = useRef<HTMLDivElement>(null);
+  const letter = useRef<HTMLDivElement>(null);
+  const flap = useRef<HTMLDivElement>(null);
+  const stamp = useRef<HTMLDivElement>(null);
+  const mark = useRef<HTMLDivElement>(null);
 
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /** The card goes in the mailbox: postmarked, the door opens, it flies in, the door shuts, the flag goes up. */
-  async function post() {
-    const el = card.current;
-    const box = door.current;
-    if (!el || !box || !postmark.current || !flag.current) return;
-    if (reduced()) return;
-    await animate(postmark.current, { opacity: [0, 1], scale: [1.8, 1], rotate: [-32, -14] }, { duration: 0.32, ease: [0.3, 1.6, 0.5, 1] });
-    await new Promise((done) => setTimeout(done, 380));
-    const from = el.getBoundingClientRect();
-    const to = box.getBoundingClientRect();
-    box.setAttribute("data-open", "");
+  /**
+   * The card is packed into an envelope and posted: it shrinks into the envelope's mouth and slides in, the flap shuts,
+   * the envelope turns over, a stamp is stuck on and franked, and the envelope flies to the post box and in at its slot.
+   */
+  async function pack() {
+    const [c, env, turn, inner, top, st, pm] = [card.current, envelope.current, turner.current, letter.current, flap.current, stamp.current, mark.current];
+    if (!c || !env || !turn || !inner || !top || !st || !pm || reduced()) return;
+    // the envelope, ready: open, face down, the letter to go in drawn to the card's own shape
+    const cardBox = c.getBoundingClientRect();
+    const envBox = env.getBoundingClientRect();
+    const aspect = cardBox.width / cardBox.height;
+    const w = Math.min(envBox.width * 0.9, envBox.height * 0.86 * aspect);
+    Object.assign(inner.style, { width: `${w}px`, height: `${w / aspect}px`, opacity: "0" });
+    top.style.zIndex = "1";
+    await animate(env, { opacity: 0, scale: 1, x: 0, y: 0, rotate: 0 }, { duration: 0 });
+    // the card shrinks to the size of the letter in the envelope's mouth; the envelope opens round it, and it is the letter
+    await animate(inner, { y: "-62%" }, { duration: 0 });
+    const into = inner.getBoundingClientRect();
     await animate(
-      el,
-      { x: to.left + to.width / 2 - (from.left + from.width / 2), y: to.top + to.height * 0.55 - (from.top + from.height / 2), scale: 0.05, rotate: -14 },
-      { duration: 0.95, ease: [0.5, 0, 0.25, 1] },
+      c,
+      { x: into.left + into.width / 2 - (cardBox.left + cardBox.width / 2), y: into.top + into.height / 2 - (cardBox.top + cardBox.height / 2), scale: into.width / cardBox.width },
+      { duration: 0.6, ease: [0.5, 0, 0.2, 1] },
     );
-    el.style.opacity = "0";
-    box.removeAttribute("data-open");
-    await new Promise((done) => setTimeout(done, 260));
-    flag.current.setAttribute("data-up", "");
+    inner.style.opacity = "1";
+    c.style.opacity = "0";
+    await animate(env, { opacity: 1 }, { duration: 0.22, ease: "easeOut" });
+    // and slides in; the flap shuts
+    await animate(inner, { y: "0%" }, { duration: 0.45, ease: [0.4, 0, 0.2, 1] });
+    top.style.zIndex = "4";
+    await animate(top, { rotateX: [180, 0] }, { duration: 0.42, ease: "easeInOut" });
+    // it turns over, and is stamped and franked
+    await animate(turn, { rotateY: [0, 180] }, { duration: 0.6, ease: [0.4, 0, 0.2, 1] });
+    await animate(st, { opacity: [0, 1], scale: [2.2, 1], rotate: [-28, 5] }, { duration: 0.34, ease: [0.3, 1.5, 0.5, 1] });
+    await animate(pm, { opacity: [0, 1], scale: [1.7, 1], rotate: [-30, -12] }, { duration: 0.3, ease: [0.3, 1.6, 0.5, 1] });
+    await new Promise((done) => setTimeout(done, 350));
+    // then flies to the post box, and in at its slot
+    const slot = post.current?.slot();
+    if (!slot) return;
+    const from = env.getBoundingClientRect();
+    const k = (slot.width * 1.05) / from.width;
+    post.current?.flap(true);
+    await animate(
+      env,
+      { x: slot.left + slot.width / 2 - (from.left + from.width / 2), y: slot.top - (from.height * k) / 2 - 6 - (from.top + from.height / 2), scale: k, rotate: -6 },
+      { duration: 0.9, ease: [0.5, 0, 0.25, 1] },
+    );
+    const dip = (from.height * k) / 2 + 10;
+    const now = env.getBoundingClientRect();
+    await animate(env, { y: now.top - from.top + dip + (from.height * (1 - k)) / 2, opacity: 0 }, { duration: 0.32, ease: "easeIn" });
+    post.current?.flap(false);
   }
 
-  /** A fresh card, back in its place, and the flag down again. */
-  async function fresh() {
-    const el = card.current;
+  /** A fresh card, back in its place, and the envelope put away. */
+  function fresh() {
     setState({ kind: "idle" });
     setName("");
     form.current?.reset();
-    if (!el) return;
-    if (postmark.current) postmark.current.style.opacity = "0";
-    el.style.opacity = "1";
-    if (reduced()) return;
-    animate(el, { x: 0, y: [24, 0], scale: [0.96, 1], rotate: 0, opacity: [0, 1] }, { duration: 0.45, ease: "easeOut" });
-    flag.current?.removeAttribute("data-up");
+    const [c, env, turn, top, st, pm] = [card.current, envelope.current, turner.current, flap.current, stamp.current, mark.current];
+    if (env) Object.assign(env.style, { opacity: "0", transform: "" });
+    if (turn) turn.style.transform = "";
+    if (top) top.style.transform = "";
+    if (st) st.style.opacity = "0";
+    if (pm) pm.style.opacity = "0";
+    if (!c) return;
+    if (reduced()) {
+      c.style.transform = "";
+      c.style.opacity = "1";
+      return;
+    }
+    animate(c, { x: 0, y: [24, 0], scale: [0.96, 1], rotate: 0, opacity: [0, 1] }, { duration: 0.45, ease: "easeOut" });
   }
 
   async function send(event: FormEvent<HTMLFormElement>) {
@@ -188,8 +176,9 @@ export default function ContactForm() {
       const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
       if (response.ok) {
         setDate(today());
-        await post();
+        await pack();
         setState({ kind: "sent", name: data.name.split(" ")[0] || "friend" });
+        if (!reduced()) void post.current?.collect();
         return;
       }
       const { error } = (await response.json().catch(() => ({ error: "failed" }))) as { error?: string };
@@ -228,13 +217,12 @@ export default function ContactForm() {
             </div>
 
             <div className={styles.address}>
-              <div className={styles.stampCorner}>
-                <span className={styles.stamp}>
-                  <Stamp />
+              <div className={styles.stampCorner} aria-hidden="true">
+                <span className={styles.stampPlace}>
+                  stamp
+                  <br />
+                  here
                 </span>
-                <div ref={postmark} className={styles.postmark}>
-                  <Postmark date={date} />
-                </div>
               </div>
               <p className={styles.to}>
                 <span className={styles.field}>to</span>
@@ -258,19 +246,59 @@ export default function ContactForm() {
               </div>
               <div className={styles.post}>
                 <SketchButton type="submit" size="sm" tone="sage" disabled={state.kind === "sending"} icon={<ArrowRight className="sketch-btn__icon" />}>
-                  {state.kind === "sending" ? "Posting…" : "Post it"}
+                  {state.kind === "sending" ? "Sending…" : "Send it"}
                 </SketchButton>
               </div>
             </div>
           </form>
         </div>
 
+        {/* the envelope it is packed into once it has gone: its back, with the flap, and its front, with the address */}
+        <div ref={envelope} className={styles.envelope} aria-hidden="true">
+          <div ref={turner} className={styles.turner}>
+            <div className={styles.envBack}>
+              <div ref={letter} className={styles.letter}>
+                <i />
+                <i />
+                <i />
+              </div>
+              <svg viewBox="0 0 100 62" preserveAspectRatio="none" className={styles.pocket}>
+                <path d="M0 0L47 35L0 62Z" fill="#ecbea9" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+                <path d="M100 0L53 35L100 62Z" fill="#ecbea9" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+                <path d="M0 62L50 27L100 62Z" fill="#e2b5a1" stroke="rgba(45,47,43,0.5)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+              </svg>
+              <div ref={flap} className={styles.flap}>
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                  <path d="M0 0L50 38L100 0Z" fill="#de9372" stroke="rgba(45,47,43,0.55)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+                </svg>
+              </div>
+            </div>
+            <div className={styles.envFront}>
+              <p className={styles.envTo}>
+                <span className={styles.field}>to</span>
+                {PERSON.name}
+                <span>{PERSON.location}</span>
+              </p>
+              <p className={styles.envFrom}>
+                <span className={styles.field}>from</span>
+                {name || "a friend"}
+              </p>
+              <div ref={stamp} className={styles.envStamp}>
+                <Stamp />
+              </div>
+              <div ref={mark} className={styles.envPostmark}>
+                <Postmark date={date} />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* once it has gone: a note where it was */}
         <AnimatePresence>
           {state.kind === "sent" && (
             <motion.div key="sent" role="status" className={styles.sent} initial={{ opacity: 0, scale: 0.9, rotate: -3 }} animate={{ opacity: 1, scale: 1, rotate: -1.5 }} exit={{ opacity: 0 }}>
-              <p className="ink-wobble text-xl font-bold sm:text-2xl">Posted! Thanks, {state.name}.</p>
-              <p className="mt-2 text-sm text-muted">It&apos;s on its way to my inbox. I&apos;ll write back soon.</p>
+              <p className="ink-wobble text-xl font-bold sm:text-2xl">Sent! Thanks, {state.name}.</p>
+              <p className="mt-2 text-sm text-muted">Your letter is in the post, on its way to my inbox. I&apos;ll write back soon.</p>
               <div className="mt-4">
                 <SketchButton size="sm" calm onClick={fresh}>
                   Write another
@@ -281,16 +309,9 @@ export default function ContactForm() {
         </AnimatePresence>
       </div>
 
-      {/* the mailbox */}
-      <div className={styles.mailbox}>
-        <Mailbox
-          door={(el) => {
-            door.current = el;
-          }}
-          flag={(el) => {
-            flag.current = el;
-          }}
-        />
+      {/* the post box, and the post that comes for the letter */}
+      <div className={styles.sceneSlot}>
+        <PostScene apiRef={post} />
       </div>
 
       {/* what went wrong, if it did */}
@@ -302,31 +323,33 @@ export default function ContactForm() {
         )}
       </AnimatePresence>
 
-      {/* the other ways, as stamps */}
-      <div className={styles.stamps}>
-        <span className="relative">
-          <StampLink onClick={copy} tone="var(--color-sienna-100)" label={`Copy the email address, ${PERSON.email}`}>
-            {copied ? <Check className="size-4 text-sage-700" /> : <Copy className="size-4" />}
-            <span className={styles.stampText}>
-              <strong>{copied ? "copied!" : "copy email"}</strong>
-              <em>{PERSON.email}</em>
-            </span>
-          </StampLink>
+      {/* the other ways, as the site's own buttons */}
+      <div className={styles.links}>
+        <span className="relative inline-flex">
+          <SketchButton size="sm" calm onClick={copy} icon={copied ? <Check className="sketch-btn__icon text-sage-600" /> : <Copy className="sketch-btn__icon" />}>
+            {copied ? "Copied" : "Copy email"}
+            <span className="sr-only"> address, {PERSON.email}</span>
+          </SketchButton>
+          <AnimatePresence>
+            {copied && (
+              <motion.span
+                role="status"
+                className="ink-wobble absolute -top-9 left-1/2 whitespace-nowrap rounded-full bg-sage-200 px-3 py-1 text-xs font-bold shadow-[2px_2px_0_1px_rgb(45_47_43/0.4)]"
+                initial={{ opacity: 0, y: 8, x: "-50%", rotate: -6 }}
+                animate={{ opacity: 1, y: 0, x: "-50%", rotate: -3 }}
+                exit={{ opacity: 0, y: -6, x: "-50%" }}
+              >
+                in your clipboard!
+              </motion.span>
+            )}
+          </AnimatePresence>
         </span>
-        <StampLink href={PERSON.github} tone="var(--color-sage-100)" label="GitHub">
-          <GitHub className="size-4" />
-          <span className={styles.stampText}>
-            <strong>GitHub</strong>
-            <em>AHMADMALIK1376</em>
-          </span>
-        </StampLink>
-        <StampLink href={PERSON.linkedin} tone="var(--color-concrete-100)" label="LinkedIn">
-          <LinkedIn className="size-4" />
-          <span className={styles.stampText}>
-            <strong>LinkedIn</strong>
-            <em>in/ahmadmalik1376</em>
-          </span>
-        </StampLink>
+        <SketchButton href={PERSON.github} size="sm" calm icon={<GitHub className="sketch-btn__icon" />}>
+          GitHub
+        </SketchButton>
+        <SketchButton href={PERSON.linkedin} size="sm" calm tone="sage" icon={<LinkedIn className="sketch-btn__icon" />}>
+          LinkedIn
+        </SketchButton>
         <p className={styles.where}>
           <span className="inline-flex items-center gap-1.5">
             <Pin className="size-4 text-sienna-500" /> {PERSON.location}

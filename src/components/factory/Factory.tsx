@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { at, bend, between, Block, COS, CX, CY, Detail, drawn, frontFace, line, onFront, onSide, onTop, Part, poly, rounded, sideFace, topFace, TONES, Wire, type Point, type Tone } from "@/components/desk/iso";
 import deskStyles from "@/components/desk/Desk.module.css";
+import { above, HAND, moveBy, plus, rigDrawing, RigShape, v3, type Rig, type V3 } from "@/components/desk/rig";
 import styles from "./Factory.module.css";
 
 /**
@@ -44,24 +45,8 @@ const VIEW = `${VB.x} ${VB.y} ${VB.w} ${VB.h}`;
 const shift = (dx: number, dy: number) => `${((dx / VB.w) * 100).toFixed(3)}% ${((dy / VB.h) * 100).toFixed(3)}%`;
 /** The shift on screen of a move in the scene: dx along x, dy along y, dz up. */
 const move = (dx: number, dy: number, dz = 0) => shift(COS * (dx - dy), (dx + dy) / 2 - dz);
-/** The same, in view box units, for an SVG transform. */
-const moveBy = (dx: number, dy: number, dz = 0) => `translate(${(COS * (dx - dy)).toFixed(2)} ${((dx + dy) / 2 - dz).toFixed(2)})`;
 const percentOf = ([x, y]: Point) => `${(((x - VB.x) / VB.w) * 100).toFixed(2)}% ${(((y - VB.y) / VB.h) * 100).toFixed(2)}%`;
 const smooth = (k: number) => k * k * (3 - 2 * k);
-
-// ── points in the scene ─────────────────────────────────────────────────
-type V3 = { x: number; y: number; z: number };
-const v3 = (x: number, y: number, z: number): V3 => ({ x, y, z });
-const plus = (a: V3, b: V3) => v3(a.x + b.x, a.y + b.y, a.z + b.z);
-const minus = (a: V3, b: V3) => v3(a.x - b.x, a.y - b.y, a.z - b.z);
-const times = (a: V3, k: number) => v3(a.x * k, a.y * k, a.z * k);
-const dot = (a: V3, b: V3) => a.x * b.x + a.y * b.y + a.z * b.z;
-const cross = (a: V3, b: V3) => v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-const unit = (a: V3) => times(a, 1 / (Math.hypot(a.x, a.y, a.z) || 1));
-const flat = (p: V3) => at(p.x, p.y, p.z);
-const above = (p: V3, by: number) => v3(p.x, p.y, p.z + by);
-/** How near the viewer a point is: the viewer looks down from along x, y and z at once. */
-const depthOf = (p: V3) => p.x + p.y + p.z;
 
 // ── the line, in the scene's own units: y along the belt, x across it, z up ──
 const BELT = { y0: -300, y1: 140, half: 26, z: 34 };
@@ -101,7 +86,6 @@ const PICK_Y = 122;
 // ── the end of the line ─────────────────────────────────────────────────
 /** A box is 18 high; a gripper holding one has its wrist this far over the bottom of the box. */
 const BOX_H = 18;
-const HAND = 14;
 const GRIP = BOX_H + 1 + HAND;
 /**
  * The end of the line is a row to the right of the belt's end: the stack at the side of the belt (three across, two
@@ -165,7 +149,6 @@ const SIENNA: Tone = { top: "#de9372", left: "#d0714c", right: "#bc4e26" };
 const PENCIL: Tone = { top: "#f5dfd5", left: "#de9372", right: "#d0714c" };
 const SAGE: Tone = { top: "#cbd7bd", left: "#b1c29f", right: "#9caf88" };
 const SAGE_DEEP: Tone = { top: "#b1c29f", left: "#9caf88", right: "#80966b" };
-const GRIPPER: Tone = { top: "#7c817a", left: "#5e625c", right: "#4a4d48" };
 const WOOD: Tone = { top: "#e2b5a1", left: "#d0a58f", right: "#c0947f" };
 const NOTES = ["#e2e9da", "#f5dfd5", "#fafaf7"];
 const IDEAS = ["FOLIUM", "GRAPHFORGE", "NEURACACHE", "HIREME", "FOCUSFLOW", "BUGISTAN", "BID ENGINE", "ROUTINE"];
@@ -257,8 +240,6 @@ const ZONES = MACHINES.flatMap((m) => [m.y0 + PORTAL / 2, m.y1 + REACH]);
 
 // ── the robot arms ──────────────────────────────────────────────────────
 
-/** A robot arm: the length and thickness of its two links, its turret, and its colours. */
-type Rig = { upper: number; fore: number; widths: [number, number]; turret: { base: number; w: number; tone: Tone }; tone: Tone; joints: [number, number, number]; hub: string };
 /** The arm at the belt's end that stacks the boxes at the side of it. */
 const STACKER: Rig = { upper: 56, fore: 52, widths: [13, 11], turret: { base: 8, w: 20, tone: SIENNA }, tone: SAGE, joints: [8, 7, 5.5], hub: "#d0714c" };
 const STACKER_AT = v3(52, 104, 30);
@@ -274,140 +255,11 @@ const BOT_ARM: Rig = { upper: 60, fore: 56, widths: [12, 10], turret: { base: BO
 /** How the robot on wheels carries a box as it drives: its wrist over its deck. */
 const CARRY = { wx: -6, wy: 0, wz: 44 };
 
-type Face = { d: string; fill: string };
-const NO_FACE: Face = { d: "", fill: "none" };
-
-/**
- * A block from a to b, `w` across and `t` through, and turned about its length so that its width lies level (or along
- * `across`, if it stands upright): the faces of it the viewer sees, shaded by which way each one faces.
- */
-function beam(a: V3, b: V3, w: number, t: number, tone: Tone, across = v3(1, 0, 0)): Face[] {
-  const d = unit(minus(b, a));
-  let h = cross(d, v3(0, 0, 1));
-  if (Math.hypot(h.x, h.y, h.z) < 0.25) h = across;
-  h = unit(minus(h, times(d, dot(h, d))));
-  const u = cross(h, d);
-  const H = times(h, w / 2);
-  const U = times(u, t / 2);
-  const c = (p: V3, sh: number, su: number) => flat(plus(plus(p, times(H, sh)), times(U, su)));
-  const faces: [V3, Point[]][] = [
-    [u, [c(a, 1, 1), c(b, 1, 1), c(b, -1, 1), c(a, -1, 1)]],
-    [times(u, -1), [c(a, 1, -1), c(b, 1, -1), c(b, -1, -1), c(a, -1, -1)]],
-    [h, [c(a, 1, 1), c(b, 1, 1), c(b, 1, -1), c(a, 1, -1)]],
-    [times(h, -1), [c(a, -1, 1), c(b, -1, 1), c(b, -1, -1), c(a, -1, -1)]],
-    [d, [c(b, 1, 1), c(b, -1, 1), c(b, -1, -1), c(b, 1, -1)]],
-    [times(d, -1), [c(a, 1, 1), c(a, -1, 1), c(a, -1, -1), c(a, 1, -1)]],
-  ];
-  const shown: Face[] = faces
-    .filter(([n]) => n.x + n.y + n.z > 0.02)
-    .map(([n, points]) => ({ d: rounded(points, 1.4), fill: n.z > 0.55 ? tone.top : n.y > n.x ? tone.left : tone.right }));
-  while (shown.length < 3) shown.push(NO_FACE);
-  return shown.slice(0, 3);
-}
-
-/** A part of a robot arm, and how near the viewer it is: the parts are painted furthest first. */
-type RigPart = { key: string; depth: number; faces?: Face[]; joint?: { c: Point; r: number }; box?: string };
-
-/**
- * A robot arm with its shoulder at `s` and its wrist at `w`: its turret turned to face the wrist, its upper arm lifted
- * and its elbow bent so the two links reach it, and its gripper hanging from the wrist with a finger either side of
- * the box it holds.
- */
-function rigParts(rig: Rig, s: V3, w: V3): RigPart[] {
-  const dx = w.x - s.x;
-  const dy = w.y - s.y;
-  const r = Math.hypot(dx, dy);
-  const dir = r > 0.5 ? { x: dx / r, y: dy / r } : { x: -1, y: 0 };
-  const rise = w.z - s.z;
-  const span = Math.min(rig.upper + rig.fore - 0.5, Math.max(Math.abs(rig.upper - rig.fore) + 1, Math.hypot(r, rise)));
-  const lift = Math.atan2(rise, r) + Math.acos(Math.min(1, Math.max(-1, (rig.upper ** 2 + span ** 2 - rig.fore ** 2) / (2 * rig.upper * span))));
-  const out = rig.upper * Math.cos(lift);
-  const e = v3(s.x + dir.x * out, s.y + dir.y * out, s.z + rig.upper * Math.sin(lift));
-  const g = w.z - HAND;
-  const foot = v3(s.x, s.y, rig.turret.base);
-  const finger = (y: number) => beam(v3(w.x, y, g), v3(w.x, y, g - 10), 8, 2.5, GRIPPER);
-  return [
-    { key: "turret", depth: depthOf(foot), faces: beam(foot, above(s, rig.turret.w * 0.3), rig.turret.w, rig.turret.w, rig.turret.tone, v3(-dir.y, dir.x, 0)) },
-    { key: "upper", depth: depthOf(times(plus(s, e), 0.5)), faces: beam(s, e, rig.widths[0], rig.widths[0], rig.tone) },
-    { key: "fore", depth: depthOf(times(plus(e, w), 0.5)), faces: beam(e, w, rig.widths[1], rig.widths[1], rig.tone) },
-    { key: "hand", depth: depthOf(v3(w.x, w.y, g + 4)), faces: [...beam(w, v3(w.x, w.y, g + 3), 8, 8, GRIPPER), ...beam(v3(w.x, w.y - 14, g + 1.5), v3(w.x, w.y + 14, g + 1.5), 9, 3, GRIPPER)] },
-    { key: "far", depth: depthOf(v3(w.x, w.y - 12.5, g - 5)), faces: finger(w.y - 12.5) },
-    { key: "near", depth: depthOf(v3(w.x, w.y + 12.5, g - 5)), faces: finger(w.y + 12.5) },
-    { key: "box", depth: depthOf(v3(w.x, w.y, g - 10)), box: moveBy(w.x, w.y, g - 1 - BOX_H) },
-    ...[s, e, w].map((p, k) => ({ key: `j${k}`, depth: depthOf(p) + 12, joint: { c: flat(p), r: rig.joints[k] } })),
-  ];
-}
-
 /**
  * The parts of an arm standing behind the stacks it works over, which are drawn behind them: its turret, its upper arm
  * and its shoulder. The rest of it, which reaches over the stacks, is drawn in front of them.
  */
 const BACK_PARTS = ["turret", "upper", "j0"];
-
-/**
- * Keeps the drawing of a robot arm in step with its pose: its parts redrawn, and put back in painting order when that
- * changes. Its parts may be split between layers (see BACK_PARTS); each layer keeps its own order.
- */
-function rigDrawing(svgs: (SVGSVGElement | null)[], rig: Rig) {
-  const holders = svgs.flatMap((svg) => svg?.querySelector<SVGGElement>("[data-rig]") ?? []);
-  const groups = new Map<string, SVGGElement>();
-  holders.forEach((holder) => holder.querySelectorAll<SVGGElement>(":scope > [data-part]").forEach((g) => groups.set(g.dataset.part ?? "", g)));
-  const paths = new Map([...groups].map(([key, g]) => [key, Array.from(g.querySelectorAll<SVGPathElement>(":scope > path"))]));
-  let order = "";
-  return {
-    draw(s: V3, w: V3) {
-      const parts = rigParts(rig, s, w);
-      for (const part of parts) {
-        const g = groups.get(part.key);
-        part.faces?.forEach((face, k) => {
-          const path = paths.get(part.key)?.[k];
-          path?.setAttribute("d", face.d);
-          path?.setAttribute("fill", face.fill);
-        });
-        if (part.joint) g?.firstElementChild?.setAttribute("transform", `translate(${part.joint.c[0].toFixed(1)} ${part.joint.c[1].toFixed(1)})`);
-        if (part.box) g?.firstElementChild?.setAttribute("transform", part.box);
-      }
-      const sorted = parts.sort((a, b) => a.depth - b.depth).map((part) => part.key);
-      const next = sorted.join();
-      if (next !== order) {
-        order = next;
-        for (const holder of holders) holder.append(...sorted.flatMap((key) => (groups.get(key)?.parentNode === holder ? (groups.get(key) ?? []) : [])));
-      }
-    },
-    hold(on: boolean) {
-      groups.get("box")?.setAttribute("display", on ? "inline" : "none");
-    },
-  };
-}
-
-/** A robot arm as first drawn, before it moves: the same parts the script redraws, in painting order; or some of them. */
-function RigShape({ rig, s, w, only }: { rig: Rig; s: V3; w: V3; only?: (key: string) => boolean }) {
-  const parts = rigParts(rig, s, w)
-    .filter((part) => !only || only(part.key))
-    .sort((a, b) => a.depth - b.depth);
-  return (
-    <g data-rig="">
-      {parts.map((part) => (
-        <g key={part.key} data-part={part.key} display={part.box ? "none" : undefined}>
-          {part.faces?.map((face, k) => (
-            <path key={k} d={face.d} fill={face.fill} stroke="rgba(45,47,43,0.62)" strokeWidth={1} strokeLinejoin="round" />
-          ))}
-          {part.joint && (
-            <g transform={`translate(${part.joint.c[0].toFixed(1)} ${part.joint.c[1].toFixed(1)})`}>
-              <circle r={part.joint.r} fill="#fafaf7" stroke="rgba(45,47,43,0.62)" strokeWidth={1.1} />
-              <circle r={part.joint.r * 0.42} fill={rig.hub} />
-            </g>
-          )}
-          {part.box && (
-            <g transform={part.box}>
-              <Parcel z={0} label={false} />
-            </g>
-          )}
-        </g>
-      ))}
-    </g>
-  );
-}
 
 /** A flat rectangle at height z, turned by `angle`: a note lying on the belt at an angle. */
 function quad(cx: number, cy: number, hw: number, hd: number, angle: number, z: number): Point[] {
@@ -442,6 +294,9 @@ function Parcel({ x = 0, y = 0, z = BELT.z, along = "x", label = true }: { x?: n
     </>
   );
 }
+
+/** What the factory's arms carry: a box, hanging from the gripper. */
+const HELD = <Parcel z={-BOX_H} label={false} />;
 
 /** A group of boxes shown one at a time as they are put there: the places in a stack, `cols` across and two high. */
 function Stack({ xs, y, z, groupRef }: { xs: number[]; y: number; z: number; groupRef: (k: number) => (el: SVGGElement | null) => void }) {
@@ -1934,7 +1789,7 @@ export default function Factory({ className }: { className?: string }) {
             aria-hidden="true"
             focusable="false"
           >
-            <RigShape rig={rig} s={s} w={w} only={(key) => BACK_PARTS.includes(key)} />
+            <RigShape rig={rig} s={s} w={w} held={HELD} only={(key) => BACK_PARTS.includes(key)} />
           </svg>
         ))}
 
@@ -2013,7 +1868,7 @@ export default function Factory({ className }: { className?: string }) {
             aria-hidden="true"
             focusable="false"
           >
-            <RigShape rig={rig} s={s} w={w} only={(key) => !BACK_PARTS.includes(key)} />
+            <RigShape rig={rig} s={s} w={w} held={HELD} only={(key) => !BACK_PARTS.includes(key)} />
           </svg>
         ))}
 
@@ -2107,13 +1962,13 @@ export default function Factory({ className }: { className?: string }) {
           <g ref={botBody} className={styles.rover}>
             <ServerBot />
           </g>
-          <RigShape rig={BOT_ARM} s={v3(BOT.x, BOT.y, BOT.shoulder)} w={plus(v3(BOT.x, BOT.y, BOT.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
+          <RigShape rig={BOT_ARM} held={HELD} s={v3(BOT.x, BOT.y, BOT.shoulder)} w={plus(v3(BOT.x, BOT.y, BOT.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
         </Part>
       </svg>
 
       {/* the robot's arm: under the trucks, or over them while it reaches into one */}
       <svg ref={roverArmLayer} viewBox={VIEW} className={`${styles.layer} ${deskStyles.fade}`} style={{ zIndex: 29, ...between(0.62, 0.06) }} aria-hidden="true" focusable="false">
-        <RigShape rig={ROVER_ARM} s={v3(ROVER.x, LANE, ROVER.shoulder)} w={plus(v3(ROVER.x, LANE, ROVER.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
+        <RigShape rig={ROVER_ARM} held={HELD} s={v3(ROVER.x, LANE, ROVER.shoulder)} w={plus(v3(ROVER.x, LANE, ROVER.shoulder), v3(CARRY.wx, CARRY.wy, CARRY.wz))} />
       </svg>
     </div>
   );

@@ -1,25 +1,26 @@
 /*
- * The contact form as a postcard, and the mailbox it is posted in. The card
- * has an airmail edge (stripes of sienna and sage) round a paper face; the
- * face is split down the middle, the message on the left on ruled lines, the
- * stamp and the address on the right. Under the card, the other ways of
- * getting in touch, as stamps with perforated edges.
+ * The contact form as a postcard; the envelope it is packed into; and the post
+ * box beside it, drawn in 3D like the factory, where the post comes for it.
+ * The card has an airmail edge (stripes of sienna and sage) round a paper
+ * face; the face is split down the middle, the message on the left on ruled
+ * lines, the address on the right.
  */
 
 .desk {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) clamp(17rem, 30vw, 23rem);
   grid-template-areas:
-    "card box"
+    "card scene"
     "error error"
-    "stamps stamps";
-  align-items: end;
+    "links links";
+  align-items: center;
   gap: 0.9rem 1.2rem;
 }
 
 .cardSlot {
   grid-area: card;
   position: relative;
+  z-index: 2;
   min-width: 0;
 }
 
@@ -48,7 +49,7 @@
 .face {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   border-radius: 0.6rem;
   background: #f8f6ef;
   box-shadow: inset 0 0 0 1px rgb(45 47 43 / 0.2);
@@ -58,7 +59,7 @@
 .message {
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.2rem 0.9rem;
+  padding: 0.95rem 1.1rem 0.85rem;
   border-right: 1.5px dashed rgb(45 47 43 / 0.3);
 }
 
@@ -115,44 +116,29 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 1rem 1.2rem 0.9rem;
+  gap: 0.5rem;
+  padding: 0.95rem 1.1rem 0.85rem;
 }
 
 .stampCorner {
-  position: relative;
   align-self: flex-end;
-  height: 4.6rem;
 }
 
-.stamp {
-  display: block;
-  width: 3.9rem;
-  padding: 3px;
-  background: radial-gradient(circle, transparent 2.1px, #fafaf7 2.5px) -3.5px -3.5px / 7px 7px;
-  filter: drop-shadow(1.5px 1.5px 0 rgb(45 47 43 / 0.3));
-  rotate: 4deg;
-}
-
-.stampArt {
-  display: block;
-  width: 100%;
-}
-
-/* the postmark, thumped over the stamp once it has gone */
-.postmark {
-  position: absolute;
-  right: 1.6rem;
-  top: 0.2rem;
-  width: 8.2rem;
-  opacity: 0;
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-
-.postmarkArt {
-  display: block;
-  width: 100%;
+/* where the stamp goes: it is stuck on the envelope, when the card is sent */
+.stampPlace {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 4rem;
+  border: 1.5px dashed rgb(45 47 43 / 0.35);
+  border-radius: 0.3rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--color-concrete-400);
 }
 
 .field {
@@ -210,6 +196,175 @@
   padding-top: 0.2rem;
 }
 
+/* ── the envelope ────────────────────────────────────────────────────── */
+
+.envelope {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(18rem, 72%);
+  aspect-ratio: 100 / 62;
+  margin: calc(min(18rem, 72%) * -0.31) 0 0 calc(min(18rem, 72%) * -0.5);
+  opacity: 0;
+  pointer-events: none;
+  perspective: 900px;
+}
+
+/* the envelope itself, which turns over: its back, with the flap, and its front, with the address */
+.turner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.envBack,
+.envFront {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.35rem;
+  backface-visibility: hidden;
+}
+
+.envBack {
+  background: #d8a48e;
+  box-shadow:
+    inset 0 0 0 1.5px rgb(45 47 43 / 0.5),
+    4px 4px 0 1px rgb(45 47 43 / 0.3);
+}
+
+/* the front: an airmail edge round paper */
+.envFront {
+  transform: rotateY(180deg);
+  background: repeating-linear-gradient(-45deg, var(--color-sienna-400) 0 8px, #f6ead9 8px 12px, var(--color-sage-400) 12px 20px, #f6ead9 20px 24px);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(45 47 43 / 0.5),
+    4px 4px 0 1px rgb(45 47 43 / 0.3);
+}
+
+.envFront::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 0.2rem;
+  background: #f6ead9;
+}
+
+.envTo,
+.envFrom {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.envTo {
+  left: 32%;
+  bottom: 18%;
+}
+
+.envTo span {
+  display: block;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.envFrom {
+  left: 0.9rem;
+  top: 0.8rem;
+  font-size: 0.62rem;
+}
+
+.envStamp {
+  position: absolute;
+  right: 0.8rem;
+  top: 0.65rem;
+  width: 2.6rem;
+  padding: 2px;
+  background: radial-gradient(circle, transparent 1.6px, #fafaf7 2px) -2.5px -2.5px / 5px 5px;
+  filter: drop-shadow(1.5px 1.5px 0 rgb(45 47 43 / 0.3));
+  opacity: 0;
+}
+
+.stampArt,
+.postmarkArt {
+  display: block;
+  width: 100%;
+}
+
+.envPostmark {
+  position: absolute;
+  right: 1.6rem;
+  top: 0.55rem;
+  width: 5.6rem;
+  opacity: 0;
+  mix-blend-mode: multiply;
+}
+
+/* the card, as it goes into the envelope: small, with its airmail edge */
+.letter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 8%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12%;
+  margin: 0 auto;
+  padding: 4% 7%;
+  border-radius: 0.3rem;
+  background: #f8f6ef;
+  box-shadow:
+    inset 0 0 0 3px var(--color-sienna-400),
+    inset 0 0 0 5px var(--color-paper-2),
+    inset 0 0 0 7px var(--color-sage-400),
+    0 0 0 1px rgb(45 47 43 / 0.4);
+  opacity: 0;
+}
+
+.letter i {
+  display: block;
+  height: 1px;
+  background: rgb(124 129 122 / 0.5);
+}
+
+.letter i:nth-child(2) {
+  width: 80%;
+}
+
+.letter i:nth-child(3) {
+  width: 55%;
+}
+
+/* the front of the pocket the card goes into, over it */
+.pocket {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+}
+
+/* the flap, open above the envelope until the card is in, then shut over it */
+.flap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  height: 64%;
+  transform-origin: 50% 0;
+  transform: perspective(500px) rotateX(180deg);
+}
+
+.flap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 /* once it has gone: a note where it was */
 .sent {
   position: absolute;
@@ -232,108 +387,66 @@
   font-weight: 700;
 }
 
-/* ── the mailbox ─────────────────────────────────────────────────────── */
+/* ── the post box scene ──────────────────────────────────────────────── */
 
-.mailbox {
-  grid-area: box;
-  width: clamp(6.5rem, 16vw, 10.5rem);
-  pointer-events: none;
+.sceneSlot {
+  grid-area: scene;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 
-.mailboxArt {
+/* the scene, faded out towards its edges, so the truck and the robot come in from nowhere and go back there */
+.scene {
+  position: relative;
+  -webkit-mask-image: radial-gradient(ellipse 58% 60% at 50% 52%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 58% 60% at 50% 52%, #000 62%, transparent 100%);
+}
+
+.sceneBase {
   display: block;
   width: 100%;
+  height: auto;
   overflow: visible;
 }
 
-/* the door drops open on its hinge at the foot, and the flag swings up on its pivot */
-.door {
+.sceneLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.truck {
+  will-change: translate;
+}
+
+/* the wheels turn while the truck or the robot drives */
+.spoke {
   transform-box: fill-box;
-  transform-origin: 50% 100%;
-  transition: rotate 0.28s ease-out;
+  transform-origin: center;
 }
 
-.door[data-open] {
-  rotate: -95deg;
+.truck[data-driving] .spoke,
+.bot[data-driving] .spoke {
+  animation: roll 0.4s linear infinite;
 }
 
-.flag {
-  transform-box: view-box;
-  transform-origin: 156px 114px;
-  transition: rotate 0.5s cubic-bezier(0.3, 1.6, 0.5, 1);
+@keyframes roll {
+  to {
+    rotate: -360deg;
+  }
 }
 
-.flag[data-up] {
-  rotate: 90deg;
-}
+/* ── the other ways, as the site's own buttons ───────────────────────── */
 
-/* ── the other ways, as stamps ───────────────────────────────────────── */
-
-.stamps {
-  grid-area: stamps;
+.links {
+  grid-area: links;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem 1rem;
-}
-
-.stampButton {
-  display: inline-block;
-  padding: 4px;
-  border: 0;
-  background: radial-gradient(circle, transparent 2.4px, #fafaf7 2.9px) -4px -4px / 8px 8px;
-  color: var(--color-ink);
-  cursor: pointer;
-  filter: drop-shadow(2px 2px 0 rgb(45 47 43 / 0.32));
-  transition:
-    rotate 0.25s var(--ease-sketch),
-    translate 0.25s var(--ease-sketch);
-}
-
-.stampButton:nth-child(odd) {
-  rotate: -2deg;
-}
-
-.stampButton:nth-child(even),
-.stamps > span .stampButton {
-  rotate: 1.5deg;
-}
-
-.stampButton:hover,
-.stampButton:focus-visible {
-  rotate: 0deg;
-  translate: 0 -3px;
-}
-
-.stampButton:focus-visible {
-  outline: 2px dashed var(--color-sienna-500);
-  outline-offset: 3px;
-}
-
-.stampFace {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.45rem 0.8rem;
-  border: 1px solid rgb(45 47 43 / 0.35);
-  background: var(--face);
-}
-
-.stampText {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-  line-height: 1.2;
-}
-
-.stampText strong {
-  font-size: 0.8rem;
-}
-
-.stampText em {
-  font-size: 0.64rem;
-  font-style: normal;
-  color: var(--color-muted);
+  gap: 0.9rem 1rem;
 }
 
 .where {
@@ -346,17 +459,25 @@
   color: var(--color-muted);
 }
 
-/* ── on a phone: the halves of the card one over the other, the mailbox beside the stamps ── */
+/* ── below a laptop's width: the post box under the card; on a phone, the card's halves one over the other ── */
 
-@media (width < 40rem) {
+@media (width < 64rem) {
   .desk {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "card card"
-      "error error"
-      "stamps box";
+      "card"
+      "scene"
+      "error"
+      "links";
   }
 
+  .sceneSlot {
+    width: min(22rem, 100%);
+    justify-self: center;
+  }
+}
+
+@media (width < 40rem) {
   .face {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -370,34 +491,24 @@
     min-height: 6.5rem;
   }
 
-  .address {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem 0.8rem;
-  }
-
   .stampCorner {
-    grid-column: 2;
-    grid-row: 1 / 3;
-  }
-
-  .to,
-  .line,
-  .post {
-    grid-column: 1 / -1;
+    position: absolute;
+    right: 1.1rem;
+    top: 0.95rem;
   }
 
   .to {
-    grid-column: 1;
-    grid-row: 1 / 3;
-  }
-
-  .mailbox {
-    width: 6rem;
-    align-self: end;
+    padding-right: 4rem;
   }
 
   .where {
     margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .truck[data-driving] .spoke,
+  .bot[data-driving] .spoke {
+    animation: none;
   }
 }

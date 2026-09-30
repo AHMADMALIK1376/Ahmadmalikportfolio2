@@ -178,15 +178,21 @@ sliding down the sheet over a road sliding back up), so scrolling stays smooth. 
 through wherever the stops fall on the page, so it fits any width; below a laptop's width it runs
 straight down the left with the cards beside it.
 
-## Contact: the postcard
+## Contact: the postcard and the post box
 
 The contact form is a postcard (`src/components/sections/ContactForm.tsx`, styled in
 `Postcard.module.css`) with an airmail edge: the message is written on its left half, on ruled
-lines under "Dear Ahmad,", and signed with the name as it is typed; on the right, under the stamp,
-the address, and the name and email it is from. Posting it sends it to `/api/contact`, which emails
-Ahmad; once it has gone a postmark with the day's date is thumped on the stamp, the mailbox's door
-drops open, the card flies in, the door shuts and the flag goes up. Under the card, as postage
-stamps: copy the email address, GitHub and LinkedIn, and where Ahmad is and the time there.
+lines under "Dear Ahmad,", and signed with the name as it is typed; on the right, the address, and
+the name and email it is from. Sending it posts to `/api/contact`, which emails Ahmad; once it has
+gone, the card shrinks into an envelope, the flap shuts, the envelope turns over, a stamp is stuck
+on and franked with the day's date, and the envelope flies to the post box beside it and in through
+the slot, whose flap lifts to take it. Then, in the post box's own 3D scene
+(`src/components/sections/PostScene.tsx`, drawn with the factory's kit), a post truck drives up the
+road from the foot of the picture, and a robot on wheels rolls down its lane from the top; its arm
+opens the collection door in the side of the box, takes the letter out, shuts the door and drops the
+letter into the MAIL crate on the truck; the truck drives off up the road and the robot rolls away
+down its lane. Under it all, the site's own buttons: copy the email address, GitHub and LinkedIn.
+The robot arms here and in the factory are drawn by `src/components/desk/rig.tsx`.
 
 ## Content
 
