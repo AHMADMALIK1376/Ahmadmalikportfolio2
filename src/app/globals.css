@@ -289,6 +289,28 @@
     box-shadow: var(--shadow-ink) 3px 3px 0 1px;
   }
 
+  /* on the dark bar along the top: light words; pointed at or current, the button's own paper face, highlighter and
+     all, with a dark shadow */
+  .sketch-btn--on-dark {
+    color: var(--color-paper-2);
+  }
+  .sketch-btn--on-dark:hover,
+  .sketch-btn--on-dark:focus-visible,
+  .sketch-btn--on-dark[aria-current],
+  .sketch-btn--on-dark[aria-expanded="true"] {
+    background-color: var(--color-paper-2);
+    color: var(--color-ink);
+    box-shadow: rgb(0 0 0 / 0.5) 3px 3px 0 1px;
+  }
+
+  /* the dark bar itself: the footer's charcoal, with the page's dot grid in light ink */
+  .nav-bar {
+    background-color: var(--color-concrete-800);
+    background-image: radial-gradient(circle at 1px 1px, rgb(244 244 240 / 0.09) 1px, transparent 0);
+    background-size: 22px 22px;
+    box-shadow: 0 2px 0 rgb(45 47 43 / 0.25);
+  }
+
   /* room on the left for the lasso that hangs off it */
   .sketch-btn--lasso {
     margin-left: 2em;
