@@ -289,20 +289,6 @@
     box-shadow: var(--shadow-ink) 3px 3px 0 1px;
   }
 
-  /* on the dark bar along the top: light words; pointed at or current, the button's own paper face, highlighter and
-     all, with a dark shadow */
-  .sketch-btn--on-dark {
-    color: var(--color-paper-2);
-  }
-  .sketch-btn--on-dark:hover,
-  .sketch-btn--on-dark:focus-visible,
-  .sketch-btn--on-dark[aria-current],
-  .sketch-btn--on-dark[aria-expanded="true"] {
-    background-color: var(--color-paper-2);
-    color: var(--color-ink);
-    box-shadow: rgb(0 0 0 / 0.5) 3px 3px 0 1px;
-  }
-
   /* the logo: its circuit trace draws itself again from the nib, and its node lights up, when it is pointed at */
   .logo-trace {
     stroke-dasharray: 1;
@@ -323,21 +309,21 @@
   }
   @keyframes logo-node {
     40% {
-      fill: var(--color-sienna-300);
-      scale: 1.35;
+      scale: 1.3;
+      filter: brightness(1.25) drop-shadow(0 0 2px #de9372);
     }
   }
   .logo-node {
     transform-box: fill-box;
     transform-origin: center;
   }
-
-  /* the dark bar itself: the footer's charcoal, with the page's dot grid in light ink */
-  .nav-bar {
-    background-color: var(--color-concrete-800);
-    background-image: radial-gradient(circle at 1px 1px, rgb(244 244 240 / 0.09) 1px, transparent 0);
-    background-size: 22px 22px;
-    box-shadow: 0 2px 0 rgb(45 47 43 / 0.25);
+  /* the logo turns a little in space when it is pointed at */
+  .logo-3d {
+    transition: transform 0.45s var(--ease-sketch);
+  }
+  .group:hover .logo-3d,
+  .group:focus-visible .logo-3d {
+    transform: perspective(140px) rotateY(-24deg) rotateX(10deg) scale(1.06);
   }
 
   /* room on the left for the lasso that hangs off it */

@@ -17,12 +17,14 @@ export default function Nav() {
   const { scrollY, scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 24, restDelta: 0.001 });
   const [hidden, setHidden] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   useMotionValueEvent(scrollY, "change", (y) => {
     const previous = scrollY.getPrevious() ?? 0;
+    setScrolled(y > 12);
     setHidden(y > 240 && y > previous + 2 && !open);
     if (y < previous - 2) setHidden(false);
   });
@@ -67,19 +69,19 @@ export default function Nav() {
         animate={{ y: hidden ? "-110%" : "0%" }}
         transition={{ type: "spring", stiffness: 260, damping: 30 }}
       >
-        <div className="nav-bar">
+        <div className={`bg-paper/90 backdrop-blur-md transition-shadow duration-300 ${scrolled ? "" : "shadow-[0_1px_0_rgb(45_47_43/0.1)]"}`}>
           <nav aria-label="Main" className="gutter flex h-(--nav-h) items-center justify-between gap-4">
-            <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight text-paper-2 sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
-              <Logo className="h-9 w-8 shrink-0 transition-transform duration-300 group-hover:-rotate-12 sm:h-10 sm:w-9" />
+            <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
+              <Logo className="h-10 w-9 shrink-0 sm:h-11 sm:w-10" />
               <span className="ink-wobble">
-                ahmad<span className="text-sienna-300">.</span>malik
+                ahmad<span className="text-sienna-500">.</span>malik
               </span>
             </a>
 
             <ul className="hidden items-center gap-1 lg:flex">
               {NAV.map((item) => (
                 <li key={item.id}>
-                  <SketchButton href={`#${item.id}`} size="sm" calm className="sketch-btn--ghost sketch-btn--on-dark" aria-current={current === item.id ? "location" : undefined}>
+                  <SketchButton href={`#${item.id}`} size="sm" calm className="sketch-btn--ghost" aria-current={current === item.id ? "location" : undefined}>
                     {item.label}
                   </SketchButton>
                 </li>
@@ -94,7 +96,7 @@ export default function Nav() {
                 ref={menuButton}
                 size="sm"
                 calm
-                className="sketch-btn--on-dark lg:hidden"
+                className="lg:hidden"
                 aria-expanded={open}
                 aria-controls="mobile-menu"
                 onClick={() => setOpen((v) => !v)}
