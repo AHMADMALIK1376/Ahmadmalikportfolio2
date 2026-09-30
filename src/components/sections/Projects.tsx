@@ -200,6 +200,8 @@ export default function Projects() {
       <div
         ref={stage}
         className={styles.stage}
+        data-reveal=""
+        style={{ "--reveal-i": 3 } as CSSProperties}
         onPointerLeave={letGo}
         onPointerDown={grab}
         onPointerMove={pull}

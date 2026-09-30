@@ -137,7 +137,7 @@ export default function SkillsTable() {
       </div>
 
       {/* the key: each kind of element, a button that lights them up */}
-      <ul className={styles.key} aria-label="Kinds of tool">
+      <ul className={styles.key} aria-label="Kinds of tool" data-reveal="" style={{ "--reveal-i": 2 } as CSSProperties}>
         {KIND_ORDER.map((k) => (
           <li key={k}>
             <button
@@ -160,7 +160,7 @@ export default function SkillsTable() {
       </ul>
 
       {/* one element, drawn large: whichever is pointed at, or each in turn */}
-      <div className={styles.featured} style={look(el.kind)} data-dark={KINDS[el.kind].dark ? "" : undefined} aria-live="polite">
+      <div className={styles.featured} data-reveal="" style={{ ...look(el.kind), "--reveal-i": 3 } as CSSProperties} data-dark={KINDS[el.kind].dark ? "" : undefined} aria-live="polite">
         <div key={active} className={styles.featuredInner}>
           <div className={styles.featuredCell}>
             <span className={styles.bigNumber}>{active + 1}</span>

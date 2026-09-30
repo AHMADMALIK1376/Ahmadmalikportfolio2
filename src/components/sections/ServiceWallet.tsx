@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, useInView } from "motion/react";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { SERVICES } from "@/lib/content";
 import { Sketch } from "@/components/sketch/Doodle";
 import Doodle from "@/components/sketch/Doodle";
@@ -46,7 +46,7 @@ export default function ServiceWallet({ heading }: { heading: ReactNode }) {
         {heading}
         <ol className="-mx-3 mt-2 space-y-0.5 lg:space-y-0" aria-label="What I do">
           {SERVICES.map((service, i) => (
-            <li key={service.title}>
+            <li key={service.title} data-reveal="" style={{ "--reveal-i": i + 2 } as CSSProperties}>
               <button
                 type="button"
                 onClick={(e) => show(i, e.currentTarget)}
@@ -72,7 +72,7 @@ export default function ServiceWallet({ heading }: { heading: ReactNode }) {
       </div>
 
       {/* the wallet */}
-      <div className="relative">
+      <div className="relative" data-reveal="" style={{ "--reveal-i": 3 } as CSSProperties}>
         <div ref={wallet} className={styles.wallet} data-in={seen ? "" : undefined} data-open={peek !== null ? "" : undefined}>
           <div className={styles.back} />
 

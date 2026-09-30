@@ -782,7 +782,7 @@ export default function CareerMap({ heading }: { heading: ReactNode }) {
 
         <div ref={column} className={`gutter ${styles.column}`}>
           {/* the title of the map, and its scale */}
-          <div className={styles.cartouche} aria-hidden="true">
+          <div className={styles.cartouche} aria-hidden="true" data-reveal="">
             <span className="block text-[0.78rem] font-bold tracking-[0.18em] sm:text-sm">THE ROAD SO FAR</span>
             <span className={styles.cartoucheRule} />
             <span className="block text-[0.6rem] font-bold text-muted sm:text-[0.66rem]">2023 → today · Rawalpindi</span>

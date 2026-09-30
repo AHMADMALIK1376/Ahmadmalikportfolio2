@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Courier_Prime } from "next/font/google";
 import Providers from "@/components/Providers";
 import SketchFilters from "@/components/sketch/SketchFilters";
+import ScrollReveal from "@/components/sketch/ScrollReveal";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { EDUCATION, PERSON } from "@/lib/content";
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(person).replace(/</g, "\\u003c") }} />
         <SketchFilters />
+        <ScrollReveal />
         <a href="#main" className="sketch-btn sketch-btn--sm sketch-btn--calm sr-only bg-paper-2 focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]">
           Skip to content
         </a>

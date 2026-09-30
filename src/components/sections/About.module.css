@@ -1,8 +1,7 @@
 /*
  * About, as a spec sheet. On a phone, one column: the photo, then the
  * callouts. From a laptop's width up, three: two callouts either side of the
- * photo, and leader lines drawn from each to its point on the photo, over it
- * all. Under it, the rating plate.
+ * photo. Under it, the rating plate.
  */
 
 .sheet {
@@ -22,12 +21,6 @@
 .callout {
   position: relative;
   max-width: 34rem;
-  opacity: 0;
-  transition: opacity 0.5s ease calc(0.35s + var(--i) * 0.15s);
-}
-
-.sheet[data-shown] .callout {
-  opacity: 1;
 }
 
 .tag {
@@ -67,86 +60,6 @@
   font-size: 0.82rem;
   line-height: 1.5;
   color: var(--color-muted);
-}
-
-/* where a leader line leaves the callout: hidden, and only measured, on a phone */
-.anchor {
-  position: absolute;
-  top: 50%;
-  width: 0;
-  height: 0;
-}
-
-/* ── the leader lines ────────────────────────────────────────────────── */
-
-.leaders {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 5;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.leader {
-  fill: none;
-  stroke: var(--color-ink);
-  stroke-opacity: 0.6;
-  stroke-width: 1.4;
-  stroke-linejoin: round;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-
-.leaderStart,
-.leaderEnd {
-  fill: var(--color-sienna-500);
-  opacity: 0;
-}
-
-.leaderEnd {
-  stroke: var(--color-paper-2);
-  stroke-width: 1.5;
-}
-
-.leaderRing {
-  fill: none;
-  stroke: var(--color-sienna-500);
-  stroke-width: 1.4;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.sheet[data-shown] .leader {
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 0.7s ease calc(0.5s + var(--i) * 0.15s);
-}
-
-.sheet[data-shown] .leaderStart,
-.sheet[data-shown] .leaderEnd {
-  opacity: 1;
-  transition: opacity 0.2s ease calc(0.5s + var(--i) * 0.15s);
-}
-
-.sheet[data-shown] .leaderEnd {
-  transition-delay: calc(1.15s + var(--i) * 0.15s);
-}
-
-.sheet[data-shown] .leaderRing {
-  animation: ping 2.4s ease-out calc(1.2s + var(--i) * 0.6s) infinite;
-}
-
-@keyframes ping {
-  0% {
-    opacity: 0.8;
-    scale: 0.4;
-  }
-  70%,
-  100% {
-    opacity: 0;
-    scale: 1.3;
-  }
 }
 
 /* ── the rating plate ────────────────────────────────────────────────── */
@@ -312,15 +225,6 @@
     grid-row: 2;
   }
 
-  /* the anchor sits on the callout's edge nearest the photo, level with its tag */
-  .callout[data-side="left"] .anchor {
-    right: -1.6rem;
-  }
-
-  .callout[data-side="right"] .anchor {
-    left: -1.6rem;
-  }
-
   .callout[data-side="left"] .tag,
   .callout[data-side="left"] .title,
   .callout[data-side="left"] .text {
@@ -343,17 +247,5 @@
 
   .wide {
     grid-column: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .callout,
-  .sheet[data-shown] .leader,
-  .sheet[data-shown] .leaderStart,
-  .sheet[data-shown] .leaderEnd {
-    transition: none;
-  }
-  .sheet[data-shown] .leaderRing {
-    animation: none;
   }
 }

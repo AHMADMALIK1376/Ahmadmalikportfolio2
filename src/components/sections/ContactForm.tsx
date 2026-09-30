@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useAnimate } from "motion/react";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { PERSON } from "@/lib/content";
 import SketchButton from "@/components/sketch/SketchButton";
 import LocalTime from "@/components/LocalTime";
@@ -201,7 +201,7 @@ export default function ContactForm() {
 
   return (
     <div ref={scope} className={styles.desk}>
-      <div className={styles.cardSlot}>
+      <div className={styles.cardSlot} data-reveal="" style={{ "--reveal-i": 1 } as CSSProperties}>
         {/* the postcard: the form */}
         <div ref={card} className={styles.card}>
           <form ref={form} onSubmit={send} className={styles.face} aria-label="Write to Ahmad">
@@ -310,7 +310,7 @@ export default function ContactForm() {
       </div>
 
       {/* the post box, and the post that comes for the letter */}
-      <div className={styles.sceneSlot}>
+      <div className={styles.sceneSlot} data-reveal="" style={{ "--reveal-i": 2 } as CSSProperties}>
         <PostScene apiRef={post} />
       </div>
 
@@ -324,7 +324,7 @@ export default function ContactForm() {
       </AnimatePresence>
 
       {/* the other ways, as the site's own buttons */}
-      <div className={styles.links}>
+      <div className={styles.links} data-reveal="" style={{ "--reveal-i": 3 } as CSSProperties}>
         <span className="relative inline-flex">
           <SketchButton size="sm" calm onClick={copy} icon={copied ? <Check className="sketch-btn__icon text-sage-600" /> : <Copy className="sketch-btn__icon" />}>
             {copied ? "Copied" : "Copy email"}
