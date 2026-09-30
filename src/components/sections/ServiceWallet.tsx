@@ -40,11 +40,11 @@ export default function ServiceWallet({ heading }: { heading: ReactNode }) {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-10">
+    <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1fr] lg:gap-8">
       {/* the heading, and the list: every kind of work, by name */}
       <div className="min-w-0">
         {heading}
-        <ol className="-mx-3 space-y-0.5" aria-label="What I do">
+        <ol className="-mx-3 mt-2 space-y-0.5 lg:space-y-0" aria-label="What I do">
           {SERVICES.map((service, i) => (
             <li key={service.title}>
               <button
@@ -54,7 +54,7 @@ export default function ServiceWallet({ heading }: { heading: ReactNode }) {
                 onPointerLeave={() => setPeek(null)}
                 onFocus={() => setPeek(i)}
                 onBlur={() => setPeek(null)}
-                className={`ink-${service.ink} group flex w-full items-baseline gap-4 rounded-2xl px-3 py-2 text-left transition-colors hover:bg-(--ink-fill) focus-visible:bg-(--ink-fill)`}
+                className={`ink-${service.ink} group flex w-full items-baseline gap-4 rounded-2xl px-3 py-2 text-left lg:py-1.5 transition-colors hover:bg-(--ink-fill) focus-visible:bg-(--ink-fill)`}
               >
                 <span className="text-xs font-bold text-sienna-600">0{i + 1}</span>
                 <span className="min-w-0 flex-1">

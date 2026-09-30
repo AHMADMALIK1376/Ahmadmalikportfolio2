@@ -19,6 +19,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* on a laptop, as big as the window's height allows, so the section fits one screen */
+@media (width >= 64rem) {
+  .wallet {
+    font-size: clamp(11.5px, calc((100svh - 10rem) / 31), 15px);
+  }
+}
+
 /* the back of the wallet, behind the cards */
 .back {
   position: absolute;
