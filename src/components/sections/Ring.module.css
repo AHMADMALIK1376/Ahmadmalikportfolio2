@@ -31,6 +31,16 @@
   cursor: grabbing;
 }
 
+/* on a laptop, the ring as big as the window's height allows, so the section fits one screen */
+@media (width >= 64rem) {
+  .stage {
+    --h: min(246px, calc((100svh - 250px) * 0.68));
+    --w: calc(var(--h) * 0.748);
+    --r: calc(var(--h) * 1.667);
+    height: calc(var(--h) * 1.463);
+  }
+}
+
 @media (width < 64rem) {
   .stage {
     --w: 164px;

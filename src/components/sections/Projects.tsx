@@ -179,10 +179,22 @@ export default function Projects() {
   const current = PROJECTS[front];
 
   return (
-    <section id="work" aria-labelledby="work-title" className="gutter overflow-x-clip py-14 sm:py-20 md:pb-24 md:pt-16">
-      <SectionHeading number="03" kicker="selected work" id="work-title" intro="Drag the ring, swipe it, or let it turn, and open any card to watch it work.">
-        Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
-      </SectionHeading>
+    <section id="work" aria-labelledby="work-title" className="gutter overflow-x-clip py-14 sm:py-20 lg:pb-10 lg:pt-14">
+      {/* the heading; and on a laptop, beside it, the card at the front, named, so the ring fits one screen under them */}
+      <div className="lg:flex lg:items-end lg:justify-between lg:gap-10">
+        <SectionHeading number="03" kicker="selected work" id="work-title" tight intro="Drag the ring, swipe it, or let it turn, and open any card to watch it work.">
+          Stuff I&apos;ve <Highlight mark="circle" ink="sienna">built</Highlight>.
+        </SectionHeading>
+        <div className="relative z-10 mb-3 hidden shrink-0 lg:block [&_button]:text-right">
+          <button type="button" onClick={(e) => show(front, e.currentTarget)} className="group min-w-0 max-w-md rounded-2xl px-3 py-1 text-right">
+          <span className="block text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sienna-600">
+            #{String(front + 1).padStart(2, "0")} · {LABEL[current.category]}
+          </span>
+          <span className="ink-wobble mt-0.5 block truncate text-base font-bold group-hover:underline group-hover:decoration-wavy group-hover:underline-offset-4 sm:text-lg">{current.title}</span>
+          <span className="block truncate text-xs text-muted">{current.tagline}</span>
+        </button>
+        </div>
+      </div>
 
       {/* the ring */}
       <div
@@ -250,8 +262,8 @@ export default function Projects() {
         </div>
       </div>
 
-      {/* the card at the front, named */}
-      <div className="relative z-10 mt-1 flex items-center justify-center">
+      {/* the card at the front, named: under the ring, below a laptop's width */}
+      <div className="relative z-10 mt-1 flex items-center justify-center lg:hidden">
         <button type="button" onClick={(e) => show(front, e.currentTarget)} className="group min-w-0 max-w-md rounded-2xl px-3 py-1 text-center">
           <span className="block text-[0.65rem] font-bold uppercase tracking-[0.22em] text-sienna-600">
             #{String(front + 1).padStart(2, "0")} · {LABEL[current.category]}
