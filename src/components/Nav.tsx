@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { NAV, PERSON, RESUME_PDF } from "@/lib/content";
 import SketchButton from "@/components/sketch/SketchButton";
 import { Close, Download, GitHub, LinkedIn, Menu } from "@/components/sketch/Icons";
-import Doodle from "@/components/sketch/Doodle";
+import Logo from "@/components/Logo";
 
 /**
  * The bar along the top. It steps out of the way while you read down the page
@@ -70,9 +70,7 @@ export default function Nav() {
         <div className="nav-bar">
           <nav aria-label="Main" className="gutter flex h-(--nav-h) items-center justify-between gap-4">
             <a href="#top" className="group flex items-center gap-2 rounded-lg text-base font-bold tracking-tight text-paper-2 sm:text-xl" aria-label={`${PERSON.name}, back to the top`}>
-              <span className="text-sienna-300 transition-transform duration-500 group-hover:rotate-[200deg]">
-                <Doodle kind="sparkle" now className="size-6" strokeWidth={4} duration={0.6} />
-              </span>
+              <Logo className="h-9 w-8 shrink-0 transition-transform duration-300 group-hover:-rotate-12 sm:h-10 sm:w-9" />
               <span className="ink-wobble">
                 ahmad<span className="text-sienna-300">.</span>malik
               </span>

@@ -303,6 +303,35 @@
     box-shadow: rgb(0 0 0 / 0.5) 3px 3px 0 1px;
   }
 
+  /* the logo: its circuit trace draws itself again from the nib, and its node lights up, when it is pointed at */
+  .logo-trace {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+  .group:hover .logo-trace,
+  .group:focus-visible .logo-trace {
+    animation: logo-trace 0.7s ease-out;
+  }
+  .group:hover .logo-node,
+  .group:focus-visible .logo-node {
+    animation: logo-node 0.9s ease-out 0.5s;
+  }
+  @keyframes logo-trace {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+  @keyframes logo-node {
+    40% {
+      fill: var(--color-sienna-300);
+      scale: 1.35;
+    }
+  }
+  .logo-node {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
   /* the dark bar itself: the footer's charcoal, with the page's dot grid in light ink */
   .nav-bar {
     background-color: var(--color-concrete-800);

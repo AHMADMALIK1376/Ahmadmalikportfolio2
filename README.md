@@ -38,6 +38,13 @@ Each has a full ramp in `src/app/globals.css` (`sage-50…800`, `concrete-100…
 `sienna-100…700`). Text colours are picked from the darker steps so they pass WCAG AA
 on the paper.
 
+## The logo
+
+Ahmad's mark (`src/components/Logo.tsx`, and `src/app/icon.svg` for the browser tab) is a pen nib
+whose slit runs on into a circuit trace ending in a node: drawn by hand, built with code. It sits in
+the dark charcoal bar along the top of the page; pointed at, the nib tilts, the trace draws itself
+again and the node lights up.
+
 ## The design system
 
 All of it lives in `src/app/globals.css` and `src/components/sketch/`.
