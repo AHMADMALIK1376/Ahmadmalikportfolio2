@@ -165,9 +165,12 @@ the screen — a floating grey orb split round its middle by a seam glowing oran
 segmented ring round an orange iris, an antenna, and a glowing hover pod on either side, drawn in
 the buildings' own wobbling ink with a warm glow all round it — leaning into the bends and bobbing over its
 shadow on waves that ripple out over the road under it, with its thruster pushing the air down; the
-road behind it is inked in. While the map fills the middle of the screen, a hard flick of the
-wheel or trackpad only scrolls it at a walking pace (about 720px a second, half a screen at most
-waiting); touch screens and reduced motion scroll as usual. Each stop's card pops up on the outside of its bend as the ball arrives, and across the
+road behind it is inked in. While the map fills the middle of the screen, the wheel and
+trackpad glide: the page eases on towards each turn of the wheel, quickly at first and settling
+softly, never faster than about 1250px a second, with half a screen at most waiting; touch screens
+and reduced motion scroll as usual. For smoothness the drone's inked body is drawn once and only
+moved and turned, with its lights in layers of their own that fade as a whole, and the road is
+wobbled a stretch at a time rather than in one filter the length of the page. Each stop's card pops up on the outside of its bend as the ball arrives, and across the
 road stands the place itself in 3D — a home office, the university, a Git tree, an easel, a
 stepped office, a hackathon tent, a camp, a tower — under 3D mountains, with forests between the
 rows. The drone and the inked road move by their transforms only (the inked road is a window

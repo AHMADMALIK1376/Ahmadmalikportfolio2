@@ -44,8 +44,8 @@
 
 .column {
   position: relative;
-  padding-top: 9.5rem;
-  padding-bottom: 11rem;
+  padding-top: 7.5rem;
+  padding-bottom: 8.5rem;
 }
 
 /* the title of the map, in its cartouche */
@@ -113,7 +113,7 @@
   position: relative;
   display: flex;
   align-items: flex-start;
-  padding: 2.4rem 0 5rem;
+  padding: 1.6rem 0 2.2rem;
 }
 
 .row:last-child {
@@ -124,7 +124,7 @@
   position: absolute;
   z-index: 3;
   left: var(--x);
-  top: 5.3rem;
+  top: 4.5rem;
   width: calc(var(--pin) * 0.78);
   height: var(--pin);
   padding: 0;
@@ -195,7 +195,7 @@
 .name {
   position: absolute;
   z-index: 3;
-  top: 3.5rem;
+  top: 2.7rem;
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -539,6 +539,7 @@
   position: absolute;
   left: 0;
   top: 0;
+  will-change: translate;
   animation: float 2.6s ease-in-out infinite alternate;
 }
 
@@ -550,68 +551,37 @@
 
 /* the drone itself, leaning into the bends as the script turns it */
 .drone {
-  --look: 0;
   position: absolute;
   left: -3.75rem;
   top: -8.6rem;
   width: 7.5rem;
   aspect-ratio: 120 / 110;
   transform-origin: 50% 45%;
-  transition: rotate 0.45s ease-out;
+  will-change: transform;
+}
+
+/* its lights, over its body, glowing brighter and dimmer as one */
+.lights {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+  animation: glow 1.4s ease-in-out infinite alternate;
 }
 
 .drone svg {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-/* its eye, glancing the way it is going */
-.eye {
-  transform: translateX(calc(var(--look) * 1px));
-  transition: transform 0.45s ease-out;
-}
-
-/* the glow all round it, breathing */
-.aura {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: aura 2.2s ease-in-out infinite alternate;
-}
-
-@keyframes aura {
-  from {
-    opacity: 0.55;
-    scale: 0.94;
-  }
-  to {
-    opacity: 1;
-    scale: 1.04;
-  }
-}
-
-/* its lights, glowing brighter and dimmer */
-.glow {
-  animation: glow 1.4s ease-in-out infinite alternate;
-}
-
 @keyframes glow {
   from {
-    opacity: 0.6;
+    opacity: 0.55;
   }
   to {
     opacity: 1;
-  }
-}
-
-.status {
-  animation: status 1.2s steps(1, end) infinite;
-}
-
-@keyframes status {
-  50% {
-    opacity: 0.25;
   }
 }
 
@@ -796,9 +766,7 @@
   .shadow,
   .float,
   .lift,
-  .glow,
-  .aura,
-  .status {
+  .lights {
     animation: none;
   }
   .card,
