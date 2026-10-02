@@ -43,9 +43,9 @@ on the paper.
 Ahmad's mark (`src/components/Logo.tsx`, and `src/app/icon.svg` for the browser tab) is a pen nib
 whose slit runs on into a circuit wire ending in a node: drawn by hand, built with code. It is drawn
 in the same hand as the factory, the map and the post box — a solid nib standing up in the
-isometric view, flat sienna faces, a wobbling ink edge and the hard shadow of the site's cards, and
-a sage wire running to a small sage block. Pointed at, the nib tips, the wire draws itself again
-and the node lights up.
+isometric view, turned to face the right, flat sienna faces, a wobbling ink edge and the hard shadow
+of the site's cards, and a sage wire running to a small sage block. Pointed at, the nib tips to the
+right, the wire draws itself again and the node lights up.
 
 ## The design system
 

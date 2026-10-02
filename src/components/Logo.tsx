@@ -2,7 +2,8 @@ import { at, EDGE, poly, type Point } from "@/components/desk/iso";
 
 /**
  * Ahmad's mark, drawn in the same hand as the factory, the map and the post
- * box: a pen nib standing up in the isometric view, a solid slab with flat
+ * box: a pen nib standing up in the isometric view, turned to face the
+ * right (its face is a right-hand face of the grid), a solid slab with flat
  * pastel faces — its face in sienna, its thickness in a deeper sienna — a
  * wobbling ink edge and the hard offset shadow of the site's cards (the
  * `desk-card` filter). Its slit runs down to the breather hole and on out of
@@ -23,9 +24,9 @@ const NIB: [number, number][] = [
   [-31, 32],
   [-30, 42],
 ];
-/** How thick the nib is: its face at y = 0, its back THICK behind it. */
+/** How thick the nib is: its face at x = 0, its back THICK behind it. Across the face (u) runs along -y, so it reads to the right. */
 const THICK = 11;
-const face = (u: number, v: number, y = 0): Point => at(u, y, v);
+const face = (u: number, v: number, x = 0): Point => at(x, -u, v);
 
 const FACE = "#de9372";
 const SIDE = "#bc4e26";
@@ -34,10 +35,10 @@ const TOP = "#ecbea9";
 /** The sides of the nib the viewer sees: each edge swept back, shaded by the way it faces. */
 const SIDES = NIB.flatMap(([u0, v0], i) => {
   const [u1, v1] = NIB[(i + 1) % NIB.length];
-  // the edge's outward normal, across and up; it is seen if it faces the viewer, who looks from +x, +y and +z at once
+  // the edge's outward normal, across and up; across is -y, so it is seen if it faces left or up (the viewer looks from +x, +y and +z)
   const [nu, nv] = [v1 - v0, u0 - u1].map((n) => -n);
-  if (nu + nv <= 0.5) return [];
-  return [{ d: poly(face(u0, v0), face(u1, v1), face(u1, v1, -THICK), face(u0, v0, -THICK)), fill: nv > nu ? TOP : SIDE }];
+  if (nv - nu <= 0.5) return [];
+  return [{ d: poly(face(u0, v0), face(u1, v1), face(u1, v1, -THICK), face(u0, v0, -THICK)), fill: nv > -nu ? TOP : SIDE }];
 });
 
 /** The breather hole: a circle on the face, seen at the view's slant. */
@@ -46,8 +47,8 @@ const HOLE = poly(...Array.from({ length: 16 }, (_, k) => face(Math.cos((k / 16)
 const WIRE = [face(0, 45, 1.5), face(0, 25, 1.5), face(15, 12.5, 1.5), face(15, -4, 1.5)]
   .map(([x, y], k) => `${k ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`)
   .join("");
-/** The node: a small block at the wire's end. */
-const NODE = { x0: 9, x1: 21, y0: -4, y1: 8, z0: -16, z1: -5 };
+/** The node: a small block at the wire's end, under u = 15. */
+const NODE = { x0: -4, x1: 8, y0: -21, y1: -9, z0: -16, z1: -5 };
 const node = (() => {
   const { x0, x1, y0, y1, z0, z1 } = NODE;
   return {
@@ -60,7 +61,7 @@ const node = (() => {
 export default function Logo({ className }: { className?: string }) {
   const edge = { stroke: EDGE, strokeWidth: 2.2, strokeLinejoin: "round" } as const;
   return (
-    <svg viewBox="322 304 84 134" className={`logo-3d ${className ?? ""}`} aria-hidden="true" focusable="false">
+    <svg viewBox="312 304 85 119" className={`logo-3d ${className ?? ""}`} aria-hidden="true" focusable="false">
       <g filter="url(#desk-card)">
         {/* the nib: its sides, then its face, the slit and the hole */}
         {SIDES.map((side) => (
